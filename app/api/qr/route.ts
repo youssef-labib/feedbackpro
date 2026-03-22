@@ -1,3 +1,8 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const QRCode = require('qrcode') as {
+  toBuffer: (text: string, options: Record<string, unknown>) => Promise<Buffer>
+}
+
 import { NextResponse } from 'next/server'
 
 export async function GET(req: Request) {
@@ -9,8 +14,6 @@ export async function GET(req: Request) {
   }
 
   try {
-    const QRCode = (await import('qrcode')).default
-
     const buffer = await QRCode.toBuffer(url, {
       type: 'png',
       width: 600,
@@ -25,7 +28,7 @@ export async function GET(req: Request) {
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': 'image/png',
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control': 'public, max-age=31536000',
       },
     })
   } catch (err) {
