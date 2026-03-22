@@ -192,7 +192,7 @@ export default function Home() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Instrument+Sans:wght@300;400;500&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        html{scroll-behavior:smooth}
+        html,body{scroll-behavior:smooth;overflow-x:hidden}
         body{background:#07101f;font-family:'Instrument Sans',sans-serif;color:#8899b0;overflow-x:hidden}
         @keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
         @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
@@ -241,7 +241,7 @@ export default function Home() {
 
         /* HERO */
         .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 40px 60px;text-align:center;position:relative}
-        .hero::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:800px;height:480px;background:radial-gradient(ellipse at 50% 0%,rgba(0,180,200,.12),transparent 68%);pointer-events:none}
+        .hero::before{content:'';position:absolute;top:0;left:0;right:0;height:480px;background:radial-gradient(ellipse at 50% 0%,rgba(0,180,200,.12),transparent 68%);pointer-events:none}
         .hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,180,200,.2),transparent)}
         .badge{display:inline-flex;align-items:center;gap:7px;padding:5px 14px;border-radius:20px;background:rgba(0,180,200,.08);border:1px solid rgba(0,180,200,.22);font-size:12px;font-weight:500;color:#7dd8e0;letter-spacing:.3px;margin-bottom:28px}
         .bdot{width:6px;height:6px;border-radius:50%;background:#00b4c8}
