@@ -9,9 +9,13 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return request.cookies.getAll() },
+        getAll() {
+          return request.cookies.getAll()
+        },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          )
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
@@ -23,20 +27,17 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Redirect to login if accessing dashboard without auth
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register')) {
+  // Redirect to dashboard if already logged in and visiting login/register
+  if (user && (
+    request.nextUrl.pathname === '/login' ||
+    request.nextUrl.pathname === '/register'
+  )) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  const adminToken = request.headers.get('x-admin-token')
-  if (request.nextUrl.pathname.startsWith('/admin') && adminToken !== process.env.ADMIN_SECRET) {
-    const url = request.nextUrl.clone()
-    if (!request.headers.get('referer')?.includes('/admin')) {
-      // Allow direct navigation to admin (token checked in page)
-    }
   }
 
   return supabaseResponse

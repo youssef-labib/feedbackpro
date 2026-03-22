@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
 type Lang = 'fr' | 'ar' | 'en' | 'es'
 const LANG_LABELS: Record<Lang, string> = { fr: 'FR', ar: 'عربي', en: 'EN', es: 'ES' }
@@ -119,7 +119,7 @@ export default function RegisterPage() {
     if (step === 1) { setStep(2); return }
     setLoading(true); setError('')
 
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+    const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
     const { data: authData, error: authErr } = await supabase.auth.signUp({ email, password })
     if (authErr || !authData.user) { setError(authErr?.message || 'Error'); setLoading(false); return }
 
