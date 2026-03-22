@@ -134,14 +134,14 @@ export default function SetupPage() {
   function moveUp(idx: number) {
     if (idx === 0) return
     const arr = [...questions]
-    ;[arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]]
+      ;[arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]]
     setQuestions(arr)
   }
 
   function moveDown(idx: number) {
     if (idx === questions.length - 1) return
     const arr = [...questions]
-    ;[arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]]
+      ;[arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]]
     setQuestions(arr)
   }
 
@@ -188,7 +188,7 @@ export default function SetupPage() {
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#07101f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid rgba(255,255,255,.07)', borderTopColor: '#028090', animation: 'spin .8s linear infinite' }}/>
+      <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid rgba(255,255,255,.07)', borderTopColor: '#028090', animation: 'spin .8s linear infinite' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
@@ -210,7 +210,7 @@ export default function SetupPage() {
       `}</style>
 
       <div style={{ minHeight: '100vh', background: '#07101f', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: 700, height: 400, background: 'radial-gradient(ellipse at 50% 0%, rgba(0,180,200,.1), transparent 70%)', pointerEvents: 'none', zIndex: 0 }}/>
+        <div style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: 700, height: 400, background: 'radial-gradient(ellipse at 50% 0%, rgba(0,180,200,.1), transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
 
         {/* Nav */}
         <nav style={{ padding: '0 40px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,.06)', position: 'relative', zIndex: 10 }}>
@@ -218,7 +218,7 @@ export default function SetupPage() {
             <div style={{ width: 30, height: 30, borderRadius: 9, background: '#028090', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cabinet Grotesk, sans-serif', fontWeight: 900, fontSize: 13, color: '#fff' }}>F</div>
             <span style={{ fontFamily: 'Cabinet Grotesk, sans-serif', fontWeight: 800, fontSize: 14, color: '#e8f0fa', letterSpacing: -.3 }}>FeedbackPro</span>
           </div>
-          <div style={{ display: 'flex', align: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ fontSize: 11, color: '#2a3a52', background: 'rgba(0,180,200,.06)', border: '1px solid rgba(0,180,200,.14)', borderRadius: 20, padding: '4px 12px' }}>Étape 3 sur 3</div>
           </div>
         </nav>
@@ -251,13 +251,13 @@ export default function SetupPage() {
 
               {/* Progress */}
               <div style={{ height: 4, background: 'rgba(255,255,255,.05)', borderRadius: 2, marginBottom: 14, overflow: 'hidden' }}>
-                <div style={{ height: '100%', borderRadius: 2, background: questions.length >= 10 ? '#EF4444' : questions.length >= 5 ? '#10B981' : '#F59E0B', width: `${(questions.length / 10) * 100}%`, transition: 'width .3s ease, background .3s' }}/>
+                <div style={{ height: '100%', borderRadius: 2, background: questions.length >= 10 ? '#EF4444' : questions.length >= 5 ? '#10B981' : '#F59E0B', width: `${(questions.length / 10) * 100}%`, transition: 'width .3s ease, background .3s' }} />
               </div>
 
               {/* Page preview */}
               {questions.length > 5 && (
                 <div style={{ padding: '8px 12px', background: 'rgba(0,180,200,.06)', border: '1px solid rgba(0,180,200,.14)', borderRadius: 9, fontSize: 11, color: '#7dd8e0', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
                   Page 1: questions 1–5 · Page 2: questions {questions.length > 5 ? `6–${questions.length}` : ''}
                 </div>
               )}
@@ -267,10 +267,10 @@ export default function SetupPage() {
                 <div key={q.id} className="q-item">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <button onClick={() => moveUp(idx)} disabled={idx === 0} style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'not-allowed' : 'pointer', color: idx === 0 ? '#2a3a52' : '#4a5a72', padding: 1, display: 'flex', transition: 'color .15s' }}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15" /></svg>
                     </button>
                     <button onClick={() => moveDown(idx)} disabled={idx === questions.length - 1} style={{ background: 'none', border: 'none', cursor: idx === questions.length - 1 ? 'not-allowed' : 'pointer', color: idx === questions.length - 1 ? '#2a3a52' : '#4a5a72', padding: 1, display: 'flex', transition: 'color .15s' }}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
                     </button>
                   </div>
 
@@ -287,7 +287,7 @@ export default function SetupPage() {
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2a3a52', padding: 4, display: 'flex', flexShrink: 0, transition: 'color .15s', borderRadius: 6 }}
                     onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.color = '#EF4444')}
                     onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.color = '#2a3a52')}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
                   </button>
                 </div>
               ))}
@@ -300,7 +300,7 @@ export default function SetupPage() {
                       style={{ width: '100%', padding: '10px', border: '1px dashed rgba(255,255,255,.12)', borderRadius: 11, background: 'transparent', color: '#4a5a72', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all .15s', marginTop: 4 }}
                       onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(0,180,200,.3)'; (e.currentTarget as HTMLButtonElement).style.color = '#e8f0fa' }}
                       onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,.12)'; (e.currentTarget as HTMLButtonElement).style.color = '#4a5a72' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                       Ajouter une question personnalisée
                     </button>
                   ) : (
@@ -355,7 +355,7 @@ export default function SetupPage() {
           {/* Error */}
           {error && (
             <div style={{ margin: '16px 0', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.2)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#fca5a5', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
               {error}
             </div>
           )}
@@ -365,8 +365,8 @@ export default function SetupPage() {
             <button onClick={handleSave} disabled={saving || questions.length < 1}
               style={{ padding: '13px 40px', background: saving ? 'rgba(255,255,255,.05)' : 'linear-gradient(135deg,#028090,#00a8bc)', color: saving ? '#4a5a72' : '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8, boxShadow: saving ? 'none' : '0 4px 16px rgba(0,180,200,.2)', transition: 'all .2s' }}>
               {saving
-                ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite' }}/>Enregistrement...</>
-                : <>Enregistrer et accéder au dashboard <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></>
+                ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />Enregistrement...</>
+                : <>Enregistrer et accéder au dashboard <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg></>
               }
             </button>
           </div>
