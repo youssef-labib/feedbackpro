@@ -8,25 +8,17 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Missing url' }, { status: 400 })
   }
 
-  try {
-    // @ts-ignore
-    const QRCode = await import('qrcode')
-    const buffer: Buffer = await QRCode.default.toBuffer(url, {
-      type: 'png',
-      width: 600,
-      margin: 3,
-      color: { dark: '#0A1628', light: '#FFFFFF' },
-      errorCorrectionLevel: 'H',
-    })
+  // Use goqr.me public API — free, no key, high quality PNG
+  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=20&ecc=H&data=${encodeURIComponent(url)}`
 
-    return new NextResponse(buffer, {
-      headers: {
-        'Content-Type': 'image/png',
-        'Cache-Control': 'public, max-age=31536000',
-      },
-    })
-  } catch (err) {
-    console.error('QR error:', err)
-    return NextResponse.json({ error: 'QR generation failed' }, { status: 500 })
-  }
+  const response = await fetch(qrApiUrl)
+  const buffer = await response.arrayBuffer()
+
+  return new NextResponse(buffer, {
+    headers: {
+      'Content-Type': 'image/png',
+      'Cache-Control': 'public, max-age=31536000',
+      'Content-Disposition': 'inline',
+    },
+  })
 }
