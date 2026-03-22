@@ -1,8 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const QRCode = require('qrcode') as {
-  toBuffer: (text: string, options: Record<string, unknown>) => Promise<Buffer>
-}
-
 import { NextResponse } from 'next/server'
 
 export async function GET(req: Request) {
@@ -14,14 +9,13 @@ export async function GET(req: Request) {
   }
 
   try {
-    const buffer = await QRCode.toBuffer(url, {
+    // @ts-ignore
+    const QRCode = await import('qrcode')
+    const buffer: Buffer = await QRCode.default.toBuffer(url, {
       type: 'png',
       width: 600,
       margin: 3,
-      color: {
-        dark: '#0A1628',
-        light: '#FFFFFF',
-      },
+      color: { dark: '#0A1628', light: '#FFFFFF' },
       errorCorrectionLevel: 'H',
     })
 
