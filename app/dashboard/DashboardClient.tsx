@@ -616,7 +616,7 @@ export default function DashboardClient({ business, form, submissions, userEmail
                   <div>
                     <div style={{fontSize:12,color:'#e8f0fa',fontWeight:600,marginBottom:3}}>{business.name}</div>
                     <div style={{fontSize:10.5,color:'#4a5a72',marginBottom:10}}>{logoPreview ? 'Logo personnalisé actif' : 'Logo par défaut (initiales)'}</div>
-                    <div style={{display:'flex',gap:7'}}>
+                    <div style={{display:'flex', gap: 7}}>
                       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleLogoUpload} style={{display:'none'}}/>
                       <button className="upload-btn" onClick={()=>fileInputRef.current?.click()} disabled={logoUploading}>
                         {logoUploading
