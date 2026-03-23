@@ -50,6 +50,11 @@ const DT: Record<string, Partial<Record<Lang, string>>> = {
   cancel:     { fr: 'Annuler', ar: 'إلغاء', en: 'Cancel' },
   google_url: { fr: 'Lien Google Reviews', ar: 'رابط Google Reviews', en: 'Google Reviews URL' },
   google_desc:{ fr: "Quand un client donne 4+ étoiles, il sera redirigé vers votre page Google.", ar: 'عندما يعطي عميل 4+ نجوم يتم توجيهه لصفحتك على Google.', en: 'When a customer gives 4+ stars, they are redirected to your Google page.' },
+  business_profile:{ fr: 'Profil du business', ar: 'ملف النشاط', en: 'Business profile' },
+  business_name:{ fr: 'Nom du business', ar: 'اسم النشاط', en: 'Business name' },
+  plan_upgrade:{ fr: 'Upgrade du plan', ar: 'ترقية الخطة', en: 'Plan upgrade' },
+  plan_help:{ fr: 'Le paiement sera branche plus tard. Pour le moment, vous pouvez changer le plan ici.', ar: 'سيتم ربط الدفع لاحقا. حاليا يمكنك تغيير الخطة هنا.', en: 'Payment will be connected later. For now, you can change the plan here.' },
+  save_profile:{ fr: 'Enregistrer les changements', ar: 'حفظ التغييرات', en: 'Save changes' },
   save:       { fr: 'Enregistrer', ar: 'حفظ', en: 'Save' },
   saved:      { fr: '✓ Enregistré', ar: '✓ تم الحفظ', en: '✓ Saved' },
   saving:     { fr: 'Enregistrement...', ar: 'جاري الحفظ...', en: 'Saving...' },
@@ -108,6 +113,8 @@ export default function DashboardClient({ business, form, submissions, userEmail
   const router = useRouter()
   const [lang, setLang] = useState<Lang>('fr')
   const [tab, setTab] = useState<'overview'|'reviews'|'qr'|'questions'|'settings'>('overview')
+  const [businessName, setBusinessName] = useState(business.name)
+  const [selectedPlan, setSelectedPlan] = useState(business.plan)
   const [googleUrl, setGoogleUrl] = useState(business.google_review_url||'')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -159,10 +166,27 @@ export default function DashboardClient({ business, form, submissions, userEmail
 
   async function logout() { await supabase.auth.signOut(); window.location.href = '/' }
 
-  async function saveGoogle() {
+  async function saveBusinessSettings() {
     setSaving(true)
-    await supabase.from('businesses').update({google_review_url:googleUrl}).eq('id',business.id)
-    setSaving(false); setSaved(true); setTimeout(()=>setSaved(false),2500)
+    const res = await fetch('/api/business/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        businessId: business.id,
+        name: businessName,
+        google_review_url: googleUrl,
+        plan: selectedPlan,
+      }),
+    })
+    const data = await res.json()
+    setSaving(false)
+    if (!res.ok) {
+      alert(data.error || 'Save failed')
+      return
+    }
+    setSaved(true)
+    router.refresh()
+    setTimeout(()=>setSaved(false),2500)
   }
 
   async function generateQR() {
@@ -588,11 +612,11 @@ export default function DashboardClient({ business, form, submissions, userEmail
                   <div className="logo-prev">
                     {logoPreview
                       ? <img src={logoPreview} alt="logo" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-                      : <span style={{fontSize:22}}>{business.name.slice(0,2).toUpperCase()}</span>
+                      : <span style={{fontSize:22}}>{businessName.slice(0,2).toUpperCase()}</span>
                     }
                   </div>
                   <div>
-                    <div style={{fontSize:12,color:'#e8f0fa',fontWeight:600,marginBottom:3}}>{business.name}</div>
+                    <div style={{fontSize:12,color:'#e8f0fa',fontWeight:600,marginBottom:3}}>{businessName}</div>
                     <div style={{fontSize:10.5,color:'#4a5a72',marginBottom:10}}>{logoPreview ? 'Logo personnalisé actif' : 'Logo par défaut (initiales)'}</div>
                     <div style={{display:'flex', gap: 7}}>
                       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleLogoUpload} style={{display:'none'}}/>
@@ -613,11 +637,35 @@ export default function DashboardClient({ business, form, submissions, userEmail
                 </div>
               </div>
 
-              {/* GOOGLE */}
-              <div className="card"><div className="ch"><span className="ct">{dt('google_url')}</span></div><p style={{fontSize:12.5,color:'#4a5a72',lineHeight:1.6,marginBottom:12}}>{dt('google_desc')}</p><div className="sf"><label className="sl">URL Google Reviews</label><input className="si" value={googleUrl} onChange={e=>setGoogleUrl(e.target.value)} placeholder="https://g.page/r/votre-restaurant/review"/></div><div style={{display:'flex',alignItems:'center',gap:9}}><button className="sv-btn" onClick={saveGoogle} disabled={saving}>{saving?dt('saving'):dt('save')}</button>{saved&&<div className="saved-b">{dt('saved')}</div>}</div></div>
+              {/* BUSINESS SETTINGS */}
+              <div className="card">
+                <div className="ch"><span className="ct">{dt('business_profile')}</span></div>
+                <div className="sf">
+                  <label className="sl">{dt('business_name')}</label>
+                  <input className="si" value={businessName} onChange={e=>setBusinessName(e.target.value)} placeholder="My Business"/>
+                </div>
+                <div className="sf">
+                  <label className="sl">{dt('google_url')}</label>
+                  <input className="si" value={googleUrl} onChange={e=>setGoogleUrl(e.target.value)} placeholder="https://g.page/r/your-business/review"/>
+                </div>
+                <div className="sf">
+                  <label className="sl">{dt('plan_upgrade')}</label>
+                  <select className="si" value={selectedPlan} onChange={e=>setSelectedPlan(e.target.value)}>
+                    <option value="trial">Trial</option>
+                    <option value="starter">Starter - 149 MAD</option>
+                    <option value="pro">Pro - 299 MAD</option>
+                    <option value="business">Business - 699 MAD</option>
+                  </select>
+                </div>
+                <p style={{fontSize:12.5,color:'#4a5a72',lineHeight:1.6,marginBottom:12}}>{dt('plan_help')}</p>
+                <div style={{display:'flex',alignItems:'center',gap:9,flexWrap:'wrap'}}>
+                  <button className="sv-btn" onClick={saveBusinessSettings} disabled={saving}>{saving?dt('saving'):dt('save_profile')}</button>
+                  {saved&&<div className="saved-b">{dt('saved')}</div>}
+                </div>
+              </div>
 
               {/* INFO */}
-              <div className="card"><div className="ch"><span className="ct">{dt('info')}</span></div>{[{l:dt('name'),v:business.name},{l:dt('city'),v:business.city},{l:dt('sector_lbl'),v:business.sector},{l:dt('plan_lbl'),v:business.plan}].map((f,i)=><div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,.04)'}}><span style={{fontSize:10.5,color:'#3d4e62',textTransform:'uppercase',letterSpacing:'.5px',fontWeight:700}}>{f.l}</span><span style={{fontSize:12.5,color:'#8899b0'}}>{f.v}</span></div>)}<p style={{fontSize:10,color:'#2a3a52',marginTop:10}}>{dt('contact_us')}</p></div>
+              <div className="card"><div className="ch"><span className="ct">{dt('info')}</span></div>{[{l:dt('name'),v:businessName},{l:dt('city'),v:business.city},{l:dt('sector_lbl'),v:business.sector},{l:dt('plan_lbl'),v:selectedPlan}].map((f,i)=><div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,.04)'}}><span style={{fontSize:10.5,color:'#3d4e62',textTransform:'uppercase',letterSpacing:'.5px',fontWeight:700}}>{f.l}</span><span style={{fontSize:12.5,color:'#8899b0'}}>{f.v}</span></div>)}<p style={{fontSize:10,color:'#2a3a52',marginTop:10}}>{dt('contact_us')}</p></div>
 
               {/* DANGER */}
               <div className="card" style={{borderColor:'rgba(239,68,68,.14)'}}><div className="ch"><span className="ct" style={{color:'#EF4444'}}>{dt('danger')}</span></div><button onClick={logout} style={{padding:'8px 16px',background:'rgba(239,68,68,.08)',border:'1px solid rgba(239,68,68,.2)',borderRadius:8,color:'#EF4444',fontSize:12.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>{dt('logout')}</button></div>

@@ -57,7 +57,7 @@ export default function FlagLangSelector({
       >
         {activeOptions.map(([code, info]) => (
           <option key={code} value={code} style={{ background: '#0d1927', color: '#e8f0fa' }}>
-            {info.flag} {info.native}
+            {info.native}
           </option>
         ))}
       </select>
