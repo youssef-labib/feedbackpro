@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import Link from 'next/link'
 
 type Lang = 'fr' | 'ar' | 'en'
 
@@ -74,10 +75,10 @@ export default function LoginPage() {
 
         {/* NAV */}
         <nav style={{ padding:'0 20px', height:58, display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid rgba(255,255,255,.06)', position:'relative', zIndex:10, flexShrink:0 }}>
-          <a href="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none', flexShrink:0 }}>
+          <Link href="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none', flexShrink:0 }}>
             <div style={{ width:30, height:30, borderRadius:9, background:'#028090', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cabinet Grotesk,sans-serif', fontWeight:900, fontSize:13, color:'#fff', flexShrink:0 }}>F</div>
             <span style={{ fontFamily:'Cabinet Grotesk,sans-serif', fontWeight:800, fontSize:14, color:'#e8f0fa', letterSpacing:-.3 }}>FeedbackPro</span>
-          </a>
+          </Link>
 
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             {/* Flag lang selector */}
@@ -91,7 +92,7 @@ export default function LoginPage() {
               ))}
             </div>
 
-            <a href="/register" style={{ fontSize:13, color:'#00b4c8', textDecoration:'none', fontWeight:500, whiteSpace:'nowrap' }}>{t('register')}</a>
+            <Link href="/register" style={{ fontSize:13, color:'#00b4c8', textDecoration:'none', fontWeight:500, whiteSpace:'nowrap' }}>{t('register')}</Link>
           </div>
         </nav>
 
@@ -114,7 +115,7 @@ export default function LoginPage() {
               <div style={{ marginBottom:20 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
                   <label style={{ fontSize:10, fontWeight:700, color:'#5a6a82', textTransform:'uppercase', letterSpacing:.7 }}>{t('pass')}</label>
-                  <a href="/forgot-password" style={{ fontSize:11, color:'#028090', textDecoration:'none', fontWeight:600 }}>{t('forgot')}</a>
+                  <Link href="/forgot-password" style={{ fontSize:11, color:'#028090', textDecoration:'none', fontWeight:600 }}>{t('forgot')}</Link>
                 </div>
                 <div style={{ position:'relative' }}>
                   <input className="inp inpp" type={showPass?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" required/>
@@ -146,7 +147,7 @@ export default function LoginPage() {
 
             <div style={{ textAlign:'center', fontSize:13, color:'#4a5a72', marginTop:16 }}>
               {t('no_acc')}{' '}
-              <a href="/register" style={{ color:'#00b4c8', textDecoration:'none', fontWeight:600 }}>{t('register')}</a>
+              <Link href="/register" style={{ color:'#00b4c8', textDecoration:'none', fontWeight:600 }}>{t('register')}</Link>
             </div>
           </div>
         </main>

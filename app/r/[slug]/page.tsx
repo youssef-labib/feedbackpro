@@ -15,7 +15,7 @@ export default async function FeedbackPage({ params }: { params: Promise<{ slug:
 
   const { data: business, error: bizError } = await supabaseAdmin
     .from('businesses')
-    .select('id, name, slug, city, google_review_url, brand_color, logo_url')
+    .select('id, name, slug, city, google_review_url, logo_url')
     .eq('slug', slug)
     .single()
 

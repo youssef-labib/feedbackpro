@@ -1,11 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-)
+import { createSupabaseAdminClient, createSupabaseServerClient } from '../../../lib/supabase-server'
 
 export async function POST(req: Request) {
   try {
@@ -17,6 +11,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing file or businessId' }, { status: 400 })
     }
 
+    const supabase = await createSupabaseServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     // Validate file type
     if (!file.type.startsWith('image/')) {
       return NextResponse.json({ error: 'File must be an image' }, { status: 400 })
@@ -25,6 +28,26 @@ export async function POST(req: Request) {
     // Validate file size (2MB max)
     if (file.size > 2 * 1024 * 1024) {
       return NextResponse.json({ error: 'Image must be under 2MB' }, { status: 400 })
+    }
+
+    const supabaseAdmin = createSupabaseAdminClient()
+    const [{ data: profile }, { data: business }] = await Promise.all([
+      supabaseAdmin
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single(),
+      supabaseAdmin
+        .from('businesses')
+        .select('owner_id')
+        .eq('id', businessId)
+        .single(),
+    ])
+
+    const canManageBusiness = profile?.is_admin || business?.owner_id === user.id
+
+    if (!canManageBusiness) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'

@@ -1,11 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-)
+import { createSupabaseAdminClient, createSupabaseServerClient } from '../../../lib/supabase-server'
 
 function generateSlug(name: string): string {
   return name
@@ -49,18 +43,39 @@ const DEFAULT_CATEGORIES: Record<string, { label_fr: string; label_ar: string; l
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { userId, businessName, city, sector } = body
+    const { businessName, city, sector } = body
 
-    if (!userId || !businessName || !city || !sector) {
+    if (!businessName || !city || !sector) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    const supabase = await createSupabaseServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const supabaseAdmin = createSupabaseAdminClient()
+
     const slug = generateSlug(businessName)
+
+    const { data: existingBusiness } = await supabaseAdmin
+      .from('businesses')
+      .select('id')
+      .eq('owner_id', user.id)
+      .maybeSingle()
+
+    if (existingBusiness) {
+      return NextResponse.json({ error: 'Business already exists for this user' }, { status: 409 })
+    }
 
     // 1. Create profile if it doesn't exist
     const { error: profileErr } = await supabaseAdmin
       .from('profiles')
-      .upsert({ id: userId, is_admin: false }, { onConflict: 'id', ignoreDuplicates: true })
+      .upsert({ id: user.id, is_admin: false }, { onConflict: 'id', ignoreDuplicates: true })
 
     if (profileErr) {
       console.error('Profile error:', profileErr)
@@ -71,7 +86,7 @@ export async function POST(req: Request) {
     const { data: biz, error: bizErr } = await supabaseAdmin
       .from('businesses')
       .insert({
-        owner_id: userId,
+        owner_id: user.id,
         name: businessName,
         slug,
         city,

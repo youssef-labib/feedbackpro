@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -46,11 +47,11 @@ export default function ForgotPasswordPage() {
       <div style={{ minHeight: '100vh', background: '#07101f', display: 'flex', flexDirection: 'column', position: 'relative' }}>
         <div style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: 700, height: 400, background: 'radial-gradient(ellipse at 50% 0%, rgba(0,180,200,.1), transparent 70%)', pointerEvents: 'none', zIndex: 0 }}/>
         <nav style={{ padding: '0 40px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,.06)', position: 'relative', zIndex: 10 }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
             <div style={{ width: 30, height: 30, borderRadius: 9, background: '#028090', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cabinet Grotesk, sans-serif', fontWeight: 900, fontSize: 13, color: '#fff' }}>F</div>
             <span style={{ fontFamily: 'Cabinet Grotesk, sans-serif', fontWeight: 800, fontSize: 14, color: '#e8f0fa', letterSpacing: -.3 }}>FeedbackPro</span>
-          </a>
-          <a href="/login" style={{ color: '#00b4c8', textDecoration: 'none', fontWeight: 500, fontSize: 13 }}>← Retour à la connexion</a>
+          </Link>
+          <Link href="/login" style={{ color: '#00b4c8', textDecoration: 'none', fontWeight: 500, fontSize: 13 }}>← Retour à la connexion</Link>
         </nav>
 
         <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 20px', position: 'relative', zIndex: 1 }}>
@@ -79,7 +80,7 @@ export default function ForgotPasswordPage() {
                   </button>
                 </form>
                 <div style={{ textAlign: 'center', fontSize: 13, color: '#3d4e62', marginTop: 20 }}>
-                  <a href="/login" style={{ color: '#00b4c8', textDecoration: 'none', fontWeight: 500 }}>← Retour à la connexion</a>
+                  <Link href="/login" style={{ color: '#00b4c8', textDecoration: 'none', fontWeight: 500 }}>← Retour à la connexion</Link>
                 </div>
               </>
             ) : (
@@ -91,9 +92,9 @@ export default function ForgotPasswordPage() {
                 <div style={{ fontSize: 13, color: '#4a5a72', lineHeight: 1.65, maxWidth: 300, margin: '0 auto 24px' }}>
                   Vérifiez votre boîte mail à <strong style={{ color: '#e8f0fa' }}>{email}</strong> et cliquez sur le lien.
                 </div>
-                <a href="/login" style={{ display: 'inline-flex', padding: '11px 24px', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 11, color: '#8899b0', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
+                <Link href="/login" style={{ display: 'inline-flex', padding: '11px 24px', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 11, color: '#8899b0', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
                   Retour à la connexion
-                </a>
+                </Link>
                 <div style={{ fontSize: 12, color: '#2a3a52', marginTop: 16 }}>
                   Pas reçu ?{' '}
                   <button onClick={() => setSent(false)} style={{ background: 'none', border: 'none', color: '#00b4c8', cursor: 'pointer', fontSize: 12, fontFamily: 'inherit' }}>Réessayer</button>

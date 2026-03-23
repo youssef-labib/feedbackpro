@@ -63,7 +63,6 @@ type Question = {
 export default function SetupPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [businessId, setBusinessId] = useState<string | null>(null)
   const [formId, setFormId] = useState<string | null>(null)
   const [sector, setSector] = useState('default')
   const [questions, setQuestions] = useState<Question[]>([])
@@ -71,9 +70,11 @@ export default function SetupPage() {
   const [showAdd, setShowAdd] = useState(false)
   const [error, setError] = useState('')
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  const [supabase] = useState(() =>
+    createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
   )
 
   useEffect(() => {
@@ -88,7 +89,6 @@ export default function SetupPage() {
         .single()
 
       if (!biz) { window.location.href = '/register'; return }
-      setBusinessId(biz.id)
       setSector(biz.sector || 'default')
 
       const { data: form } = await supabase
@@ -116,7 +116,7 @@ export default function SetupPage() {
       setLoading(false)
     }
     load()
-  }, [])
+  }, [supabase])
 
   function addSuggestion(s: { fr: string; ar: string; en: string; es: string }) {
     if (questions.length >= 10) { setError('Maximum 10 questions.'); return }

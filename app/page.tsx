@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 
 type Lang = 'fr' | 'ar' | 'en' | 'es'
 const LANG_LABELS: Record<Lang, string> = { fr: 'FR', ar: 'عربي', en: 'EN', es: 'ES' }
@@ -173,14 +174,14 @@ export default function Home() {
   const isRTL = c.dir === 'rtl'
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 20)
+    const fn = () => {
+      const nextScrolled = window.scrollY > 20
+      setScrolled(nextScrolled)
+      if (nextScrolled) setMenuOpen(false)
+    }
     window.addEventListener('scroll', fn)
     return () => window.removeEventListener('scroll', fn)
   }, [])
-
-  useEffect(() => {
-    if (menuOpen) setMenuOpen(false)
-  }, [scrolled])
 
   function navClick(id: string) {
     setMenuOpen(false)
@@ -356,10 +357,10 @@ export default function Home() {
 
         {/* NAV */}
         <nav className={`nav${scrolled?' sc':''}`}>
-          <a href="/" className="logo">
+          <Link href="/" className="logo">
             <div className="logo-mark">F</div>
             <span className="logo-name">FeedbackPro</span>
-          </a>
+          </Link>
           <div className="dlinks">
             <button className="dlink" onClick={() => smoothScrollTo('features')}>{c.nav.features}</button>
             <button className="dlink" onClick={() => smoothScrollTo('how')}>{c.nav.how}</button>
@@ -371,8 +372,8 @@ export default function Home() {
                 <button key={l} className={`lb${lang===l?' on':''}`} onClick={() => setLang(l)}>{LANG_LABELS[l]}</button>
               ))}
             </div>
-            <a href="/login" className="btn-g">{c.nav.login}</a>
-            <a href="/register" className="btn-t">{c.nav.cta}</a>
+            <Link href="/login" className="btn-g">{c.nav.login}</Link>
+            <Link href="/register" className="btn-t">{c.nav.cta}</Link>
           </div>
           {/* Burger */}
           <button className="burger" onClick={() => setMenuOpen(o => !o)}>
@@ -396,8 +397,8 @@ export default function Home() {
           <button className="mlink" onClick={() => navClick('pricing')}>{c.nav.pricing}</button>
           <div className="mdiv"/>
           <div className="mctas">
-            <a href="/login" className="mlogin" onClick={() => setMenuOpen(false)}>{c.nav.login}</a>
-            <a href="/register" className="mreg" onClick={() => setMenuOpen(false)}>{c.nav.cta}</a>
+            <Link href="/login" className="mlogin" onClick={() => setMenuOpen(false)}>{c.nav.login}</Link>
+            <Link href="/register" className="mreg" onClick={() => setMenuOpen(false)}>{c.nav.cta}</Link>
           </div>
         </div>
 
@@ -407,10 +408,11 @@ export default function Home() {
           <h1 className="fu2">{c.h1a} <span className="accent">{c.h1b}</span><span className="dimline">{c.h1c}</span></h1>
           <p className="hsub fu3">{c.sub}</p>
           <div className="hcta fu4">
-            <a href="/register" className="cmain">
+            <Link href="/register" className="cmain">
               {c.cta1}
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </a>
+            </Link>
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/r/al-badr-casablanca" className="csec">{c.cta2} →</a>
           </div>
 
@@ -547,7 +549,7 @@ export default function Home() {
         <div className="band">
           <div className="bandt">{c.band_title}</div>
           <div className="bands">{c.band_sub}</div>
-          <a href="/register" className="bandb">{c.band_cta}</a>
+          <Link href="/register" className="bandb">{c.band_cta}</Link>
         </div>
 
         {/* FOOTER */}
@@ -557,8 +559,8 @@ export default function Home() {
             <button onClick={() => smoothScrollTo('features')}>{c.nav.features}</button>
             <button onClick={() => smoothScrollTo('how')}>{c.nav.how}</button>
             <button onClick={() => smoothScrollTo('pricing')}>{c.nav.pricing}</button>
-            <a href="/login">{c.nav.login}</a>
-            <a href="/register">{c.nav.cta}</a>
+            <Link href="/login">{c.nav.login}</Link>
+            <Link href="/register">{c.nav.cta}</Link>
           </div>
           <div className="fcopy">© 2025 FeedbackPro Morocco</div>
         </footer>

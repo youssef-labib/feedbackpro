@@ -57,8 +57,8 @@ function hints(lang: Lang): string[] {
   const v = T.hints[lang]; return Array.isArray(v) ? v as string[] : []
 }
 
-function StarRow({ catLabel, value, onChange, lang, accent }: {
-  catLabel: string; value: number; onChange: (v: number) => void; lang: Lang; accent: string
+function StarRow({ catLabel, value, onChange, lang }: {
+  catLabel: string; value: number; onChange: (v: number) => void; lang: Lang
 }) {
   const [hover, setHover] = useState(0)
   const active = hover || value
@@ -224,7 +224,7 @@ export default function FeedbackFormClient({ business, form }: { business: Busin
               {/* Rating rows */}
               {pageCats.map(cat => (
                 <StarRow key={cat.id} catLabel={catLabel(cat)} value={ratings[cat.id]||0}
-                  onChange={v => setRatings(r => ({...r,[cat.id]:v}))} lang={lang} accent={accent}/>
+                  onChange={v => setRatings(r => ({...r,[cat.id]:v}))} lang={lang}/>
               ))}
 
               {/* Comment — last page only */}

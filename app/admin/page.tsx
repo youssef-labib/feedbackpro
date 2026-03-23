@@ -1,12 +1,28 @@
-import { createClient } from '@supabase/supabase-js'
+import { redirect } from 'next/navigation'
 import AdminClient from './AdminClient'
+import { createSupabaseAdminClient, createSupabaseServerClient } from '../../lib/supabase-server'
 
 export default async function AdminPage() {
-  const admin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
+  const supabase = await createSupabaseServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  const admin = createSupabaseAdminClient()
+
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.is_admin) {
+    redirect('/admin/denied')
+  }
 
   const { data: businesses } = await admin
     .from('businesses')

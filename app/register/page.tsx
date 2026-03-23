@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import Link from 'next/link'
 
 type Lang = 'fr' | 'ar' | 'en'
 
@@ -108,7 +109,6 @@ export default function RegisterPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: authData.user.id,
           businessName: bizName,
           city,
           sector,
@@ -166,10 +166,10 @@ export default function RegisterPage() {
 
         {/* NAV */}
         <nav style={{ padding:'0 20px', height:58, display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid rgba(255,255,255,.06)', position:'relative', zIndex:10, flexShrink:0 }}>
-          <a href="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none' }}>
+          <Link href="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none' }}>
             <div style={{ width:30, height:30, borderRadius:9, background:'#028090', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cabinet Grotesk,sans-serif', fontWeight:900, fontSize:13, color:'#fff' }}>F</div>
             <span style={{ fontFamily:'Cabinet Grotesk,sans-serif', fontWeight:800, fontSize:14, color:'#e8f0fa', letterSpacing:-.3 }}>FeedbackPro</span>
-          </a>
+          </Link>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             {/* Flag lang selector */}
             <div style={{ display:'flex', background:'rgba(255,255,255,.05)', border:'1px solid rgba(255,255,255,.08)', borderRadius:9, padding:3, gap:2 }}>
@@ -181,7 +181,7 @@ export default function RegisterPage() {
                 </button>
               ))}
             </div>
-            <a href="/login" style={{ fontSize:13, color:'#00b4c8', textDecoration:'none', fontWeight:500, whiteSpace:'nowrap' }}>{t('login')}</a>
+            <Link href="/login" style={{ fontSize:13, color:'#00b4c8', textDecoration:'none', fontWeight:500, whiteSpace:'nowrap' }}>{t('login')}</Link>
           </div>
         </nav>
 
@@ -284,7 +284,7 @@ export default function RegisterPage() {
             </form>
 
             <div style={{ textAlign:'center', fontSize:12.5, color:'#4a5a72', marginTop:16 }}>
-              {t('have_acc')} <a href="/login" style={{ color:'#00b4c8', textDecoration:'none', fontWeight:500 }}>{t('login')}</a>
+              {t('have_acc')} <Link href="/login" style={{ color:'#00b4c8', textDecoration:'none', fontWeight:500 }}>{t('login')}</Link>
             </div>
           </div>
         </main>

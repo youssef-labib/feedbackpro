@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 
 type Business = {
   id: string; name: string; slug: string; sector: string; city: string

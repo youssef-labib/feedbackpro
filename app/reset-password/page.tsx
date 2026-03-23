@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
 function ResetForm() {
@@ -56,7 +57,7 @@ function ResetForm() {
       return () => subscription.unsubscribe()
     }
     init()
-  }, [])
+  }, [ready, searchParams])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -94,7 +95,7 @@ function ResetForm() {
       </div>
       <div style={{ fontFamily: 'Cabinet Grotesk, sans-serif', fontSize: 18, fontWeight: 900, color: '#e8f0fa', marginBottom: 8 }}>Lien invalide</div>
       <div style={{ fontSize: 13, color: '#4a5a72', marginBottom: 24, lineHeight: 1.6 }}>{error}</div>
-      <a href="/forgot-password" style={{ display: 'inline-flex', padding: '11px 24px', background: '#028090', color: '#fff', borderRadius: 11, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Nouvelle demande</a>
+      <Link href="/forgot-password" style={{ display: 'inline-flex', padding: '11px 24px', background: '#028090', color: '#fff', borderRadius: 11, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Nouvelle demande</Link>
     </div>
   )
 
@@ -165,10 +166,10 @@ export default function ResetPasswordPage() {
       <div style={{ minHeight: '100vh', background: '#07101f', display: 'flex', flexDirection: 'column' }}>
         <div style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: 700, height: 400, background: 'radial-gradient(ellipse at 50% 0%, rgba(0,180,200,.1), transparent 70%)', pointerEvents: 'none', zIndex: 0 }}/>
         <nav style={{ padding: '0 40px', height: 60, display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,.06)', position: 'relative', zIndex: 10 }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
             <div style={{ width: 30, height: 30, borderRadius: 9, background: '#028090', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cabinet Grotesk, sans-serif', fontWeight: 900, fontSize: 13, color: '#fff' }}>F</div>
             <span style={{ fontFamily: 'Cabinet Grotesk, sans-serif', fontWeight: 800, fontSize: 14, color: '#e8f0fa', letterSpacing: -.3 }}>FeedbackPro</span>
-          </a>
+          </Link>
         </nav>
         <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 20px', position: 'relative', zIndex: 1 }}>
           <div style={{ width: '100%', maxWidth: 420, background: '#0d1927', border: '1px solid rgba(255,255,255,.08)', borderRadius: 22, padding: '40px 36px', boxShadow: '0 24px 64px rgba(0,0,0,.5)', animation: 'fadeUp .5s ease' }}>
