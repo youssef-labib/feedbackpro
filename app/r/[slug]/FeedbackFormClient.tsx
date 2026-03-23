@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import FlagLangSelector from '../../../components/FlagLangSelector'
 
 type Lang = 'fr' | 'ar' | 'en' | 'es'
 type Screen = 'form' | 'loading' | 'good' | 'bad'
@@ -14,8 +15,6 @@ type Business = {
 type Category = { id: string; label_fr: string; label_ar: string; label_en?: string; label_es?: string }
 type FeedbackForm = { id: string; business_id: string; categories: Category[] }
 type RatingMap = Record<string, number>
-
-const LANG_LABELS: Record<Lang, string> = { fr: 'FR', ar: 'ع', en: 'EN', es: 'ES' }
 
 const T: Record<string, Record<Lang, string | string[]>> = {
   anon:       { fr: 'Anonyme · 60 secondes', ar: 'مجهول · 60 ثانية', en: 'Anonymous · 60s', es: 'Anónimo · 60s' },
@@ -181,14 +180,7 @@ export default function FeedbackFormClient({ business, form }: { business: Busin
             </div>
 
             {/* Lang switcher */}
-            <div style={{ display: 'flex', background: 'rgba(0,0,0,.2)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 9, padding: 3, gap: 2 }}>
-              {(['fr','ar','en','es'] as Lang[]).map(l => (
-                <button key={l} onClick={() => setLang(l)}
-                  style={{ padding: '3px 7px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 10, fontWeight: 700, fontFamily: 'inherit', background: lang===l ? accent : 'transparent', color: lang===l ? '#fff' : '#6b7c94', transition: 'all .15s' }}>
-                  {LANG_LABELS[l]}
-                </button>
-              ))}
-            </div>
+            <FlagLangSelector lang={lang} setLang={setLang} options={['fr','ar','en','es']} dark />
           </div>
 
           {/* Cover message */}

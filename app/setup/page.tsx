@@ -176,12 +176,13 @@ export default function SetupPage() {
       label_es: q.es || q.fr,
     }))
 
-    const { error } = await supabase
-      .from('feedback_forms')
-      .update({ categories })
-      .eq('id', formId)
-
-    if (error) { setError(error.message); setSaving(false); return }
+    const res = await fetch('/api/forms/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ formId, categories }),
+    })
+    const data = await res.json()
+    if (!res.ok) { setError(data.error || 'Save failed'); setSaving(false); return }
     window.location.href = '/dashboard'
   }
 

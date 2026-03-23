@@ -3,19 +3,13 @@
 import { useState, useRef } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
+import FlagLangSelector from '../../components/FlagLangSelector'
 
 type Lang = 'fr' | 'ar' | 'en' | 'es'
 type Business = { id:string; name:string; slug:string; sector:string; city:string; google_review_url:string|null; plan:string; plan_status:string; qr_generated?:boolean; logo_url?:string|null }
 type Category = { id:string; label_fr:string; label_ar:string; label_en?:string; label_es?:string }
 type Form = { id:string; business_id:string; categories:Category[] }
 type Sub = { id:string; ratings:Record<string,number>; average_score:number; comment:string|null; created_at:string }
-
-const LANG_OPTIONS: { code: Lang; flag: string; label: string }[] = [
-  { code: 'fr', flag: '🇫🇷', label: 'Français' },
-  { code: 'ar', flag: '🇲🇦', label: 'العربية' },
-  { code: 'en', flag: '🇬🇧', label: 'English' },
-  { code: 'es', flag: '🇪🇸', label: 'Español' },
-]
 
 const DT: Record<string, Partial<Record<Lang, string>>> = {
   overview:   { fr: 'Vue générale', ar: 'نظرة عامة', en: 'Overview' },
@@ -105,38 +99,6 @@ function Ring({ score }: { score:number }) {
         {score>0?score.toFixed(1):'—'}
       </text>
     </svg>
-  )
-}
-
-function LangSelect({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
-  const current = LANG_OPTIONS.find(l => l.code === lang)!
-  return (
-    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-      <span style={{ position: 'absolute', left: 9, fontSize: 16, pointerEvents: 'none', zIndex: 1 }}>{current.flag}</span>
-      <select
-        value={lang}
-        onChange={e => setLang(e.target.value as Lang)}
-        style={{
-          paddingLeft: 32, paddingRight: 28, paddingTop: 7, paddingBottom: 7,
-          background: 'rgba(255,255,255,.05)',
-          border: '1px solid rgba(255,255,255,.1)',
-          borderRadius: 9, color: '#e8f0fa',
-          fontSize: 12, fontWeight: 600,
-          fontFamily: 'Instrument Sans, sans-serif',
-          cursor: 'pointer', outline: 'none',
-          WebkitAppearance: 'none', appearance: 'none',
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%234a5a72' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'right 8px center',
-        }}
-      >
-        {LANG_OPTIONS.map(l => (
-          <option key={l.code} value={l.code} style={{ background: '#0d1927', color: '#e8f0fa' }}>
-            {l.flag} {l.label}
-          </option>
-        ))}
-      </select>
-    </div>
   )
 }
 
@@ -283,13 +245,18 @@ export default function DashboardClient({ business, form, submissions, userEmail
       label_en: q.label_en || q.label_fr,
       label_es: q.label_es || q.label_en || q.label_fr,
     }))
-    const { error } = await supabase.from('feedback_forms').update({categories}).eq('id',form.id)
-    if (!error) {
-      setQuestions(categories)
+    const res = await fetch('/api/forms/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ formId: form.id, categories }),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      setQuestions(data.categories || categories)
       setQuestionsDirty(false)
       router.refresh()
     } else {
-      alert('Erreur: ' + error.message)
+      alert('Erreur: ' + (data.error || 'Save failed'))
     }
     setQuestionsSaving(false)
   }
@@ -471,7 +438,7 @@ export default function DashboardClient({ business, form, submissions, userEmail
             </div>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <LangSelect lang={lang} setLang={setLang}/>
+            <FlagLangSelector lang={lang} setLang={setLang} options={['fr','ar','en','es']} />
             <button onClick={logout} style={{background:'none',border:'none',cursor:'pointer',color:'#3d4e62',padding:4,display:'flex'}}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
             </button>
@@ -491,7 +458,7 @@ export default function DashboardClient({ business, form, submissions, userEmail
               </div>
             </div>
             <div style={{display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
-              <LangSelect lang={lang} setLang={setLang}/>
+              <FlagLangSelector lang={lang} setLang={setLang} options={['fr','ar','en','es']} />
               <span className="plan-pill">{business.plan}</span>
             </div>
           </div>

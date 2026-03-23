@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import FlagLangSelector from '../components/FlagLangSelector'
 
 type Lang = 'fr' | 'ar' | 'en' | 'es'
-const LANG_LABELS: Record<Lang, string> = { fr: 'FR', ar: 'عربي', en: 'EN', es: 'ES' }
 
 const C: Record<Lang, {
   dir: 'ltr' | 'rtl'; badge: string
@@ -212,10 +212,6 @@ export default function Home() {
         .dlink{padding:7px 13px;border-radius:8px;font-size:13px;font-weight:500;color:#6b7c94;background:none;border:none;cursor:pointer;font-family:'Instrument Sans',sans-serif;transition:color .15s}
         .dlink:hover{color:#e8f0fa}
         .dright{display:flex;align-items:center;gap:8px}
-        .lsw{display:flex;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:3px;gap:2px}
-        .lb{padding:4px 9px;border-radius:7px;border:none;cursor:pointer;font-size:11px;font-weight:700;font-family:'Instrument Sans',sans-serif;transition:all .15s;background:transparent;color:#6b7c94}
-        .lb.on{background:#028090;color:#fff}
-        .lb:hover:not(.on){color:#e8f0fa}
         .btn-g{padding:8px 16px;border-radius:9px;border:1px solid rgba(255,255,255,.1);background:transparent;color:#8899b0;font-size:13px;font-weight:500;text-decoration:none;transition:all .15s;font-family:'Instrument Sans',sans-serif}
         .btn-g:hover{border-color:rgba(0,180,200,.4);color:#e8f0fa}
         .btn-t{padding:9px 18px;border-radius:9px;background:#028090;color:#fff;font-size:13px;font-weight:600;text-decoration:none;transition:all .15s;font-family:'Instrument Sans',sans-serif;white-space:nowrap}
@@ -367,11 +363,7 @@ export default function Home() {
             <button className="dlink" onClick={() => smoothScrollTo('pricing')}>{c.nav.pricing}</button>
           </div>
           <div className="dright">
-            <div className="lsw">
-              {(['fr','ar','en','es'] as Lang[]).map(l => (
-                <button key={l} className={`lb${lang===l?' on':''}`} onClick={() => setLang(l)}>{LANG_LABELS[l]}</button>
-              ))}
-            </div>
+            <FlagLangSelector lang={lang} setLang={setLang} options={['fr','ar','en','es']} />
             <Link href="/login" className="btn-g">{c.nav.login}</Link>
             <Link href="/register" className="btn-t">{c.nav.cta}</Link>
           </div>
@@ -387,9 +379,7 @@ export default function Home() {
         {/* MOBILE MENU */}
         <div className={`mmenu${menuOpen?' open':''}`}>
           <div className="mlangs">
-            {(['fr','ar','en','es'] as Lang[]).map(l => (
-              <button key={l} className={`mlb${lang===l?' on':''}`} onClick={() => setLang(l)}>{LANG_LABELS[l]}</button>
-            ))}
+            <FlagLangSelector lang={lang} setLang={setLang} options={['fr','ar','en','es']} />
           </div>
           <div className="mdiv"/>
           <button className="mlink" onClick={() => navClick('features')}>{c.nav.features}</button>
