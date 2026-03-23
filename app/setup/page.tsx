@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import FlagLangSelector, { type Lang } from '../../components/FlagLangSelector'
 
 const SUGGESTIONS: Record<string, { fr: string; ar: string; en: string; es: string }[]> = {
   restaurant: [
@@ -61,6 +62,7 @@ type Question = {
 }
 
 export default function SetupPage() {
+  const [lang, setLang] = useState<Lang>('fr')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [formId, setFormId] = useState<string | null>(null)
@@ -207,18 +209,24 @@ export default function SetupPage() {
         .q-item:hover{border-color:rgba(0,180,200,.2)}
         .sug-btn{padding:7px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:#070f1d;cursor:pointer;font-size:12px;color:#8899b0;font-family:inherit;transition:all .15s;text-align:left}
         .sug-btn:hover{border-color:rgba(0,180,200,.3);color:#e8f0fa;background:rgba(0,180,200,.05)}
+        @media(max-width:860px){
+          .setup-nav{padding:12px 16px!important;height:auto!important}
+          .setup-nav-right{width:100%;justify-content:space-between}
+          .setup-grid{grid-template-columns:1fr!important}
+        }
       `}</style>
 
       <div style={{ minHeight: '100vh', background: '#07101f', display: 'flex', flexDirection: 'column' }}>
         <div style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: 700, height: 400, background: 'radial-gradient(ellipse at 50% 0%, rgba(0,180,200,.1), transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
 
         {/* Nav */}
-        <nav style={{ padding: '0 40px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,.06)', position: 'relative', zIndex: 10 }}>
+        <nav className="setup-nav" style={{ padding: '0 16px', minHeight: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', borderBottom: '1px solid rgba(255,255,255,.06)', position: 'relative', zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
             <div style={{ width: 30, height: 30, borderRadius: 9, background: '#028090', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cabinet Grotesk, sans-serif', fontWeight: 900, fontSize: 13, color: '#fff' }}>F</div>
             <span style={{ fontFamily: 'Cabinet Grotesk, sans-serif', fontWeight: 800, fontSize: 14, color: '#e8f0fa', letterSpacing: -.3 }}>FeedbackPro</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="setup-nav-right" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
             <div style={{ fontSize: 11, color: '#2a3a52', background: 'rgba(0,180,200,.06)', border: '1px solid rgba(0,180,200,.14)', borderRadius: 20, padding: '4px 12px' }}>Étape 3 sur 3</div>
           </div>
         </nav>
@@ -235,7 +243,7 @@ export default function SetupPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
+          <div className="setup-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
 
             {/* LEFT — Current questions */}
             <div>

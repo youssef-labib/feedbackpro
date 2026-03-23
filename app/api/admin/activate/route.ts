@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { createSupabaseAdminClient, createSupabaseServerClient } from '../../../../lib/supabase-server'
 
 export async function POST(req: Request) {
@@ -40,6 +41,9 @@ export async function POST(req: Request) {
       .eq('id', id)
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    revalidatePath('/admin')
+    revalidatePath('/dashboard')
 
     return NextResponse.json({ success: true })
   } catch {
