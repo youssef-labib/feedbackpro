@@ -2,10 +2,11 @@
 
 import { useState, useRef } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import { useRouter } from 'next/navigation'
 
-type Lang = 'fr' | 'ar' | 'en'
+type Lang = 'fr' | 'ar' | 'en' | 'es'
 type Business = { id:string; name:string; slug:string; sector:string; city:string; google_review_url:string|null; plan:string; plan_status:string; qr_generated?:boolean; logo_url?:string|null }
-type Category = { id:string; label_fr:string; label_ar:string; label_en?:string }
+type Category = { id:string; label_fr:string; label_ar:string; label_en?:string; label_es?:string }
 type Form = { id:string; business_id:string; categories:Category[] }
 type Sub = { id:string; ratings:Record<string,number>; average_score:number; comment:string|null; created_at:string }
 
@@ -13,9 +14,10 @@ const LANG_OPTIONS: { code: Lang; flag: string; label: string }[] = [
   { code: 'fr', flag: '🇫🇷', label: 'Français' },
   { code: 'ar', flag: '🇲🇦', label: 'العربية' },
   { code: 'en', flag: '🇬🇧', label: 'English' },
+  { code: 'es', flag: '🇪🇸', label: 'Español' },
 ]
 
-const DT: Record<string, Record<Lang, string>> = {
+const DT: Record<string, Partial<Record<Lang, string>>> = {
   overview:   { fr: 'Vue générale', ar: 'نظرة عامة', en: 'Overview' },
   reviews:    { fr: 'Avis', ar: 'التقييمات', en: 'Reviews' },
   questions:  { fr: 'Questions', ar: 'الأسئلة', en: 'Questions' },
@@ -141,6 +143,7 @@ function LangSelect({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void 
 export default function DashboardClient({ business, form, submissions, userEmail }:
   { business:Business; form:Form|null; submissions:Sub[]; userEmail:string }) {
 
+  const router = useRouter()
   const [lang, setLang] = useState<Lang>('fr')
   const [tab, setTab] = useState<'overview'|'reviews'|'qr'|'questions'|'settings'>('overview')
   const [googleUrl, setGoogleUrl] = useState(business.google_review_url||'')
@@ -154,7 +157,7 @@ export default function DashboardClient({ business, form, submissions, userEmail
   const [questionsDirty, setQuestionsDirty] = useState(false)
   const [questionsSaving, setQuestionsSaving] = useState(false)
   const [showAddQ, setShowAddQ] = useState(false)
-  const [newQ, setNewQ] = useState({ fr:'', ar:'', en:'' })
+  const [newQ, setNewQ] = useState({ fr:'', ar:'', en:'', es:'' })
   const [qError, setQError] = useState('')
 
   // Logo state
@@ -262,8 +265,14 @@ export default function DashboardClient({ business, form, submissions, userEmail
   function addQ() {
     if(!newQ.fr.trim()){setQError(dt('fr_req'));return}
     if(questions.length>=10){setQError(dt('max_q'));return}
-    modQ(p=>[...p,{id:String(Date.now()),label_fr:newQ.fr.trim(),label_ar:newQ.ar.trim()||newQ.fr.trim(),label_en:newQ.en.trim()||newQ.fr.trim()}])
-    setNewQ({fr:'',ar:'',en:''}); setShowAddQ(false); setQError('')
+    modQ(p=>[...p,{
+      id:String(Date.now()),
+      label_fr:newQ.fr.trim(),
+      label_ar:newQ.ar.trim()||newQ.fr.trim(),
+      label_en:newQ.en.trim()||newQ.fr.trim(),
+      label_es:newQ.es.trim()||newQ.en.trim()||newQ.fr.trim(),
+    }])
+    setNewQ({fr:'',ar:'',en:'',es:''}); setShowAddQ(false); setQError('')
   }
   async function saveQ() {
     if(!form)return; setQuestionsSaving(true)
@@ -272,11 +281,13 @@ export default function DashboardClient({ business, form, submissions, userEmail
       label_fr: q.label_fr,
       label_ar: q.label_ar || q.label_fr,
       label_en: q.label_en || q.label_fr,
+      label_es: q.label_es || q.label_en || q.label_fr,
     }))
     const { error } = await supabase.from('feedback_forms').update({categories}).eq('id',form.id)
     if (!error) {
       setQuestions(categories)
       setQuestionsDirty(false)
+      router.refresh()
     } else {
       alert('Erreur: ' + error.message)
     }
@@ -557,12 +568,12 @@ export default function DashboardClient({ business, form, submissions, userEmail
                     ):(
                       <div style={{background:'#070f1d',border:'1px solid rgba(0,180,200,.2)',borderRadius:11,padding:12,animation:'fadeUp .2s ease'}}>
                         <div style={{fontSize:10,fontWeight:700,color:'#4a5a72',textTransform:'uppercase',letterSpacing:.5,marginBottom:9}}>{dt('new_q')}</div>
-                        {[{k:'fr',l:dt('fr_label')},{k:'ar',l:dt('ar_label')},{k:'en',l:dt('en_label')}].map(f=>(
+                        {[{k:'fr',l:dt('fr_label')},{k:'ar',l:dt('ar_label')},{k:'en',l:dt('en_label')},{k:'es',l:'🇪🇸 Spanish'}].map(f=>(
                           <input key={f.k} placeholder={f.l} value={newQ[f.k as keyof typeof newQ]} onChange={e=>setNewQ(p=>({...p,[f.k]:e.target.value}))} style={{width:'100%',padding:'8px 11px',background:'#0a1525',border:'1.5px solid rgba(255,255,255,.08)',borderRadius:8,fontSize:12,color:'#e8f0fa',fontFamily:'inherit',outline:'none',marginBottom:6,display:'block'}}/>
                         ))}
                         <div style={{display:'flex',gap:7,marginTop:3}}>
                           <button onClick={addQ} style={{flex:1,padding:'8px',background:'#028090',color:'#fff',border:'none',borderRadius:8,fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>{dt('add')}</button>
-                          <button onClick={()=>{setShowAddQ(false);setNewQ({fr:'',ar:'',en:''})}} style={{padding:'8px 14px',background:'transparent',color:'#4a5a72',border:'1px solid rgba(255,255,255,.08)',borderRadius:8,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>{dt('cancel')}</button>
+                          <button onClick={()=>{setShowAddQ(false);setNewQ({fr:'',ar:'',en:'',es:''})}} style={{padding:'8px 14px',background:'transparent',color:'#4a5a72',border:'1px solid rgba(255,255,255,.08)',borderRadius:8,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>{dt('cancel')}</button>
                         </div>
                       </div>
                     )}
