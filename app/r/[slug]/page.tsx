@@ -1,32 +1,45 @@
+export const dynamic = 'force-dynamic'
+
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import FeedbackFormClient from './FeedbackFormClient'
 
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+)
+
 export default async function FeedbackPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
-  const admin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-
-  const { data: business } = await admin
+  const { data: business, error: bizError } = await supabaseAdmin
     .from('businesses')
-    .select('*')
+    .select('id, name, slug, city, google_review_url, brand_color, logo_url')
     .eq('slug', slug)
-    .eq('plan_status', 'active')
     .single()
 
-  if (!business) notFound()
+  if (bizError || !business) {
+    notFound()
+  }
 
-  const { data: form } = await admin
+  const { data: form, error: formError } = await supabaseAdmin
     .from('feedback_forms')
-    .select('*')
+    .select('id, business_id, categories')
     .eq('business_id', business.id)
     .single()
 
-  if (!form) notFound()
+  if (formError || !form) {
+    notFound()
+  }
 
-  return <FeedbackFormClient business={business} form={form} />
+  // Ensure categories is always an array
+  const categories = Array.isArray(form.categories) ? form.categories : []
+
+  return (
+    <FeedbackFormClient
+      business={business}
+      form={{ ...form, categories }}
+    />
+  )
 }
