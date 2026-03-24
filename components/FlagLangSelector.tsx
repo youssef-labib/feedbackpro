@@ -21,15 +21,7 @@ export default function FlagLangSelector({
   options?: Lang[]
 }) {
   const [open, setOpen] = useState(false)
-  const [compact, setCompact] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const syncCompact = () => setCompact(window.innerWidth <= 640)
-    syncCompact()
-    window.addEventListener('resize', syncCompact)
-    return () => window.removeEventListener('resize', syncCompact)
-  }, [])
 
   useEffect(() => {
     function closeOnOutside(event: MouseEvent) {
@@ -67,7 +59,7 @@ export default function FlagLangSelector({
         aria-haspopup="menu"
       >
         <span>{current.flag}</span>
-        <span className="lang-trigger-label">{compact ? current.short : current.label}</span>
+        <span className="lang-trigger-label">{current.short}</span>
         <ChevronDown size={16} className="lang-trigger-chevron" />
       </button>
 
@@ -87,8 +79,8 @@ export default function FlagLangSelector({
             >
               <span>{option.flag}</span>
               <span className="lang-option-copy">
-                <span className="lang-option-title">{option.label}</span>
-                {!compact ? <span className="lang-option-subtitle">{option.short}</span> : null}
+                <span className="lang-option-title">{option.short}</span>
+                <span className="lang-option-subtitle">{option.label}</span>
               </span>
               {option.code === lang ? <Check size={15} style={{ marginLeft: 'auto' }} /> : null}
             </button>

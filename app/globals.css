@@ -2,14 +2,14 @@
 
 :root {
   color-scheme: light;
-  --bg: #f4f7f5;
+  --bg: #f3f5f4;
   --panel: #ffffff;
-  --panel-strong: #eef4ef;
-  --panel-soft: #f7faf8;
-  --border: #d9e3db;
+  --panel-strong: #edf2ee;
+  --panel-soft: #f4f7f5;
+  --border: #cfd8d2;
   --text: #101828;
-  --muted: #667085;
-  --muted-strong: #344054;
+  --muted: #5f6f66;
+  --muted-strong: #27352d;
   --accent: #22c55e;
   --accent-strong: #16a34a;
   --accent-soft: rgba(34, 197, 94, 0.12);
@@ -20,7 +20,7 @@
   --success: #22c55e;
   --success-soft: rgba(34, 197, 94, 0.12);
   --shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
-  --topbar-bg: rgba(244, 247, 245, 0.92);
+  --topbar-bg: rgba(243, 245, 244, 0.94);
   --radius-xl: 28px;
   --radius-lg: 22px;
   --radius-md: 16px;
@@ -45,16 +45,16 @@
 
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #f4f7f5;
+  --bg: #f3f5f4;
   --panel: #ffffff;
-  --panel-strong: #eef4ef;
-  --panel-soft: #f7faf8;
-  --border: #d9e3db;
+  --panel-strong: #edf2ee;
+  --panel-soft: #f4f7f5;
+  --border: #cfd8d2;
   --text: #101828;
-  --muted: #667085;
-  --muted-strong: #344054;
+  --muted: #5f6f66;
+  --muted-strong: #27352d;
   --shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
-  --topbar-bg: rgba(244, 247, 245, 0.92);
+  --topbar-bg: rgba(243, 245, 244, 0.94);
 }
 
 :root[data-theme='dark'] {
@@ -248,7 +248,7 @@ img {
 }
 
 .button-secondary {
-  background: transparent;
+  background: var(--panel);
   color: var(--text);
   border-color: var(--border);
 }
@@ -272,7 +272,7 @@ img {
   padding: 0 14px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--panel-soft);
   color: var(--muted-strong);
   font-size: 12px;
   font-weight: 700;
@@ -281,7 +281,7 @@ img {
 .accent-pill {
   border-color: rgba(34, 197, 94, 0.22);
   background: var(--accent-soft);
-  color: #bbf7d0;
+  color: var(--accent-strong);
 }
 
 .surface-card {
@@ -488,7 +488,7 @@ img {
 }
 
 .split-shell {
-  padding: 52px 0 80px;
+  padding: 24px 0 56px;
 }
 
 .auth-layout {
@@ -890,7 +890,7 @@ img {
 
 .lang-trigger {
   min-height: 42px;
-  padding: 0 14px;
+  padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--panel);
@@ -910,6 +910,8 @@ img {
 .lang-trigger-label {
   font-size: 13px;
   font-weight: 700;
+  min-width: 20px;
+  text-align: center;
 }
 
 .lang-trigger-chevron {
@@ -931,8 +933,9 @@ img {
 }
 
 .theme-toggle {
-  min-height: 42px;
-  padding: 0 14px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--panel);
@@ -952,7 +955,7 @@ img {
 .auth-shell-center .auth-layout {
   grid-template-columns: minmax(0, 520px);
   justify-content: center;
-  min-height: calc(100vh - 132px);
+  min-height: calc(100vh - 116px);
   align-items: center;
 }
 
@@ -1033,6 +1036,10 @@ img {
   .auth-card,
   .auth-side {
     padding: 20px;
+  }
+
+  .split-shell {
+    padding: 18px 0 40px;
   }
 
   .save-banner {
