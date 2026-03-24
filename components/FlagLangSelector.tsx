@@ -1,3 +1,7 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+
 type Lang = 'fr' | 'ar' | 'en' | 'es'
 
 const FLAGS: Record<Lang, { flag: string; label: string; native: string }> = {
@@ -18,6 +22,15 @@ export default function FlagLangSelector({
   dark?: boolean
   options?: Lang[]
 }) {
+  const [compact, setCompact] = useState(false)
+
+  useEffect(() => {
+    const syncCompact = () => setCompact(window.innerWidth <= 640)
+    syncCompact()
+    window.addEventListener('resize', syncCompact)
+    return () => window.removeEventListener('resize', syncCompact)
+  }, [])
+
   const activeOptions = (options && options.length > 0 ? options : (Object.keys(FLAGS) as Lang[])).map(
     (code) => [code, FLAGS[code]] as const
   )
@@ -36,11 +49,11 @@ export default function FlagLangSelector({
           paddingRight: 32,
           paddingTop: 8,
           paddingBottom: 8,
-          minWidth: 98,
+          minWidth: compact ? 78 : 98,
           background: dark ? 'rgba(0,0,0,.25)' : 'rgba(255,255,255,.05)',
           border: `1px solid ${dark ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.09)'}`,
           borderRadius: 10,
-          color: dark ? '#e8f0fa' : '#e8f0fa',
+          color: '#e8f0fa',
           fontSize: 12,
           fontWeight: 700,
           fontFamily: 'Instrument Sans, sans-serif',
@@ -57,7 +70,7 @@ export default function FlagLangSelector({
       >
         {activeOptions.map(([code, info]) => (
           <option key={code} value={code} style={{ background: '#0d1927', color: '#e8f0fa' }}>
-            {info.native}
+            {compact ? info.label : info.native}
           </option>
         ))}
       </select>
