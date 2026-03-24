@@ -3,232 +3,380 @@
 import Link from 'next/link'
 import {
   ArrowRight,
+  Building2,
   Check,
   LayoutDashboard,
   MessageSquareText,
   QrCode,
+  ScanLine,
   ShieldCheck,
+  Star,
 } from 'lucide-react'
 import AppLogo from '../components/AppLogo'
 import FlagLangSelector from '../components/FlagLangSelector'
 import ThemeToggle from '../components/ThemeToggle'
 import { useStoredLanguage } from '../components/useStoredLanguage'
 
-const COPY = {
+type LandingLang = 'fr' | 'ar' | 'en'
+
+type LandingCopy = {
+  nav: {
+    features: string
+    workflow: string
+    pricing: string
+    login: string
+  }
+  badge: string
+  title: string
+  subtitle: string
+  primary: string
+  secondary: string
+  chips: string[]
+  stats: Array<{ label: string; value: string }>
+  panelTitle: string
+  panelBody: string
+  panelHighlights: string[]
+  featuresTitle: string
+  featuresSubtitle: string
+  features: Array<{ title: string; desc: string }>
+  workflowTitle: string
+  workflowSubtitle: string
+  workflow: Array<{ step: string; title: string; desc: string }>
+  proofTitle: string
+  proofSubtitle: string
+  proofCards: Array<{ title: string; desc: string }>
+  pricingTitle: string
+  pricingSubtitle: string
+  pricing: Array<{ name: string; price: string; note: string; features: string[] }>
+  ctaTitle: string
+  ctaSubtitle: string
+}
+
+const COPY: Record<LandingLang, LandingCopy> = {
   fr: {
-    nav: { features: 'Fonctions', how: 'Comment ca marche', pricing: 'Tarifs', login: 'Connexion' },
-    badge: 'Pensé pour les restaurants, cafes, salons et services au Maroc',
-    title: 'Collectez plus de feedback sans compliquer le parcours client.',
+    nav: {
+      features: 'Fonctions',
+      workflow: 'Parcours',
+      pricing: 'Tarifs',
+      login: 'Connexion',
+    },
+    badge: 'Feedback QR simple pour restaurants, cafes, salons et services',
+    title: 'Le moyen le plus simple pour capter des avis sur place et agir vite.',
     subtitle:
-      'Un QR code sur place, un formulaire rapide en plusieurs langues, un tableau de bord simple pour voir ce qui bloque et ce qui marche.',
-    primary: 'Commencer gratuitement',
-    secondary: 'Voir les tarifs',
-    heroStats: [
+      'FeedbackPro aide les equipes a recuperer des retours utiles sans rallonger le parcours client: un QR code, un formulaire rapide, puis un dashboard clair.',
+    primary: 'Creer mon espace',
+    secondary: 'Voir les plans',
+    chips: ['Restaurants', 'Cafes', 'Salons', 'Services'],
+    stats: [
       { label: 'mise en place', value: '15 min' },
       { label: 'langues', value: '4' },
       { label: 'temps moyen', value: '60 sec' },
     ],
-    previewTitle: 'Le systeme reste simple',
-    previewPoints: [
-      'Les clients scannent et notent en quelques secondes.',
-      'Les mauvais retours restent prives pour votre equipe.',
-      'Les bons retours peuvent aller vers Google Reviews.',
+    panelTitle: 'Le client scanne, repond vite, et vous voyez tout au bon endroit.',
+    panelBody:
+      'Le parcours reste mobile-first et tres court. Les bons retours peuvent etre rediriges, les points faibles restent visibles pour votre equipe.',
+    panelHighlights: [
+      'QR sur table, comptoir ou reception',
+      'Questions adaptables selon votre activite',
+      'Retours prives pour mieux corriger en interne',
     ],
-    featuresTitle: 'Un produit simple, propre et pret pour le terrain',
+    featuresTitle: 'Tout le loop feedback dans une structure propre et legere',
     featuresSubtitle:
-      'Le but est de faire moins, mais mieux: moins de friction pour le client et plus de clarte pour le business.',
+      'Le produit reste basique dans le bon sens: moins de bruit, moins de clics inutiles, plus de clarte pour le business.',
     features: [
       {
-        title: 'QR code instantane',
-        desc: 'Chaque business obtient un lien public et un QR pret a imprimer.',
+        title: 'QR pret a imprimer',
+        desc: 'Chaque business obtient un lien public et un QR rapide a poser sur place.',
       },
       {
-        title: 'Questions personnalisables',
-        desc: 'Choisissez les questions qui comptent vraiment pour votre activite.',
+        title: 'Questions sur mesure',
+        desc: 'Ajoutez vos propres questions pour mesurer accueil, rapidite, qualite et plus.',
       },
       {
-        title: 'Dashboard clair',
-        desc: 'Suivez les notes, les commentaires, les points faibles et vos volumes.',
+        title: 'Dashboard lisible',
+        desc: 'Suivez les notes, les commentaires et les tendances sans interface surchargee.',
       },
       {
-        title: 'Google review routing',
-        desc: 'Redirigez les clients satisfaits vers votre page Google au bon moment.',
-      },
-      {
-        title: 'Espace admin',
-        desc: 'Gerez les plans, le statut des comptes et les clients depuis un seul endroit.',
-      },
-      {
-        title: 'Supabase ready',
-        desc: 'Le produit garde une base propre et un flow rapide pour les operations.',
+        title: 'Controle et securite',
+        desc: 'Gerez les plans, statuts et acces dans une structure simple a maintenir.',
       },
     ],
-    howTitle: 'Comment FeedbackPro fonctionne',
-    howSteps: [
-      'Creez votre compte puis configurez vos questions.',
-      'Imprimez le QR code et placez-le sur table, caisse ou reception.',
-      'Recevez les retours dans votre dashboard sans perdre du temps.',
+    workflowTitle: 'Trois etapes pour lancer le systeme',
+    workflowSubtitle:
+      'L objectif est d etre operationnel vite, meme pour une petite equipe qui veut juste un process propre.',
+    workflow: [
+      {
+        step: '01',
+        title: 'Creer le compte',
+        desc: 'Inscrivez le business, choisissez la langue et preparez votre espace.',
+      },
+      {
+        step: '02',
+        title: 'Configurer le formulaire',
+        desc: 'Ajoutez les questions utiles puis telechargez le QR code pret a diffuser.',
+      },
+      {
+        step: '03',
+        title: 'Suivre et ajuster',
+        desc: 'Regardez les retours entrer dans le dashboard et corrigez vite les points faibles.',
+      },
     ],
-    pricingTitle: 'Des plans faciles a comprendre',
-    pricingSubtitle: 'Vous pourrez brancher le paiement plus tard. La structure du produit est deja prete.',
+    proofTitle: 'Pense pour le terrain, pas juste pour une demo',
+    proofSubtitle:
+      'Chaque bloc du produit est fait pour des equipes qui veulent aller droit au but sur mobile, tablette ou laptop.',
+    proofCards: [
+      {
+        title: 'Formulaire mobile-first',
+        desc: 'Le feedback public reste court et lisible meme sur petit ecran.',
+      },
+      {
+        title: 'Boucle de review claire',
+        desc: 'Les bons retours peuvent partir vers Google Reviews au bon moment.',
+      },
+      {
+        title: 'Equipe et operations',
+        desc: 'Les responsables voient rapidement ce qui bloque sans chercher partout.',
+      },
+      {
+        title: 'Structure facile a faire evoluer',
+        desc: 'Le produit reste simple maintenant, mais pret pour paiements et automatisations ensuite.',
+      },
+    ],
+    pricingTitle: 'Des plans simples a comprendre',
+    pricingSubtitle:
+      'Le systeme reste pret pour une suite plus complete, mais deja assez clair pour commencer maintenant.',
     pricing: [
       {
         name: 'Starter',
         price: '149 MAD',
-        note: 'Pour un seul point de vente',
-        features: ['1 business', 'Questions personnalisables', 'Dashboard essentiel'],
+        note: 'Pour un point de vente',
+        features: ['1 business', 'Questions personnalisees', 'Dashboard essentiel'],
       },
       {
         name: 'Pro',
         price: '299 MAD',
         note: 'Le meilleur point de depart',
-        features: ['Jusqu a 3 business', 'QR illimites', 'Plus de suivi et de gestion'],
+        features: ['Jusqu a 3 business', 'QR illimites', 'Suivi plus complet'],
       },
       {
         name: 'Business',
         price: '699 MAD',
         note: 'Pour les operations plus larges',
-        features: ['Multi-sites', 'Priorite admin', 'Suite plus complete'],
+        features: ['Multi-sites', 'Support prioritaire', 'Gestion avancee'],
       },
     ],
-    ctaTitle: 'Un site simple, pro et pret a faire avancer le projet.',
-    ctaSubtitle: 'Commencez par la mise en place du produit, puis on continue ensemble sur chaque detail.',
+    ctaTitle: 'Une base propre pour lancer FeedbackPro serieusement.',
+    ctaSubtitle:
+      'Commencez avec un produit simple, rapide a comprendre, puis on continuera les paiements et automatisations sur une base solide.',
   },
   ar: {
-    nav: { features: 'المميزات', how: 'كيف يعمل', pricing: 'الاسعار', login: 'تسجيل الدخول' },
-    badge: 'مناسب للمطاعم والمقاهي والخدمات في المغرب',
-    title: 'اجمع اراء العملاء بشكل بسيط واحترافي.',
+    nav: {
+      features: 'المميزات',
+      workflow: 'الخطوات',
+      pricing: 'الاسعار',
+      login: 'تسجيل الدخول',
+    },
+    badge: 'نظام QR بسيط للمطاعم والمقاهي والصالونات والخدمات',
+    title: 'ابسط طريقة لجمع اراء الزبائن في المكان والتصرف بسرعة.',
     subtitle:
-      'QR في المكان، نموذج سريع بعدة لغات، ولوحة تحكم واضحة لمعرفة ما الذي يجب تحسينه.',
-    primary: 'ابدأ مجانا',
+      'FeedbackPro يساعد الفرق تجمع ملاحظات مفيدة بدون ما تطول تجربة الزبون: QR واحد، فورم سريع، ثم لوحة تحكم واضحة.',
+    primary: 'انشاء حساب',
     secondary: 'شاهد الاسعار',
-    heroStats: [
+    chips: ['مطاعم', 'مقاهي', 'صالونات', 'خدمات'],
+    stats: [
       { label: 'وقت الاعداد', value: '15 دقيقة' },
       { label: 'اللغات', value: '4' },
       { label: 'متوسط الاجابة', value: '60 ثانية' },
     ],
-    previewTitle: 'الفكرة تبقى بسيطة',
-    previewPoints: [
-      'العميل يمسح ويقيم بسرعة.',
-      'الاراء السلبية تبقى داخلية لفريقك.',
-      'الاراء الجيدة يمكن توجيهها الى Google Reviews.',
+    panelTitle: 'الزبون يمسح ويجاوب بسرعة وانت تشوف كل شيء في المكان الصحيح.',
+    panelBody:
+      'التجربة قصيرة ومناسبة للهاتف. الاراء الجيدة يمكن توجيهها، والملاحظات السلبية تبقى واضحة لفريقك داخليا.',
+    panelHighlights: [
+      'QR على الطاولة او الكاشير او الاستقبال',
+      'اسئلة قابلة للتخصيص حسب النشاط',
+      'ملاحظات داخلية لتحسين الخدمة بسرعة',
     ],
-    featuresTitle: 'منتج بسيط وواضح وجاهز للاستعمال',
+    featuresTitle: 'كل دورة الفيدباك في بنية واضحة وخفيفة',
     featuresSubtitle:
-      'الهدف هو تقليل التعقيد للعميل واعطاء صورة اوضح لصاحب النشاط.',
+      'المنتج بسيط بالمعنى الجيد: اقل ضوضاء، اقل نقرات، وصورة اوضح لصاحب النشاط وفريقه.',
     features: [
       {
-        title: 'QR فوري',
-        desc: 'كل نشاط يحصل على رابط عام و QR جاهز للطباعة.',
+        title: 'QR جاهز للطباعة',
+        desc: 'كل نشاط يحصل على رابط عام وQR سريع وجاهز للاستعمال.',
       },
       {
-        title: 'اسئلة قابلة للتخصيص',
-        desc: 'اختر الاسئلة التي تناسب نشاطك الحقيقي.',
+        title: 'اسئلة مخصصة',
+        desc: 'اضف الاسئلة التي تهم الاستقبال والسرعة والجودة وكل ما تريد قياسه.',
       },
       {
         title: 'لوحة تحكم واضحة',
-        desc: 'تابع النقاط والتعليقات والمشاكل الرئيسية بسهولة.',
+        desc: 'تابع التقييمات والتعليقات والاتجاهات بدون واجهة معقدة.',
       },
       {
-        title: 'توجيه نحو Google',
-        desc: 'العميل الراضي يمكن توجيهه مباشرة نحو صفحتك في Google.',
-      },
-      {
-        title: 'لوحة ادارة',
-        desc: 'تحكم في الخطط والحسابات والعملاء من مكان واحد.',
-      },
-      {
-        title: 'جاهز مع Supabase',
-        desc: 'المنتج مبني ليستمر بشكل منظم وسريع.',
+        title: 'تحكم وحماية',
+        desc: 'ادارة الخطط والحسابات والصلاحيات تبقى بسيطة وقابلة للتطوير.',
       },
     ],
-    howTitle: 'كيف يعمل FeedbackPro',
-    howSteps: [
-      'انشئ حسابك ثم جهز الاسئلة.',
-      'اطبع QR وضعه في الطاولة او الاستقبال او نقطة البيع.',
-      'تابع كل الاراء من لوحة التحكم بدون تعقيد.',
+    workflowTitle: 'ثلاث خطوات لاطلاق النظام',
+    workflowSubtitle:
+      'الهدف هو ان تبدأ بسرعة حتى لو كان الفريق صغير ويريد فقط نظاما نظيفا وواضحا.',
+    workflow: [
+      {
+        step: '01',
+        title: 'انشاء الحساب',
+        desc: 'سجل النشاط، اختر اللغة، وجهز مساحتك.',
+      },
+      {
+        step: '02',
+        title: 'تجهيز الفورم',
+        desc: 'اضف الاسئلة المناسبة ثم حمل QR الجاهز للمشاركة.',
+      },
+      {
+        step: '03',
+        title: 'متابعة النتائج',
+        desc: 'شاهد الاراء تدخل للوحة التحكم واتخذ قرارات اسرع.',
+      },
     ],
-    pricingTitle: 'خطط سهلة وواضحة',
-    pricingSubtitle: 'يمكنك ربط الدفع لاحقا. المهم ان بنية المنتج جاهزة.',
+    proofTitle: 'مصمم للاستعمال اليومي وليس فقط للعرض',
+    proofSubtitle:
+      'كل جزء في المنتج مبني لفرق تريد تجربة واضحة على الهاتف او التابلت او الحاسوب.',
+    proofCards: [
+      {
+        title: 'فورم مناسب للهاتف',
+        desc: 'صفحة الفيدباك تبقى سريعة وواضحة حتى على الشاشات الصغيرة.',
+      },
+      {
+        title: 'توجيه مراجعات واضح',
+        desc: 'يمكن ارسال الزبائن الراضين الى Google Reviews في الوقت المناسب.',
+      },
+      {
+        title: 'رؤية تشغيلية افضل',
+        desc: 'المسؤولون يرون بسرعة ما الذي يحتاج تدخل بدون بحث طويل.',
+      },
+      {
+        title: 'قاعدة سهلة للتطوير',
+        desc: 'المنتج بسيط حاليا لكنه جاهز لاحقا للمدفوعات والاتمتة.',
+      },
+    ],
+    pricingTitle: 'خطط واضحة وسهلة',
+    pricingSubtitle:
+      'البنية جاهزة لتطويرات اكبر لاحقا، لكنها من الان كافية للبدء بشكل مرتب واحترافي.',
     pricing: [
       {
         name: 'Starter',
         price: '149 MAD',
-        note: 'لنشاط واحد',
+        note: 'لفرع واحد',
         features: ['نشاط واحد', 'اسئلة مخصصة', 'لوحة تحكم اساسية'],
       },
       {
         name: 'Pro',
         price: '299 MAD',
-        note: 'افضل نقطة بداية',
-        features: ['حتى 3 نشاطات', 'QR غير محدود', 'متابعة وادارة اكثر'],
+        note: 'افضل نقطة انطلاق',
+        features: ['حتى 3 انشطة', 'QR غير محدود', 'متابعة افضل'],
       },
       {
         name: 'Business',
         price: '699 MAD',
-        note: 'للعمليات الاكبر',
-        features: ['عدة مواقع', 'اولوية في الادارة', 'خصائص اكثر'],
+        note: 'لعمليات اكبر',
+        features: ['عدة مواقع', 'اولوية في الدعم', 'ادارة اوسع'],
       },
     ],
-    ctaTitle: 'موقع بسيط واحترافي وجاهز لتطوير المشروع.',
-    ctaSubtitle: 'ابدأ بالنسخة الاساسية القوية وبعدها نكمل كل التحسينات التي تريدها.',
+    ctaTitle: 'قاعدة نظيفة لاطلاق FeedbackPro بشكل احترافي.',
+    ctaSubtitle:
+      'ابدأ بمنتج بسيط وسريع الفهم، وبعدها نكمل المدفوعات والاتمتة فوق نفس القاعدة القوية.',
   },
   en: {
-    nav: { features: 'Features', how: 'How it works', pricing: 'Pricing', login: 'Login' },
-    badge: 'Built for restaurants, cafes, salons, and service businesses in Morocco',
-    title: 'Collect customer feedback without adding friction.',
+    nav: {
+      features: 'Features',
+      workflow: 'Workflow',
+      pricing: 'Pricing',
+      login: 'Login',
+    },
+    badge: 'Simple QR feedback for restaurants, cafes, salons, and service teams',
+    title: 'The simplest way to collect on-site feedback and act on it fast.',
     subtitle:
-      'One QR code on site, one fast multilingual form, and one clean dashboard to understand what needs attention.',
-    primary: 'Start free',
-    secondary: 'View pricing',
-    heroStats: [
+      'FeedbackPro gives teams a short customer flow: one QR code, one fast form, and one clean dashboard to spot what needs attention.',
+    primary: 'Create workspace',
+    secondary: 'See pricing',
+    chips: ['Restaurants', 'Cafes', 'Salons', 'Services'],
+    stats: [
       { label: 'setup time', value: '15 min' },
       { label: 'languages', value: '4' },
       { label: 'avg response', value: '60 sec' },
     ],
-    previewTitle: 'The product stays focused',
-    previewPoints: [
-      'Customers scan and rate in seconds.',
-      'Low scores stay private for your team.',
-      'High scores can flow toward Google Reviews.',
+    panelTitle: 'Customers scan, answer quickly, and the right insights land in one place.',
+    panelBody:
+      'The flow stays mobile-first and short. Great feedback can be routed outward, while weak points stay visible for your internal team.',
+    panelHighlights: [
+      'QR on tables, counters, or reception',
+      'Questions that match each business type',
+      'Private feedback flow for fast internal fixes',
     ],
-    featuresTitle: 'A simple product that already covers the important parts',
+    featuresTitle: 'The full feedback loop in a clean, lightweight product',
     featuresSubtitle:
-      'The goal is to keep the experience lightweight for customers and useful for operators.',
+      'The product stays basic in the best way: less noise, fewer unnecessary clicks, and more clarity for operators.',
     features: [
       {
-        title: 'Instant QR setup',
-        desc: 'Every business gets a public link and a QR that is ready to print.',
+        title: 'Print-ready QR',
+        desc: 'Each business gets a public link and a QR code that is ready to place on site.',
       },
       {
         title: 'Custom questions',
-        desc: 'Choose the questions that matter for your business type.',
+        desc: 'Add the questions that actually matter for service, speed, quality, and more.',
       },
       {
-        title: 'Clear dashboard',
-        desc: 'Track scores, comments, weak points, and review volume in one place.',
+        title: 'Readable dashboard',
+        desc: 'Track scores, comments, and trends without drowning in interface clutter.',
       },
       {
-        title: 'Google review routing',
-        desc: 'Send happy customers to Google Reviews at the right moment.',
-      },
-      {
-        title: 'Admin control',
-        desc: 'Manage plans, account status, and clients from a single admin area.',
-      },
-      {
-        title: 'Supabase ready',
-        desc: 'The app structure stays clean and operationally simple.',
+        title: 'Control and security',
+        desc: 'Keep plans, account status, and permissions in a simple structure you can grow later.',
       },
     ],
-    howTitle: 'How FeedbackPro works',
-    howSteps: [
-      'Create your account and configure the right questions.',
-      'Print the QR code and place it on tables, counters, or reception.',
-      'Watch feedback flow into your dashboard with no extra steps.',
+    workflowTitle: 'Three steps to launch the system',
+    workflowSubtitle:
+      'The goal is to be operational quickly, even for a small team that just wants a clean process.',
+    workflow: [
+      {
+        step: '01',
+        title: 'Create the account',
+        desc: 'Set up the business, choose the working language, and prepare the workspace.',
+      },
+      {
+        step: '02',
+        title: 'Configure the form',
+        desc: 'Add the right questions, then download the QR code that is ready to share.',
+      },
+      {
+        step: '03',
+        title: 'Track and improve',
+        desc: 'Watch feedback arrive in the dashboard and fix weak points faster.',
+      },
     ],
-    pricingTitle: 'Pricing that is easy to read',
-    pricingSubtitle: 'You can connect payments later. The product structure is already ready for it.',
+    proofTitle: 'Built for everyday operations, not just for a demo',
+    proofSubtitle:
+      'Every block is designed for teams that need a clean experience on phone, tablet, or laptop.',
+    proofCards: [
+      {
+        title: 'Phone-first form',
+        desc: 'The public feedback page stays short, readable, and fast on small screens.',
+      },
+      {
+        title: 'Clear review routing',
+        desc: 'Happy customers can be guided toward Google Reviews at the right moment.',
+      },
+      {
+        title: 'Better operational visibility',
+        desc: 'Managers can spot recurring issues quickly without digging through noise.',
+      },
+      {
+        title: 'Easy base to extend',
+        desc: 'The app is simple now, but already ready for payments and automations later.',
+      },
+    ],
+    pricingTitle: 'Pricing that is easy to understand',
+    pricingSubtitle:
+      'The structure is ready for a larger SaaS flow later, but already clean enough to start using today.',
     pricing: [
       {
         name: 'Starter',
@@ -240,123 +388,177 @@ const COPY = {
         name: 'Pro',
         price: '299 MAD',
         note: 'Best starting point',
-        features: ['Up to 3 businesses', 'Unlimited QR codes', 'Stronger management flow'],
+        features: ['Up to 3 businesses', 'Unlimited QR codes', 'Stronger tracking flow'],
       },
       {
         name: 'Business',
         price: '699 MAD',
         note: 'For larger operations',
-        features: ['Multiple locations', 'Admin priority', 'Broader suite'],
+        features: ['Multiple sites', 'Priority support', 'Broader management'],
       },
     ],
-    ctaTitle: 'A clean, simple product foundation you can keep building on.',
-    ctaSubtitle: 'Start with the essential experience, then we can keep refining every detail together.',
+    ctaTitle: 'A clean foundation to launch FeedbackPro the right way.',
+    ctaSubtitle:
+      'Start with a simple product that is fast to understand, then keep layering payments and automation on top of a solid base.',
   },
-} as const
+}
 
-const FEATURES = [
-  MessageSquareText,
-  QrCode,
-  LayoutDashboard,
-  ShieldCheck,
-  MessageSquareText,
-  LayoutDashboard,
-]
+const FEATURE_ICONS = [QrCode, MessageSquareText, LayoutDashboard, ShieldCheck]
+const PROOF_ICONS = [Building2, Star, ScanLine, ShieldCheck]
 
 export default function HomePage() {
   const { lang, setLang, copyLang, isRTL } = useStoredLanguage('fr')
   const copy = COPY[copyLang]
+  const arrowStyle = isRTL ? { transform: 'scaleX(-1)' } : undefined
 
   return (
     <div className="page-shell" dir={isRTL ? 'rtl' : 'ltr'}>
-      <header className="topbar">
+      <header className="topbar landing-topbar">
         <div className="container topbar-inner">
           <AppLogo />
-          <div className="topbar-links">
-            <a href="#features" className="nav-link">{copy.nav.features}</a>
-            <a href="#how" className="nav-link">{copy.nav.how}</a>
-            <a href="#pricing" className="nav-link">{copy.nav.pricing}</a>
-          </div>
+
+          <nav className="landing-nav">
+            <a href="#features" className="nav-link">
+              {copy.nav.features}
+            </a>
+            <a href="#workflow" className="nav-link">
+              {copy.nav.workflow}
+            </a>
+            <a href="#pricing" className="nav-link">
+              {copy.nav.pricing}
+            </a>
+          </nav>
+
           <div className="topbar-actions">
             <ThemeToggle />
             <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
-            <Link href="/login" className="nav-link">{copy.nav.login}</Link>
-            <Link href="/register" className="button button-primary">{copy.primary}</Link>
+            <Link href="/login" className="button button-secondary landing-topbar-button">
+              {copy.nav.login}
+            </Link>
+            <Link href="/register" className="button button-primary landing-topbar-button">
+              {copy.primary}
+            </Link>
           </div>
         </div>
       </header>
 
       <main>
-        <section className="container hero-grid">
-          <div className="hero-copy">
-            <div>
-              <div className="pill accent-pill" style={{ marginBottom: 18 }}>{copy.badge}</div>
-              <h1 className="section-title">{copy.title}</h1>
-              <p className="section-subtitle">{copy.subtitle}</p>
-            </div>
-
-            <div className="hero-actions">
-              <Link href="/register" className="button button-primary">
-                {copy.primary}
-                <ArrowRight size={16} />
-              </Link>
-              <a href="#pricing" className="button button-secondary">
-                {copy.secondary}
-              </a>
-            </div>
-
-            <div className="three-col">
-              {copy.heroStats.map((item) => (
-                <div key={item.label} className="metric-card">
-                  <div className="metric-label">{item.label}</div>
-                  <div className="metric-value">{item.value}</div>
+        <section className="landing-hero">
+          <div className="container hero-grid landing-hero-grid">
+            <div className="hero-copy landing-hero-copy">
+              <div>
+                <div className="pill accent-pill" style={{ marginBottom: 18 }}>
+                  {copy.badge}
                 </div>
-              ))}
+                <h1 className="section-title">{copy.title}</h1>
+                <p className="section-subtitle">{copy.subtitle}</p>
+              </div>
+
+              <div className="hero-actions">
+                <Link href="/register" className="button button-primary">
+                  {copy.primary}
+                  <ArrowRight size={16} style={arrowStyle} />
+                </Link>
+                <a href="#pricing" className="button button-secondary">
+                  {copy.secondary}
+                </a>
+              </div>
+
+              <div className="landing-kicker">
+                {copy.chips.map((chip) => (
+                  <span key={chip} className="landing-chip">
+                    {chip}
+                  </span>
+                ))}
+              </div>
+
+              <div className="landing-stat-row">
+                {copy.stats.map((item) => (
+                  <article key={item.label} className="metric-card">
+                    <div className="metric-label">{item.label}</div>
+                    <div className="metric-value">{item.value}</div>
+                  </article>
+                ))}
+              </div>
             </div>
+
+            <aside className="hero-card landing-showcase">
+              <div className="landing-showcase-main">
+                <div className="section-eyebrow">Live product</div>
+                <h2 className="landing-card-title">{copy.panelTitle}</h2>
+                <p className="card-copy">{copy.panelBody}</p>
+
+                <div className="stack" style={{ marginTop: 20 }}>
+                  {copy.panelHighlights.map((item) => (
+                    <div key={item} className="landing-signal">
+                      <span className="feature-icon landing-signal-icon">
+                        <Check size={16} />
+                      </span>
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="landing-mini-grid">
+                {copy.features.map((feature, index) => {
+                  const Icon = FEATURE_ICONS[index]
+                  return (
+                    <article key={feature.title} className="landing-mini-card">
+                      <div className="feature-icon">
+                        <Icon size={18} />
+                      </div>
+                      <h3 className="landing-card-title" style={{ marginTop: 16 }}>
+                        {feature.title}
+                      </h3>
+                      <p className="feature-copy">{feature.desc}</p>
+                    </article>
+                  )
+                })}
+              </div>
+            </aside>
           </div>
-
-          <aside className="hero-card">
-            <div className="section-eyebrow">Feedback loop</div>
-            <h2 className="card-title" style={{ marginTop: 0 }}>{copy.previewTitle}</h2>
-            <p className="card-copy">
-              FeedbackPro helps you collect, filter, and act on feedback without making the customer do extra work.
-            </p>
-            <div className="list" style={{ marginTop: 22 }}>
-              {copy.previewPoints.map((item) => (
-                <div key={item} className="list-row">
-                  <span className="list-bullet" />
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-            <div className="two-col" style={{ marginTop: 22 }}>
-              <div className="summary-card">
-                <div className="metric-label">Form</div>
-                <div className="metric-value" style={{ fontSize: 24 }}>QR + 5 taps</div>
-                <div className="metric-note">Fast enough to finish on mobile.</div>
-              </div>
-              <div className="summary-card">
-                <div className="metric-label">Ops</div>
-                <div className="metric-value" style={{ fontSize: 24 }}>1 dashboard</div>
-                <div className="metric-note">Questions, QR, reviews, settings, and admin.</div>
-              </div>
-            </div>
-          </aside>
         </section>
 
         <section id="features" className="section">
-          <div className="container">
-            <div className="section-head">
-              <div className="section-eyebrow">Product</div>
-              <h2 className="section-title" style={{ fontSize: 'clamp(28px, 4vw, 42px)' }}>{copy.featuresTitle}</h2>
-              <p className="section-subtitle">{copy.featuresSubtitle}</p>
-            </div>
+          <div className="container landing-feature-split">
+            <article className="surface-card landing-section-card">
+              <div className="section-eyebrow">Product structure</div>
+              <h2 className="card-title landing-section-title">{copy.featuresTitle}</h2>
+              <p className="card-copy">{copy.featuresSubtitle}</p>
 
-            <div className="feature-grid">
+              <div className="landing-stacked-cards">
+                <div className="landing-detail-card">
+                  <div className="landing-detail-head">
+                    <span className="feature-icon">
+                      <ScanLine size={18} />
+                    </span>
+                    <div>
+                      <h3 className="landing-card-title">{copy.workflow[0].title}</h3>
+                      <p className="feature-copy">{copy.workflow[0].desc}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="landing-detail-card">
+                  <div className="landing-detail-head">
+                    <span className="feature-icon">
+                      <LayoutDashboard size={18} />
+                    </span>
+                    <div>
+                      <h3 className="landing-card-title">{copy.workflow[2].title}</h3>
+                      <p className="feature-copy">{copy.workflow[2].desc}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <div className="landing-board">
               {copy.features.map((feature, index) => {
-                const Icon = FEATURES[index]
+                const Icon = FEATURE_ICONS[index]
                 return (
-                  <article key={feature.title} className="feature-card">
+                  <article key={feature.title} className="feature-card landing-proof-card">
                     <div className="feature-icon">
                       <Icon size={18} />
                     </div>
@@ -369,39 +571,51 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="how" className="section">
-          <div className="container two-col">
-            <div className="info-card">
-              <div className="section-eyebrow">Flow</div>
-              <h2 className="card-title" style={{ marginTop: 0 }}>{copy.howTitle}</h2>
-              <div className="list" style={{ marginTop: 18 }}>
-                {copy.howSteps.map((step, index) => (
-                  <div key={step} className="list-row">
-                    <span className="feature-icon" style={{ width: 34, height: 34, borderRadius: 999, fontWeight: 800 }}>
-                      {index + 1}
-                    </span>
-                    <span>{step}</span>
-                  </div>
-                ))}
-              </div>
+        <section id="workflow" className="section">
+          <div className="container">
+            <div className="section-head">
+              <div className="section-eyebrow">Workflow</div>
+              <h2 className="section-title" style={{ fontSize: 'clamp(28px, 4vw, 44px)' }}>
+                {copy.workflowTitle}
+              </h2>
+              <p className="section-subtitle">{copy.workflowSubtitle}</p>
             </div>
 
-            <div className="info-card">
-              <div className="section-eyebrow">Why it works</div>
-              <h2 className="card-title" style={{ marginTop: 0 }}>Built to stay practical in the field.</h2>
-              <div className="list" style={{ marginTop: 18 }}>
-                {[
-                  'No overloaded landing page patterns.',
-                  'Simple auth and onboarding.',
-                  'Dashboard and admin remain readable on laptop or phone.',
-                  'The same language selector stays available across views.',
-                ].map((item) => (
-                  <div key={item} className="list-row">
-                    <Check size={18} style={{ color: 'var(--accent)', marginTop: 2, flexShrink: 0 }} />
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
+            <div className="landing-flow">
+              {copy.workflow.map((item) => (
+                <article key={item.step} className="surface-card landing-step-card">
+                  <div className="landing-step-number">{item.step}</div>
+                  <h3 className="landing-card-title">{item.title}</h3>
+                  <p className="feature-copy">{item.desc}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="section">
+          <div className="container">
+            <div className="section-head">
+              <div className="section-eyebrow">Built for teams</div>
+              <h2 className="section-title" style={{ fontSize: 'clamp(28px, 4vw, 44px)' }}>
+                {copy.proofTitle}
+              </h2>
+              <p className="section-subtitle">{copy.proofSubtitle}</p>
+            </div>
+
+            <div className="landing-proof-grid">
+              {copy.proofCards.map((item, index) => {
+                const Icon = PROOF_ICONS[index]
+                return (
+                  <article key={item.title} className="feature-card landing-proof-card">
+                    <div className="feature-icon">
+                      <Icon size={18} />
+                    </div>
+                    <h3 className="feature-title">{item.title}</h3>
+                    <p className="feature-copy">{item.desc}</p>
+                  </article>
+                )
+              })}
             </div>
           </div>
         </section>
@@ -410,7 +624,9 @@ export default function HomePage() {
           <div className="container">
             <div className="section-head">
               <div className="section-eyebrow">Pricing</div>
-              <h2 className="section-title" style={{ fontSize: 'clamp(28px, 4vw, 42px)' }}>{copy.pricingTitle}</h2>
+              <h2 className="section-title" style={{ fontSize: 'clamp(28px, 4vw, 44px)' }}>
+                {copy.pricingTitle}
+              </h2>
               <p className="section-subtitle">{copy.pricingSubtitle}</p>
             </div>
 
@@ -418,14 +634,17 @@ export default function HomePage() {
               {copy.pricing.map((plan, index) => (
                 <article
                   key={plan.name}
-                  className="price-card"
-                  style={index === 1 ? { borderColor: 'rgba(34, 197, 94, 0.28)' } : undefined}
+                  className="price-card landing-price-card"
+                  style={index === 1 ? { borderColor: 'rgba(34, 197, 94, 0.3)' } : undefined}
                 >
                   <div className={index === 1 ? 'pill accent-pill' : 'pill'} style={{ marginBottom: 18 }}>
                     {plan.name}
                   </div>
-                  <div className="metric-value" style={{ fontSize: 32 }}>{plan.price}</div>
+                  <div className="metric-value" style={{ fontSize: 34 }}>
+                    {plan.price}
+                  </div>
                   <div className="metric-note">{plan.note}</div>
+
                   <div className="list" style={{ marginTop: 22 }}>
                     {plan.features.map((feature) => (
                       <div key={feature} className="list-row">
@@ -442,22 +661,21 @@ export default function HomePage() {
 
         <section className="section">
           <div className="container">
-            <div className="surface-card" style={{ padding: 28 }}>
-              <div className="two-col" style={{ alignItems: 'center' }}>
-                <div>
-                  <div className="section-eyebrow">Ready</div>
-                  <h2 className="card-title" style={{ marginTop: 0 }}>{copy.ctaTitle}</h2>
-                  <p className="card-copy">{copy.ctaSubtitle}</p>
-                </div>
-                <div className="hero-actions" style={{ justifyContent: isRTL ? 'flex-start' : 'flex-end' }}>
-                  <Link href="/register" className="button button-primary">
-                    {copy.primary}
-                    <ArrowRight size={16} />
-                  </Link>
-                  <Link href="/login" className="button button-secondary">
-                    {copy.nav.login}
-                  </Link>
-                </div>
+            <div className="surface-card landing-cta-card">
+              <div>
+                <div className="section-eyebrow">Ready to launch</div>
+                <h2 className="card-title landing-section-title">{copy.ctaTitle}</h2>
+                <p className="card-copy">{copy.ctaSubtitle}</p>
+              </div>
+
+              <div className="hero-actions landing-cta-actions">
+                <Link href="/register" className="button button-primary">
+                  {copy.primary}
+                  <ArrowRight size={16} style={arrowStyle} />
+                </Link>
+                <Link href="/login" className="button button-secondary">
+                  {copy.nav.login}
+                </Link>
               </div>
             </div>
           </div>
