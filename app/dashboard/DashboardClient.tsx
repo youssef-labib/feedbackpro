@@ -18,6 +18,7 @@ import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 import AppLogo from '../../components/AppLogo'
 import FlagLangSelector from '../../components/FlagLangSelector'
+import ThemeToggle from '../../components/ThemeToggle'
 import { useStoredLanguage } from '../../components/useStoredLanguage'
 
 type Business = {
@@ -269,6 +270,7 @@ export default function DashboardClient({
             </div>
             <div className="topbar-actions">
               <AppLogo href="/dashboard" caption="Business workspace" />
+              <ThemeToggle />
               <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
               <button type="button" className="button button-secondary" onClick={logout}><LogOut size={16} />Sign out</button>
             </div>

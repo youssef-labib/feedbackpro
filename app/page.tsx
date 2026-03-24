@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import AppLogo from '../components/AppLogo'
 import FlagLangSelector from '../components/FlagLangSelector'
+import ThemeToggle from '../components/ThemeToggle'
 import { useStoredLanguage } from '../components/useStoredLanguage'
 
 const COPY = {
@@ -277,6 +278,7 @@ export default function HomePage() {
             <a href="#pricing" className="nav-link">{copy.nav.pricing}</a>
           </div>
           <div className="topbar-actions">
+            <ThemeToggle />
             <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
             <Link href="/login" className="nav-link">{copy.nav.login}</Link>
             <Link href="/register" className="button button-primary">{copy.primary}</Link>

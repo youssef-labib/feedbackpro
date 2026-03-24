@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { ExternalLink, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import AppLogo from '../../components/AppLogo'
+import ThemeToggle from '../../components/ThemeToggle'
 
 type Business = {
   id: string
@@ -112,7 +113,10 @@ export default function AdminClient({
                 Review plans, account status, review volume, and client activity from one clean control panel.
               </p>
             </div>
-            <AppLogo href="/admin" caption="Internal workspace" />
+            <div className="topbar-actions">
+              <ThemeToggle />
+              <AppLogo href="/admin" caption="Internal workspace" />
+            </div>
           </header>
 
           <section className="stats-grid" style={{ marginBottom: 22 }}>

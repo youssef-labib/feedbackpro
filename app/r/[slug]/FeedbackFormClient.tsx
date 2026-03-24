@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { ArrowLeft, ArrowRight, Check, ExternalLink, LoaderCircle, MessageSquareText } from 'lucide-react'
 import FlagLangSelector from '../../../components/FlagLangSelector'
+import ThemeToggle from '../../../components/ThemeToggle'
 import { useStoredLanguage } from '../../../components/useStoredLanguage'
 
 type Screen = 'form' | 'loading' | 'good' | 'bad'
@@ -182,7 +183,10 @@ export default function FeedbackFormClient({
                 </p>
               </div>
             </div>
-            <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
+            <div className="topbar-actions">
+              <ThemeToggle />
+              <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
+            </div>
           </header>
 
           {screen === 'form' ? (

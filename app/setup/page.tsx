@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUp, Plus, Save, Trash2 } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
 import AppLogo from '../../components/AppLogo'
 import FlagLangSelector from '../../components/FlagLangSelector'
+import ThemeToggle from '../../components/ThemeToggle'
 import { useStoredLanguage } from '../../components/useStoredLanguage'
 
 type Question = {
@@ -284,6 +285,7 @@ export default function SetupPage() {
           <AppLogo />
           <div className="topbar-actions">
             <div className="pill accent-pill">{copy.step}</div>
+            <ThemeToggle />
             <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
           </div>
         </div>
