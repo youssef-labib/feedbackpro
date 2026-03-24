@@ -1,7 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { ExternalLink, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import AppLogo from '../../components/AppLogo'
 
 type Business = {
   id: string
@@ -16,18 +18,18 @@ type Business = {
   owner_id: string
 }
 
-const SCORE_COLOR = (score: number) => (score >= 4 ? '#10B981' : score >= 3 ? '#F59E0B' : '#EF4444')
-const PLAN_COLOR: Record<string, { bg: string; color: string }> = {
-  trial: { bg: 'rgba(99,153,34,.12)', color: '#639922' },
-  starter: { bg: 'rgba(0,180,200,.1)', color: '#00b4c8' },
-  pro: { bg: 'rgba(2,128,144,.15)', color: '#028090' },
-  business: { bg: 'rgba(124,58,237,.12)', color: '#a78bfa' },
+const PLAN_STYLES: Record<string, { text: string; bg: string }> = {
+  trial: { text: '#d9f99d', bg: 'rgba(163, 230, 53, 0.14)' },
+  starter: { text: '#bbf7d0', bg: 'rgba(34, 197, 94, 0.14)' },
+  pro: { text: '#86efac', bg: 'rgba(34, 197, 94, 0.2)' },
+  business: { text: '#f8fafc', bg: 'rgba(255, 255, 255, 0.08)' },
 }
-const STATUS_COLOR: Record<string, { bg: string; color: string; dot: string }> = {
-  active: { bg: 'rgba(16,185,129,.12)', color: '#10B981', dot: '#10B981' },
-  trial: { bg: 'rgba(0,180,200,.1)', color: '#00b4c8', dot: '#00b4c8' },
-  suspended: { bg: 'rgba(239,68,68,.1)', color: '#EF4444', dot: '#EF4444' },
-  past_due: { bg: 'rgba(245,158,11,.1)', color: '#F59E0B', dot: '#F59E0B' },
+
+const STATUS_STYLES: Record<string, { text: string; bg: string }> = {
+  active: { text: '#22c55e', bg: 'rgba(34, 197, 94, 0.14)' },
+  trial: { text: '#84cc16', bg: 'rgba(132, 204, 22, 0.14)' },
+  past_due: { text: '#f59e0b', bg: 'rgba(245, 158, 11, 0.14)' },
+  suspended: { text: '#ef4444', bg: 'rgba(239, 68, 68, 0.14)' },
 }
 
 export default function AdminClient({
@@ -46,315 +48,257 @@ export default function AdminClient({
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [updating, setUpdating] = useState(false)
-  const [updateMsg, setUpdateMsg] = useState('')
+  const [updateMessage, setUpdateMessage] = useState('')
 
   const selected = useMemo(
     () => items.find((business) => business.id === selectedId) || null,
     [items, selectedId]
   )
 
-  const active = items.filter((b) => b.plan_status === 'active' || b.plan_status === 'trial').length
-  const suspended = items.filter((b) => b.plan_status === 'suspended').length
-  const mrr = items
-    .filter((b) => b.plan_status === 'active')
-    .reduce((acc, b) => {
-      if (b.plan === 'pro') return acc + 299
-      if (b.plan === 'business') return acc + 699
-      if (b.plan === 'starter') return acc + 149
-      return acc
-    }, 0)
-  const totalReviews = Object.values(submissionCounts).reduce((a, b) => a + b, 0)
+  const activeCount = items.filter((item) => item.plan_status === 'active' || item.plan_status === 'trial').length
+  const suspendedCount = items.filter((item) => item.plan_status === 'suspended').length
+  const totalReviews = Object.values(submissionCounts).reduce((sum, count) => sum + count, 0)
+  const monthlyRevenue = items.reduce((sum, item) => {
+    if (item.plan_status !== 'active') return sum
+    if (item.plan === 'starter') return sum + 149
+    if (item.plan === 'pro') return sum + 299
+    if (item.plan === 'business') return sum + 699
+    return sum
+  }, 0)
 
-  const filtered = items.filter((b) => {
-    const q = search.toLowerCase()
-    const matchSearch =
-      !q ||
-      b.name.toLowerCase().includes(q) ||
-      b.city?.toLowerCase().includes(q) ||
-      b.slug.toLowerCase().includes(q)
-    const matchPlan = filterPlan === 'all' || b.plan === filterPlan
-    const matchStatus = filterStatus === 'all' || b.plan_status === filterStatus
-    return matchSearch && matchPlan && matchStatus
+  const filtered = items.filter((item) => {
+    const query = search.trim().toLowerCase()
+    const matchesSearch =
+      !query ||
+      item.name.toLowerCase().includes(query) ||
+      item.slug.toLowerCase().includes(query) ||
+      item.city.toLowerCase().includes(query)
+    const matchesPlan = filterPlan === 'all' || item.plan === filterPlan
+    const matchesStatus = filterStatus === 'all' || item.plan_status === filterStatus
+    return matchesSearch && matchesPlan && matchesStatus
   })
 
   async function updateBusiness(id: string, updates: Record<string, string>) {
     setUpdating(true)
-    setUpdateMsg('')
+    setUpdateMessage('')
 
-    const res = await fetch('/api/admin/activate', {
+    const response = await fetch('/api/admin/activate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, ...updates }),
     })
 
-    if (!res.ok) {
-      setUpdateMsg('Update failed')
+    if (!response.ok) {
+      setUpdateMessage('Update failed')
       setUpdating(false)
       return
     }
 
-    setItems((current) =>
-      current.map((business) => (business.id === id ? { ...business, ...updates } : business))
-    )
-    setUpdateMsg('Updated')
+    setItems((current) => current.map((item) => (item.id === id ? { ...item, ...updates } : item)))
+    setUpdateMessage('Updated')
     router.refresh()
     setUpdating(false)
   }
 
-  const statusStyles = selected ? STATUS_COLOR[selected.plan_status] || STATUS_COLOR.active : null
-
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;700;800;900&family=Instrument+Sans:wght@400;500&display=swap');
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        body{background:#07101f;font-family:'Instrument Sans',sans-serif;color:#8899b0}
-        .adm{min-height:100vh;background:#07101f}
-        .adm-top{background:#0a1422;border-bottom:1px solid rgba(255,255,255,.07);padding:0 20px;min-height:58px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:100;flex-wrap:wrap}
-        .adm-brand{display:flex;align-items:center;gap:10px}
-        .adm-mark{width:32px;height:32px;border-radius:9px;background:#028090;display:flex;align-items:center;justify-content:center;font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:14px;color:#fff}
-        .adm-title{font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:15px;color:#e8f0fa;letter-spacing:-.2px}
-        .adm-badge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(239,68,68,.1);color:#EF4444;border:1px solid rgba(239,68,68,.2)}
-        .body{padding:24px 20px}
-        .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:11px;margin-bottom:22px}
-        .metric{background:#0d1927;border:1px solid rgba(255,255,255,.07);border-radius:15px;padding:16px 18px}
-        .ml{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#2a3a52;margin-bottom:8px}
-        .mv{font-family:'Cabinet Grotesk',sans-serif;font-size:28px;font-weight:900;letter-spacing:-1.5px;color:#e8f0fa}
-        .ms{font-size:10px;color:#2a3a52;margin-top:4px}
-        .filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
-        .search{flex:1;min-width:220px;padding:10px 13px;background:#0d1927;border:1px solid rgba(255,255,255,.08);border-radius:10px;font-size:13px;color:#e8f0fa;font-family:inherit;outline:none;transition:border-color .2s}
-        .search:focus{border-color:#028090}
-        .search::placeholder{color:#2a3a52}
-        .flt{padding:9px 13px;background:#0d1927;border:1px solid rgba(255,255,255,.08);border-radius:9px;font-size:12px;color:#6b7c94;font-family:inherit;outline:none;cursor:pointer;transition:border-color .2s}
-        .flt:focus{border-color:#028090}
-        .table-wrap{background:#0d1927;border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow:hidden}
-        .table-head{padding:10px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-        .th-title{font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:700;color:#e8f0fa}
-        .th-count{font-size:11px;color:#2a3a52}
-        table{width:100%;border-collapse:collapse;min-width:860px}
-        th{text-align:left;padding:10px 18px;font-size:10px;font-weight:700;color:#2a3a52;text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid rgba(255,255,255,.05);background:#070f1d}
-        td{padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
-        tr:last-child td{border-bottom:none}
-        tr:hover td{background:rgba(255,255,255,.02);cursor:pointer}
-        .biz-cell{display:flex;align-items:center;gap:9px}
-        .biz-ic{width:32px;height:32px;border-radius:9px;background:rgba(0,180,200,.1);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#00b4c8;flex-shrink:0;font-family:'Cabinet Grotesk',sans-serif}
-        .biz-nm{font-weight:600;color:#e8f0fa;font-size:13px}
-        .biz-sl{font-size:10px;color:#2a3a52}
-        .plan-chip{padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
-        .sp{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700}
-        .sp-dot{width:5px;height:5px;border-radius:50%}
-        .act-btn{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;border:1px solid rgba(0,180,200,.2);background:rgba(0,180,200,.08);color:#00b4c8}
-        .act-btn:hover{background:rgba(0,180,200,.15)}
-        .empty-row{padding:48px;text-align:center;color:#2a3a52;font-size:13px}
-        .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
-        .modal{background:#0d1927;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:28px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto}
-        .modal-title{font-family:'Cabinet Grotesk',sans-serif;font-size:18px;font-weight:800;color:#e8f0fa;letter-spacing:-.3px;margin-bottom:20px}
-        .m-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05)}
-        .m-row:last-of-type{border-bottom:none}
-        .m-lbl{font-size:11px;color:#3d4e62;text-transform:uppercase;letter-spacing:.5px;font-weight:700}
-        .m-val{font-size:13px;color:#8899b0;text-align:right}
-        .m-actions{margin-top:20px;display:flex;flex-direction:column;gap:8px}
-        .m-btn{width:100%;padding:11px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;border:none;display:flex;align-items:center;justify-content:center;gap:6px}
-        .m-btn-teal{background:#028090;color:#fff}
-        .m-btn-teal:hover{background:#00b4c8}
-        .m-btn-warn{background:rgba(245,158,11,.1);color:#F59E0B;border:1px solid rgba(245,158,11,.2)}
-        .m-btn-warn:hover{background:rgba(245,158,11,.15)}
-        .m-btn-red{background:rgba(239,68,68,.1);color:#EF4444;border:1px solid rgba(239,68,68,.2)}
-        .m-btn-red:hover{background:rgba(239,68,68,.15)}
-        .m-btn-ghost{background:rgba(255,255,255,.04);color:#5a6a82;border:1px solid rgba(255,255,255,.08)}
-        .m-btn-ghost:hover{color:#e8f0fa}
-        .m-sep{height:1px;background:rgba(255,255,255,.06);margin:16px 0}
-        .m-section{font-size:11px;font-weight:700;color:#2a3a52;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
-        .m-select{width:100%;padding:9px 12px;background:#070f1d;border:1px solid rgba(255,255,255,.08);border-radius:9px;font-size:13px;color:#e8f0fa;font-family:inherit;outline:none;cursor:pointer;appearance:none}
-        .m-select:focus{border-color:#028090}
-        .update-msg{text-align:center;padding:8px;font-size:13px;color:#10B981;font-weight:600}
-        @media(max-width:768px){
-          .body{padding:16px}
-          .filters{flex-direction:column;align-items:stretch}
-          .search{min-width:0;width:100%}
-          .flt{width:100%}
-          .adm-top{padding:12px 16px}
-          .modal{padding:22px}
-        }
-      `}</style>
-
-      <div className="adm">
-        <div className="adm-top">
-          <div className="adm-brand">
-            <div className="adm-mark">F</div>
-            <span className="adm-title">FeedbackPro Admin</span>
-          </div>
-          <span className="adm-badge">Super Admin</span>
-        </div>
-
-        <div className="body">
-          <div className="metrics">
-            {[
-              { l: 'Total clients', v: items.length, s: `${active} active`, c: '#e8f0fa' },
-              { l: 'Estimated MRR', v: `${mrr.toLocaleString()} MAD`, s: 'active subscriptions', c: '#00b4c8' },
-              { l: 'Suspended', v: suspended, s: 'needs attention', c: suspended > 0 ? '#EF4444' : '#2a3a52' },
-              { l: 'Total reviews', v: totalReviews.toLocaleString(), s: 'all sources', c: '#10B981' },
-            ].map((metric, index) => (
-              <div key={index} className="metric">
-                <div className="ml">{metric.l}</div>
-                <div className="mv" style={{ color: metric.c }}>{metric.v}</div>
-                <div className="ms">{metric.s}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="filters">
-            <input className="search" placeholder="Search a client..." value={search} onChange={(e) => setSearch(e.target.value)} />
-            <select className="flt" value={filterPlan} onChange={(e) => setFilterPlan(e.target.value)}>
-              <option value="all">All plans</option>
-              <option value="trial">Trial</option>
-              <option value="starter">Starter</option>
-              <option value="pro">Pro</option>
-              <option value="business">Business</option>
-            </select>
-            <select className="flt" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-              <option value="all">All statuses</option>
-              <option value="active">Active</option>
-              <option value="trial">Trial</option>
-              <option value="suspended">Suspended</option>
-              <option value="past_due">Past due</option>
-            </select>
-          </div>
-
-          <div className="table-wrap">
-            <div className="table-head">
-              <span className="th-title">Clients</span>
-              <span className="th-count">{filtered.length} results</span>
+    <div className="page-shell">
+      <main className="admin-shell">
+        <div className="container">
+          <header className="admin-header">
+            <div>
+              <div className="pill accent-pill" style={{ marginBottom: 14 }}>Admin console</div>
+              <h1 className="page-title">Manage FeedbackPro clients</h1>
+              <p className="page-subtitle">
+                Review plans, account status, review volume, and client activity from one clean control panel.
+              </p>
             </div>
-            <div style={{ overflowX: 'auto' }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Business</th>
-                    <th>City</th>
-                    <th>Plan</th>
-                    <th>Status</th>
-                    <th>Reviews</th>
-                    <th>Score</th>
-                    <th>Created</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.length === 0 ? (
+            <AppLogo href="/admin" caption="Internal workspace" />
+          </header>
+
+          <section className="stats-grid" style={{ marginBottom: 22 }}>
+            {[
+              { label: 'Total clients', value: items.length, note: `${activeCount} active or trial` },
+              { label: 'Estimated MRR', value: `${monthlyRevenue} MAD`, note: 'active subscriptions only' },
+              { label: 'Suspended', value: suspendedCount, note: 'accounts needing attention' },
+              { label: 'Total reviews', value: totalReviews, note: 'all public submissions' },
+            ].map((card) => (
+              <article key={card.label} className="metric-card">
+                <div className="metric-label">{card.label}</div>
+                <div className="metric-value">{card.value}</div>
+                <div className="metric-note">{card.note}</div>
+              </article>
+            ))}
+          </section>
+
+          <section className="table-card">
+            <div className="field-row" style={{ marginBottom: 18 }}>
+              <h2 className="card-title" style={{ margin: 0 }}>Clients</h2>
+              <div className="pill">{filtered.length} result(s)</div>
+            </div>
+
+            <div className="topbar-actions" style={{ marginBottom: 18 }}>
+              <div style={{ position: 'relative', flex: 1, minWidth: 240 }}>
+                <Search size={16} style={{ position: 'absolute', left: 16, top: 16, color: 'var(--muted)' }} />
+                <input
+                  className="input"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search by client, slug, or city"
+                  style={{ paddingLeft: 44 }}
+                />
+              </div>
+
+              <select className="select" value={filterPlan} onChange={(event) => setFilterPlan(event.target.value)} style={{ maxWidth: 180 }}>
+                <option value="all">All plans</option>
+                <option value="trial">Trial</option>
+                <option value="starter">Starter</option>
+                <option value="pro">Pro</option>
+                <option value="business">Business</option>
+              </select>
+
+              <select className="select" value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)} style={{ maxWidth: 180 }}>
+                <option value="all">All statuses</option>
+                <option value="active">Active</option>
+                <option value="trial">Trial</option>
+                <option value="past_due">Past due</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
+
+            {filtered.length === 0 ? (
+              <div className="empty-state" style={{ boxShadow: 'none', background: 'transparent' }}>
+                <h3 className="empty-title">No clients found</h3>
+                <p className="empty-copy">Try another search term or clear the current filters.</p>
+              </div>
+            ) : (
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead>
                     <tr>
-                      <td colSpan={8}><div className="empty-row">No clients found</div></td>
+                      <th>Business</th>
+                      <th>City</th>
+                      <th>Plan</th>
+                      <th>Status</th>
+                      <th>Reviews</th>
+                      <th>Score</th>
+                      <th>Created</th>
+                      <th></th>
                     </tr>
-                  ) : (
-                    filtered.map((business) => {
-                      const st = STATUS_COLOR[business.plan_status] || STATUS_COLOR.active
-                      const pc = PLAN_COLOR[business.plan] || PLAN_COLOR.trial
-                      const score = avgScores[business.id]
+                  </thead>
+                  <tbody>
+                    {filtered.map((business) => {
+                      const planStyle = PLAN_STYLES[business.plan] || PLAN_STYLES.trial
+                      const statusStyle = STATUS_STYLES[business.plan_status] || STATUS_STYLES.active
+
                       return (
-                        <tr key={business.id} onClick={() => setSelectedId(business.id)}>
+                        <tr key={business.id}>
                           <td>
-                            <div className="biz-cell">
-                              <div className="biz-ic">{business.name.slice(0, 2).toUpperCase()}</div>
-                              <div>
-                                <div className="biz-nm">{business.name}</div>
-                                <div className="biz-sl">{business.slug}</div>
-                              </div>
-                            </div>
+                            <button type="button" className="table-row-button" onClick={() => setSelectedId(business.id)}>
+                              <div style={{ fontWeight: 800 }}>{business.name}</div>
+                              <div className="help-text" style={{ marginTop: 4 }}>{business.slug}</div>
+                            </button>
                           </td>
-                          <td style={{ fontSize: 12, color: '#5a6a82' }}>{business.city || '-'}</td>
+                          <td>{business.city || '-'}</td>
                           <td>
-                            <span className="plan-chip" style={{ background: pc.bg, color: pc.color }}>{business.plan}</span>
+                            <span className="score-pill" style={{ background: planStyle.bg, color: planStyle.text }}>
+                              {business.plan}
+                            </span>
                           </td>
                           <td>
-                            <span className="sp" style={{ background: st.bg, color: st.color }}>
-                              <span className="sp-dot" style={{ background: st.dot }}></span>
+                            <span className="score-pill" style={{ background: statusStyle.bg, color: statusStyle.text }}>
                               {business.plan_status}
                             </span>
                           </td>
-                          <td style={{ fontWeight: 600, color: '#e8f0fa', fontSize: 13 }}>{submissionCounts[business.id] || 0}</td>
-                          <td style={{ color: score ? SCORE_COLOR(score) : '#2a3a52', fontWeight: 700, fontSize: 13 }}>{score ? score.toFixed(1) : '-'}</td>
-                          <td style={{ fontSize: 11, color: '#2a3a52' }}>{new Date(business.created_at).toLocaleDateString('en-US')}</td>
+                          <td>{submissionCounts[business.id] || 0}</td>
+                          <td>{avgScores[business.id] ? `${avgScores[business.id].toFixed(1)}/5` : '-'}</td>
+                          <td>{new Date(business.created_at).toLocaleDateString('en-US')}</td>
                           <td>
-                            <button className="act-btn" onClick={(e) => { e.stopPropagation(); setSelectedId(business.id) }}>Manage</button>
+                            <button type="button" className="button button-secondary" onClick={() => setSelectedId(business.id)}>
+                              Manage
+                            </button>
                           </td>
                         </tr>
                       )
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {selected && statusStyles && (
-        <div className="overlay" onClick={() => setSelectedId(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,180,200,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cabinet Grotesk, sans-serif', fontWeight: 900, fontSize: 16, color: '#00b4c8' }}>
-                {selected.name.slice(0, 2).toUpperCase()}
+                    })}
+                  </tbody>
+                </table>
               </div>
+            )}
+          </section>
+        </div>
+      </main>
+
+      {selected ? (
+        <div className="modal-backdrop" onClick={() => setSelectedId(null)}>
+          <div className="surface-card modal-card" onClick={(event) => event.stopPropagation()}>
+            <div className="field-row" style={{ marginBottom: 20 }}>
               <div>
-                <div className="modal-title" style={{ marginBottom: 2 }}>{selected.name}</div>
-                <div style={{ fontSize: 11, color: '#2a3a52' }}>{selected.city} · {selected.sector}</div>
+                <h2 className="card-title" style={{ margin: 0 }}>{selected.name}</h2>
+                <p className="card-copy" style={{ marginTop: 6 }}>
+                  {selected.city} · {selected.sector} · {selected.slug}
+                </p>
               </div>
-            </div>
-
-            {[
-              { l: 'Slug / link', v: selected.slug },
-              { l: 'Current plan', v: selected.plan },
-              { l: 'Status', v: selected.plan_status },
-              { l: 'Reviews received', v: String(submissionCounts[selected.id] || 0) },
-              { l: 'Average score', v: avgScores[selected.id] ? `${avgScores[selected.id].toFixed(1)}/5` : '-' },
-              { l: 'Created', v: new Date(selected.created_at).toLocaleDateString('en-US') },
-            ].map((row, index) => (
-              <div key={index} className="m-row">
-                <span className="m-lbl">{row.l}</span>
-                <span className="m-val">{row.v}</span>
-              </div>
-            ))}
-
-            <div className="m-sep" />
-            <div className="m-section">Change plan</div>
-            <select className="m-select" value={selected.plan} onChange={(e) => updateBusiness(selected.id, { plan: e.target.value })}>
-              <option value="trial">Trial</option>
-              <option value="starter">Starter - 149 MAD</option>
-              <option value="pro">Pro - 299 MAD</option>
-              <option value="business">Business - 699 MAD</option>
-            </select>
-
-            <div className="m-actions" style={{ marginTop: 16 }}>
-              {selected.plan_status !== 'active' && (
-                <button className="m-btn m-btn-teal" disabled={updating} onClick={() => updateBusiness(selected.id, { plan_status: 'active' })}>
-                  Activate account
-                </button>
-              )}
-              {selected.plan_status === 'active' && (
-                <button className="m-btn m-btn-warn" disabled={updating} onClick={() => updateBusiness(selected.id, { plan_status: 'past_due' })}>
-                  Mark as past due
-                </button>
-              )}
-              {selected.plan_status !== 'suspended' && (
-                <button className="m-btn m-btn-red" disabled={updating} onClick={() => updateBusiness(selected.id, { plan_status: 'suspended' })}>
-                  Suspend account
-                </button>
-              )}
-              {selected.plan_status === 'suspended' && (
-                <button className="m-btn m-btn-teal" disabled={updating} onClick={() => updateBusiness(selected.id, { plan_status: 'active' })}>
-                  Reactivate account
-                </button>
-              )}
-              <a href={`/r/${selected.slug}`} target="_blank" rel="noopener noreferrer" className="m-btn m-btn-ghost" style={{ textDecoration: 'none' }}>
-                Open client form
+              <a href={`/r/${selected.slug}`} target="_blank" rel="noopener noreferrer" className="button button-secondary">
+                Open form
+                <ExternalLink size={16} />
               </a>
-              <button className="m-btn m-btn-ghost" onClick={() => setSelectedId(null)}>Close</button>
             </div>
 
-            {updateMsg && <div className="update-msg">{updateMsg}</div>}
+            <div className="stack">
+              <div className="field">
+                <label className="label">Plan</label>
+                <select
+                  className="select"
+                  value={selected.plan}
+                  onChange={(event) => updateBusiness(selected.id, { plan: event.target.value })}
+                >
+                  <option value="trial">Trial</option>
+                  <option value="starter">Starter - 149 MAD</option>
+                  <option value="pro">Pro - 299 MAD</option>
+                  <option value="business">Business - 699 MAD</option>
+                </select>
+              </div>
+
+              <div className="field">
+                <label className="label">Account status</label>
+                <div className="inline-actions">
+                  <button type="button" className="button button-primary" disabled={updating} onClick={() => updateBusiness(selected.id, { plan_status: 'active' })}>
+                    Set active
+                  </button>
+                  <button type="button" className="button button-secondary" disabled={updating} onClick={() => updateBusiness(selected.id, { plan_status: 'past_due' })}>
+                    Mark past due
+                  </button>
+                  <button type="button" className="button button-danger" disabled={updating} onClick={() => updateBusiness(selected.id, { plan_status: 'suspended' })}>
+                    Suspend
+                  </button>
+                </div>
+              </div>
+
+              <section className="summary-card">
+                {[
+                  ['Owner id', selected.owner_id],
+                  ['Reviews received', String(submissionCounts[selected.id] || 0)],
+                  ['Average score', avgScores[selected.id] ? `${avgScores[selected.id].toFixed(1)}/5` : '-'],
+                  ['Created', new Date(selected.created_at).toLocaleDateString('en-US')],
+                ].map(([label, value]) => (
+                  <div key={label} className="info-row">
+                    <div className="metric-label" style={{ color: 'var(--muted)' }}>{label}</div>
+                    <div>{value}</div>
+                  </div>
+                ))}
+              </section>
+
+              {updateMessage ? <div className="message message-success">{updateMessage}</div> : null}
+
+              <div className="inline-actions">
+                <button type="button" className="button button-secondary" onClick={() => setSelectedId(null)}>
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      )}
-    </>
+      ) : null}
+    </div>
   )
 }

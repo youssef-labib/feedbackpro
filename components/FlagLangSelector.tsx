@@ -1,28 +1,28 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Check, ChevronDown } from 'lucide-react'
+import type { Lang } from './useStoredLanguage'
 
-type Lang = 'fr' | 'ar' | 'en' | 'es'
-
-const FLAGS: Record<Lang, { flag: string; label: string; native: string }> = {
-  fr: { flag: '🇫🇷', label: 'FR', native: 'Francais' },
-  ar: { flag: '🇲🇦', label: 'AR', native: 'Arabic' },
-  en: { flag: '🇬🇧', label: 'EN', native: 'English' },
-  es: { flag: '🇪🇸', label: 'ES', native: 'Espanol' },
+const FLAGS: Record<Lang, { flag: string; short: string; label: string; subtitle: string }> = {
+  fr: { flag: '🇫🇷', short: 'FR', label: 'Francais', subtitle: 'French' },
+  ar: { flag: '🇲🇦', short: 'AR', label: 'العربية', subtitle: 'Arabic' },
+  en: { flag: '🇬🇧', short: 'EN', label: 'English', subtitle: 'English' },
+  es: { flag: '🇪🇸', short: 'ES', label: 'Espanol', subtitle: 'Spanish' },
 }
 
 export default function FlagLangSelector({
   lang,
   setLang,
-  dark = false,
   options,
 }: {
   lang: Lang
-  setLang: (l: Lang) => void
-  dark?: boolean
+  setLang: (lang: Lang) => void
   options?: Lang[]
 }) {
+  const [open, setOpen] = useState(false)
   const [compact, setCompact] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const syncCompact = () => setCompact(window.innerWidth <= 640)
@@ -31,49 +31,70 @@ export default function FlagLangSelector({
     return () => window.removeEventListener('resize', syncCompact)
   }, [])
 
-  const activeOptions = (options && options.length > 0 ? options : (Object.keys(FLAGS) as Lang[])).map(
-    (code) => [code, FLAGS[code]] as const
-  )
+  useEffect(() => {
+    function closeOnOutside(event: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false)
+    }
+
+    document.addEventListener('mousedown', closeOnOutside)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutside)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [])
+
+  const available = (options && options.length > 0 ? options : (Object.keys(FLAGS) as Lang[])).map((code) => ({
+    code,
+    ...FLAGS[code],
+  }))
   const current = FLAGS[lang]
 
   return (
-    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', maxWidth: '100%' }}>
-      <span style={{ position: 'absolute', left: 10, fontSize: 15, lineHeight: 1, pointerEvents: 'none', zIndex: 1 }}>
-        {current.flag}
-      </span>
-      <select
-        value={lang}
-        onChange={(e) => setLang(e.target.value as Lang)}
-        style={{
-          paddingLeft: 34,
-          paddingRight: 32,
-          paddingTop: 8,
-          paddingBottom: 8,
-          minWidth: compact ? 78 : 98,
-          background: dark ? 'rgba(0,0,0,.25)' : 'rgba(255,255,255,.05)',
-          border: `1px solid ${dark ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.09)'}`,
-          borderRadius: 10,
-          color: '#e8f0fa',
-          fontSize: 12,
-          fontWeight: 700,
-          fontFamily: 'Instrument Sans, sans-serif',
-          cursor: 'pointer',
-          outline: 'none',
-          WebkitAppearance: 'none',
-          appearance: 'none',
-          backgroundImage:
-            `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%235a6a82' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'right 10px center',
-          whiteSpace: 'nowrap',
-        }}
+    <div className="lang-select" ref={rootRef}>
+      <button
+        type="button"
+        className="lang-trigger"
+        data-open={open}
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-haspopup="menu"
       >
-        {activeOptions.map(([code, info]) => (
-          <option key={code} value={code} style={{ background: '#0d1927', color: '#e8f0fa' }}>
-            {compact ? info.label : info.native}
-          </option>
-        ))}
-      </select>
+        <span>{current.flag}</span>
+        <span className="lang-trigger-label">{compact ? current.short : current.label}</span>
+        <ChevronDown size={16} className="lang-trigger-chevron" />
+      </button>
+
+      {open ? (
+        <div className="lang-menu" role="menu">
+          {available.map((option) => (
+            <button
+              key={option.code}
+              type="button"
+              className={`lang-option${option.code === lang ? ' active' : ''}`}
+              onClick={() => {
+                setLang(option.code)
+                setOpen(false)
+              }}
+              role="menuitemradio"
+              aria-checked={option.code === lang}
+            >
+              <span>{option.flag}</span>
+              <span className="lang-option-copy">
+                <span className="lang-option-title">{option.label}</span>
+                {!compact ? <span className="lang-option-subtitle">{option.short}</span> : null}
+              </span>
+              {option.code === lang ? <Check size={15} style={{ marginLeft: 'auto' }} /> : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }

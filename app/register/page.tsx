@@ -1,81 +1,175 @@
 'use client'
 
 import { useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
-import FlagLangSelector, { type Lang } from '../../components/FlagLangSelector'
+import { ArrowLeft, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { createBrowserClient } from '@supabase/ssr'
+import AuthShell from '../../components/AuthShell'
+import { useStoredLanguage } from '../../components/useStoredLanguage'
 
-const T: Record<string, Record<'fr' | 'ar' | 'en', string>> = {
-  create: { fr: 'Creer un compte', ar: 'انشاء حساب', en: 'Create account' },
-  your_biz: { fr: 'Votre business', ar: 'نشاطك التجاري', en: 'Your business' },
-  sub1: { fr: '14 jours gratuits, aucune carte', ar: '14 يوما مجانا بدون بطاقة', en: '14-day free trial, no card' },
-  sub2: { fr: 'Encore une etape', ar: 'خطوة اخيرة', en: 'One more step' },
-  step: { fr: 'Etape', ar: 'خطوة', en: 'Step' },
-  of: { fr: 'sur', ar: 'من', en: 'of' },
-  email: { fr: 'Email', ar: 'البريد الالكتروني', en: 'Email' },
-  email_ph: { fr: 'votre@email.com', ar: 'your@email.com', en: 'your@email.com' },
-  pass: { fr: 'Mot de passe', ar: 'كلمة المرور', en: 'Password' },
-  pass_ph: { fr: 'Minimum 6 caracteres', ar: '6 احرف على الاقل', en: 'Min 6 characters' },
-  cont: { fr: 'Continuer', ar: 'متابعة', en: 'Continue' },
-  biz_name: { fr: 'Nom du business', ar: 'اسم النشاط', en: 'Business name' },
-  biz_ph: { fr: 'Ex: Restaurant Al Badr', ar: 'مثال: مطعم البدر', en: 'E.g. My Restaurant' },
-  city: { fr: 'Ville', ar: 'المدينة', en: 'City' },
-  city_ph: { fr: 'Choisir une ville...', ar: 'اختر مدينة...', en: 'Choose a city...' },
-  biz_type: { fr: 'Type de business', ar: 'نوع النشاط', en: 'Business type' },
-  finish: { fr: 'Creer mon compte', ar: 'انشاء حسابي', en: 'Create account' },
-  creating: { fr: 'Creation...', ar: 'جاري الانشاء...', en: 'Creating...' },
-  back: { fr: 'Retour', ar: 'رجوع', en: 'Back' },
-  have_acc: { fr: 'Deja un compte ?', ar: 'لديك حساب؟', en: 'Have an account?' },
-  login: { fr: 'Se connecter', ar: 'تسجيل الدخول', en: 'Sign in' },
-  trial_badge: { fr: '14 jours gratuits - aucune carte bancaire requise', ar: '14 يوما مجانا - بدون بطاقة بنكية', en: '14-day free trial - no credit card required' },
-  account_error: { fr: 'Erreur lors de la creation du compte.', ar: 'حدث خطا اثناء انشاء الحساب.', en: 'Error creating account.' },
-  business_error: { fr: 'Erreur lors de la creation du business.', ar: 'حدث خطا اثناء انشاء النشاط.', en: 'Error creating business.' },
-  network_error: { fr: 'Erreur reseau. Reessayez.', ar: 'خطا في الشبكة. حاول مرة اخرى.', en: 'Network error. Please retry.' },
-}
+const CITIES = [
+  'Casablanca',
+  'Rabat',
+  'Sale',
+  'Temara',
+  'Mohammedia',
+  'Tanger',
+  'Tetouan',
+  'Oujda',
+  'Nador',
+  'Chefchaouen',
+  'Fes',
+  'Meknes',
+  'Marrakech',
+  'Agadir',
+  'Essaouira',
+  'Ouarzazate',
+  'Laayoune',
+  'Beni Mellal',
+  'Khouribga',
+  'Khenifra',
+  'Settat',
+  'Berrechid',
+  'Larache',
+  'Al Hoceima',
+  'Midelt',
+  'Errachidia',
+  'Tiznit',
+  'Taroudant',
+  'Ifrane',
+  'Dakhla',
+]
 
-const SECTORS: Record<'fr' | 'ar' | 'en', { value: string; label: string; icon: string }[]> = {
+const SECTORS = {
   fr: [
-    { value: 'restaurant', label: 'Restaurant / Cafe', icon: '🍽️' },
-    { value: 'gym', label: 'Salle de sport', icon: '🏋️' },
-    { value: 'hotel', label: 'Hotel / Riad', icon: '🏨' },
-    { value: 'car_rental', label: 'Location voiture', icon: '🚗' },
-    { value: 'other', label: 'Autre', icon: '🏪' },
+    { value: 'restaurant', label: 'Restaurant / Cafe' },
+    { value: 'gym', label: 'Salle de sport' },
+    { value: 'hotel', label: 'Hotel / Riad' },
+    { value: 'car_rental', label: 'Location de voitures' },
+    { value: 'other', label: 'Autre' },
   ],
   ar: [
-    { value: 'restaurant', label: 'مطعم / مقهى', icon: '🍽️' },
-    { value: 'gym', label: 'قاعة رياضية', icon: '🏋️' },
-    { value: 'hotel', label: 'فندق / رياض', icon: '🏨' },
-    { value: 'car_rental', label: 'تاجير سيارات', icon: '🚗' },
-    { value: 'other', label: 'اخرى', icon: '🏪' },
+    { value: 'restaurant', label: 'مطعم / مقهى' },
+    { value: 'gym', label: 'قاعة رياضية' },
+    { value: 'hotel', label: 'فندق / رياض' },
+    { value: 'car_rental', label: 'كراء السيارات' },
+    { value: 'other', label: 'اخرى' },
   ],
   en: [
-    { value: 'restaurant', label: 'Restaurant / Cafe', icon: '🍽️' },
-    { value: 'gym', label: 'Gym', icon: '🏋️' },
-    { value: 'hotel', label: 'Hotel / Riad', icon: '🏨' },
-    { value: 'car_rental', label: 'Car rental', icon: '🚗' },
-    { value: 'other', label: 'Other', icon: '🏪' },
+    { value: 'restaurant', label: 'Restaurant / Cafe' },
+    { value: 'gym', label: 'Gym' },
+    { value: 'hotel', label: 'Hotel / Riad' },
+    { value: 'car_rental', label: 'Car rental' },
+    { value: 'other', label: 'Other' },
   ],
-}
+} as const
 
-const CITIES = ['Casablanca', 'Rabat', 'Sale', 'Temara', 'Mohammedia', 'Tanger', 'Tetouan', 'Oujda', 'Nador', 'Chefchaouen', 'Fes', 'Meknes', 'Marrakech', 'Agadir', 'Essaouira', 'Ouarzazate', 'Laayoune', 'Beni Mellal', 'Khouribga', 'Khenifra', 'Settat', 'Berrechid', 'Larache', 'Al Hoceima', 'Midelt', 'Errachidia', 'Tiznit', 'Taroudant', 'Ifrane', 'Dakhla']
+const COPY = {
+  fr: {
+    topLink: 'Connexion',
+    title1: 'Creez votre compte.',
+    subtitle1: 'Commencez par votre email puis ajoutez les details du business.',
+    title2: 'Parlez-nous de votre business.',
+    subtitle2: 'Ces informations servent a preparer le dashboard et le formulaire public.',
+    badge: '14 jours gratuits',
+    email: 'Adresse email',
+    password: 'Mot de passe',
+    business: 'Nom du business',
+    city: 'Ville',
+    sector: 'Type de business',
+    continue: 'Continuer',
+    back: 'Retour',
+    create: 'Creer mon compte',
+    creating: 'Creation...',
+    haveAccount: 'Vous avez deja un compte ?',
+    signIn: 'Se connecter',
+    accountError: 'Impossible de creer le compte.',
+    businessError: 'Impossible de creer le business.',
+    networkError: 'Erreur reseau. Reessayez.',
+    sideTitle: 'Un onboarding court, sans bruit.',
+    sideText: 'Le but est d arriver vite au dashboard sans vous perdre dans un long setup.',
+    sideItems: [
+      'Inscription en deux etapes simples.',
+      'Questions et QR configures juste apres.',
+      'La structure reste propre pour evoluer vite.',
+    ],
+  },
+  ar: {
+    topLink: 'تسجيل الدخول',
+    title1: 'انشئ حسابك.',
+    subtitle1: 'ابدأ بالبريد ثم اضف معلومات النشاط.',
+    title2: 'اخبرنا عن نشاطك.',
+    subtitle2: 'هذه المعلومات ستجهز لوحة التحكم والنموذج العام.',
+    badge: '14 يوما مجانا',
+    email: 'البريد الالكتروني',
+    password: 'كلمة المرور',
+    business: 'اسم النشاط',
+    city: 'المدينة',
+    sector: 'نوع النشاط',
+    continue: 'متابعة',
+    back: 'رجوع',
+    create: 'انشاء الحساب',
+    creating: 'جاري الانشاء...',
+    haveAccount: 'لديك حساب بالفعل؟',
+    signIn: 'تسجيل الدخول',
+    accountError: 'تعذر انشاء الحساب.',
+    businessError: 'تعذر انشاء النشاط.',
+    networkError: 'خطأ في الشبكة. حاول مرة اخرى.',
+    sideTitle: 'تهيئة قصيرة وواضحة.',
+    sideText: 'نوصلك بسرعة الى لوحة التحكم بدون خطوات مزعجة.',
+    sideItems: [
+      'تسجيل على خطوتين فقط.',
+      'الاسئلة و QR مباشرة بعد ذلك.',
+      'هيكلة واضحة تساعدك على تطوير المنتج لاحقا.',
+    ],
+  },
+  en: {
+    topLink: 'Login',
+    title1: 'Create your account.',
+    subtitle1: 'Start with your email, then add the business details.',
+    title2: 'Tell us about your business.',
+    subtitle2: 'This prepares the dashboard and the public feedback form.',
+    badge: '14-day free trial',
+    email: 'Email address',
+    password: 'Password',
+    business: 'Business name',
+    city: 'City',
+    sector: 'Business type',
+    continue: 'Continue',
+    back: 'Back',
+    create: 'Create account',
+    creating: 'Creating...',
+    haveAccount: 'Already have an account?',
+    signIn: 'Sign in',
+    accountError: 'Could not create account.',
+    businessError: 'Could not create business.',
+    networkError: 'Network error. Please try again.',
+    sideTitle: 'Short onboarding, clear next step.',
+    sideText: 'The product gets you to the dashboard quickly without a noisy setup.',
+    sideItems: [
+      'Two simple registration steps.',
+      'Questions and QR setup come right after.',
+      'A clean structure that stays easy to improve later.',
+    ],
+  },
+} as const
 
 export default function RegisterPage() {
-  const [lang, setLang] = useState<Lang>('fr')
+  const { lang, setLang, copyLang, isRTL } = useStoredLanguage('fr')
+  const copy = COPY[copyLang]
   const [step, setStep] = useState(1)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [showPass, setShowPass] = useState(false)
-  const [bizName, setBizName] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [businessName, setBusinessName] = useState('')
   const [city, setCity] = useState('')
   const [sector, setSector] = useState('restaurant')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const copyLang = lang === 'es' ? 'en' : lang
-  const isRTL = lang === 'ar'
-  const t = (k: string) => T[k]?.[copyLang as 'fr' | 'ar' | 'en'] || k
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+
     if (step === 1) {
       setStep(2)
       return
@@ -90,201 +184,185 @@ export default function RegisterPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       )
 
-      const { data: authData, error: authErr } = await supabase.auth.signUp({ email, password })
-      if (authErr) {
-        setError(authErr.message)
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+      })
+
+      if (authError) {
+        setError(authError.message)
         setLoading(false)
         return
       }
 
       if (!authData.user) {
-        setError(t('account_error'))
+        setError(copy.accountError)
         setLoading(false)
         return
       }
 
-      const res = await fetch('/api/register', {
+      const response = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessName: bizName, city, sector }),
+        body: JSON.stringify({
+          businessName,
+          city,
+          sector,
+        }),
       })
 
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || t('business_error'))
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || copy.businessError)
         setLoading(false)
         return
       }
 
       window.location.href = '/setup'
     } catch {
-      setError(t('network_error'))
+      setError(copy.networkError)
       setLoading(false)
     }
   }
 
-  const inp: React.CSSProperties = {
-    width: '100%',
-    padding: '11px 13px',
-    background: '#070f1d',
-    border: '1.5px solid rgba(255,255,255,.09)',
-    borderRadius: 10,
-    fontSize: 13.5,
-    color: '#e8f0fa',
-    fontFamily: 'inherit',
-    outline: 'none',
-    WebkitAppearance: 'none',
-    transition: 'border-color .2s',
-  }
-
-  const selStyle: React.CSSProperties = {
-    ...inp,
-    cursor: 'pointer',
-    backgroundImage:
-      `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a5a72' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'right 13px center',
-    paddingRight: 34,
-  }
-
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@700;800;900&family=Instrument+Sans:wght@400;500&display=swap');
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        html,body{overflow-x:hidden;background:#07101f;font-family:'Instrument Sans',sans-serif}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        input:focus,select:focus{border-color:#028090!important;background:#060d1a!important;outline:none}
-        input::placeholder{color:#2a3a52}
-        select option{background:#0d1927;color:#e8f0fa}
-        @media(max-width:640px){
-          .register-nav{padding:12px 16px!important;height:auto!important}
-          .register-nav-right{width:100%;justify-content:space-between}
-        }
-      `}</style>
+    <div dir={isRTL ? 'rtl' : 'ltr'}>
+      <AuthShell
+        lang={lang}
+        setLang={setLang}
+        title={step === 1 ? copy.title1 : copy.title2}
+        subtitle={step === 1 ? copy.subtitle1 : copy.subtitle2}
+        badge={copy.badge}
+        topLink={{ href: '/login', label: copy.topLink }}
+        sideTitle={copy.sideTitle}
+        sideText={copy.sideText}
+        sideItems={copy.sideItems}
+      >
+        <div className="auth-stepbar">
+          <div className={`auth-step${step >= 1 ? ' active' : ''}`} />
+          <div className={`auth-step${step >= 2 ? ' active' : ''}`} />
+        </div>
 
-      <div style={{ minHeight: '100vh', background: '#07101f', display: 'flex', flexDirection: 'column' }} dir={isRTL ? 'rtl' : 'ltr'}>
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 360, background: 'radial-gradient(ellipse at 50% 0%,rgba(0,180,200,.1),transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
-
-        <nav className="register-nav" style={{ padding: '0 16px', minHeight: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderBottom: '1px solid rgba(255,255,255,.06)', position: 'relative', zIndex: 10, flexShrink: 0, flexWrap: 'wrap' }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-            <div style={{ width: 30, height: 30, borderRadius: 9, background: '#028090', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cabinet Grotesk,sans-serif', fontWeight: 900, fontSize: 13, color: '#fff' }}>F</div>
-            <span style={{ fontFamily: 'Cabinet Grotesk,sans-serif', fontWeight: 800, fontSize: 14, color: '#e8f0fa', letterSpacing: -0.3 }}>FeedbackPro</span>
-          </Link>
-          <div className="register-nav-right" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
-            <Link href="/login" style={{ fontSize: 13, color: '#00b4c8', textDecoration: 'none', fontWeight: 500, whiteSpace: 'nowrap' }}>{t('login')}</Link>
-          </div>
-        </nav>
-
-        <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 16px 32px', position: 'relative', zIndex: 1, overflowY: 'auto' }}>
-          <div style={{ width: '100%', maxWidth: 460, background: '#0d1927', border: '1px solid rgba(255,255,255,.08)', borderRadius: 20, padding: 'clamp(22px,5vw,28px) clamp(18px,5vw,24px)', boxShadow: '0 24px 64px rgba(0,0,0,.5)', animation: 'fadeUp .5s ease' }}>
-            <div style={{ textAlign: 'center', marginBottom: 22 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#028090,#00b4c8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cabinet Grotesk,sans-serif', fontWeight: 900, fontSize: 20, color: '#fff', margin: '0 auto 12px', boxShadow: '0 4px 16px rgba(0,180,200,.25)' }}>F</div>
-              <div style={{ fontFamily: 'Cabinet Grotesk,sans-serif', fontSize: 20, fontWeight: 900, color: '#e8f0fa', letterSpacing: -0.5, marginBottom: 4 }}>
-                {step === 1 ? t('create') : t('your_biz')}
+        <form onSubmit={handleSubmit}>
+          {step === 1 ? (
+            <>
+              <div className="field">
+                <label className="label">{copy.email}</label>
+                <input
+                  type="email"
+                  className="input"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  required
+                />
               </div>
-              <div style={{ fontSize: 12.5, color: '#4a5a72' }}>{step === 1 ? t('sub1') : t('sub2')}</div>
-              <div style={{ display: 'flex', gap: 5, justifyContent: 'center', marginTop: 12, alignItems: 'center' }}>
-                {[1, 2, 3].map((s) => (
-                  <div key={s} style={{ height: 3, width: step === s ? 24 : 14, borderRadius: 2, background: step >= s ? '#028090' : 'rgba(255,255,255,.08)', transition: 'all .3s' }} />
-                ))}
-              </div>
-              <div style={{ fontSize: 10, color: '#2a3a52', marginTop: 5 }}>{t('step')} {step} {t('of')} 3</div>
-            </div>
 
-            <form onSubmit={handleSubmit}>
-              {step === 1 && (
-                <div style={{ animation: 'slideIn .25s ease' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'rgba(0,180,200,.06)', border: '1px solid rgba(0,180,200,.14)', borderRadius: 9, fontSize: 11.5, color: '#7dd8e0', marginBottom: 16 }}>
-                    <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#00b4c8', flexShrink: 0 }} />
-                    {t('trial_badge')}
-                  </div>
-
-                  <div style={{ marginBottom: 13 }}>
-                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#4a5a72', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 6 }}>{t('email')}</label>
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('email_ph')} required autoComplete="email" style={inp} />
-                  </div>
-
-                  <div style={{ marginBottom: 14 }}>
-                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#4a5a72', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 6 }}>{t('pass')}</label>
-                    <div style={{ position: 'relative' }}>
-                      <input type={showPass ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('pass_ph')} required minLength={6} style={{ ...inp, paddingRight: 42 }} />
-                      <button type="button" onClick={() => setShowPass((p) => !p)} style={{ position: 'absolute', right: 11, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#3d4e62', padding: 4, display: 'flex' }}>
-                        {showPass ? (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" /><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
-                        ) : (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {error && <div style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.2)', borderRadius: 9, padding: '10px 13px', fontSize: 12.5, color: '#fca5a5', marginBottom: 12 }}>{error}</div>}
-
-                  <button type="submit" style={{ width: '100%', padding: 13, background: 'linear-gradient(135deg,#028090,#00a8bc)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, boxShadow: '0 4px 14px rgba(0,180,200,.2)', marginTop: 4 }}>
-                    {t('cont')}
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
+              <div className="field">
+                <label className="label">{copy.password}</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className="input"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="Minimum 6 characters"
+                    minLength={6}
+                    autoComplete="new-password"
+                    required
+                    style={{ paddingInlineEnd: 52 }}
+                  />
+                  <button
+                    type="button"
+                    aria-label="Toggle password visibility"
+                    onClick={() => setShowPassword((value) => !value)}
+                    style={{
+                      position: 'absolute',
+                      insetInlineEnd: 14,
+                      top: 14,
+                      color: 'var(--muted)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
-              )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="field">
+                <label className="label">{copy.business}</label>
+                <input
+                  type="text"
+                  className="input"
+                  value={businessName}
+                  onChange={(event) => setBusinessName(event.target.value)}
+                  placeholder="FeedbackPro Cafe"
+                  required
+                />
+              </div>
 
-              {step === 2 && (
-                <div style={{ animation: 'slideIn .25s ease' }}>
-                  <button type="button" onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: '#3d4e62', fontSize: 12.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'inherit', marginBottom: 16, padding: 0 }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
-                    {t('back')}
-                  </button>
+              <div className="field">
+                <label className="label">{copy.city}</label>
+                <select
+                  className="select"
+                  value={city}
+                  onChange={(event) => setCity(event.target.value)}
+                  required
+                >
+                  <option value="">Select city</option>
+                  {CITIES.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                  <div style={{ marginBottom: 13 }}>
-                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#4a5a72', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 6 }}>{t('biz_name')}</label>
-                    <input type="text" value={bizName} onChange={(e) => setBizName(e.target.value)} placeholder={t('biz_ph')} required style={inp} />
-                  </div>
+              <div className="field">
+                <label className="label">{copy.sector}</label>
+                <select
+                  className="select"
+                  value={sector}
+                  onChange={(event) => setSector(event.target.value)}
+                >
+                  {SECTORS[copyLang].map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
 
-                  <div style={{ marginBottom: 13 }}>
-                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#4a5a72', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 6 }}>{t('city')}</label>
-                    <select value={city} onChange={(e) => setCity(e.target.value)} required style={selStyle}>
-                      <option value="" disabled>{t('city_ph')}</option>
-                      {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </div>
+          {error ? <div className="message message-error">{error}</div> : null}
 
-                  <div style={{ marginBottom: 14 }}>
-                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#4a5a72', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 }}>{t('biz_type')}</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: 7 }}>
-                      {SECTORS[copyLang as 'fr' | 'ar' | 'en'].map((s) => (
-                        <div key={s.value} onClick={() => setSector(s.value)} style={{ padding: '11px 7px', borderRadius: 10, border: `1px solid ${sector === s.value ? '#028090' : 'rgba(255,255,255,.07)'}`, background: sector === s.value ? 'rgba(0,180,200,.07)' : '#070f1d', cursor: 'pointer', textAlign: 'center', transition: 'all .15s' }}>
-                          <div style={{ fontSize: 20, marginBottom: 3 }}>{s.icon}</div>
-                          <div style={{ fontSize: 11, color: sector === s.value ? '#7dd8e0' : '#5a6a82', fontWeight: 500 }}>{s.label}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+          <div className="inline-actions" style={{ marginTop: 8 }}>
+            {step === 2 ? (
+              <button type="button" className="button button-secondary" onClick={() => setStep(1)}>
+                <ArrowLeft size={16} />
+                {copy.back}
+              </button>
+            ) : null}
 
-                  {error && <div style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.2)', borderRadius: 9, padding: '10px 13px', fontSize: 12.5, color: '#fca5a5', marginBottom: 12 }}>{error}</div>}
-
-                  <button type="submit" disabled={loading} style={{ width: '100%', padding: 13, background: loading ? 'rgba(255,255,255,.05)' : 'linear-gradient(135deg,#028090,#00a8bc)', color: loading ? '#4a5a72' : '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
-                    {loading ? (
-                      <>
-                        <div style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
-                        {t('creating')}
-                      </>
-                    ) : (
-                      t('finish')
-                    )}
-                  </button>
-                </div>
-              )}
-            </form>
-
-            <div style={{ textAlign: 'center', fontSize: 12.5, color: '#4a5a72', marginTop: 16 }}>
-              {t('have_acc')} <Link href="/login" style={{ color: '#00b4c8', textDecoration: 'none', fontWeight: 500 }}>{t('login')}</Link>
-            </div>
+            <button type="submit" className="button button-primary" disabled={loading} style={{ flex: 1 }}>
+              {step === 1 ? copy.continue : loading ? copy.creating : copy.create}
+              <ArrowRight size={16} />
+            </button>
           </div>
-        </main>
-      </div>
-    </>
+
+          <p className="muted-line" style={{ marginTop: 18, textAlign: 'center' }}>
+            {copy.haveAccount}{' '}
+            <Link href="/login" className="inline-link">
+              {copy.signIn}
+            </Link>
+          </p>
+        </form>
+      </AuthShell>
+    </div>
   )
 }
