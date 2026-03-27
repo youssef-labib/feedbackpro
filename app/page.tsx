@@ -442,28 +442,42 @@ const FEATURE_ICONS = [QrCode, MessageSquareText, LayoutDashboard, ShieldCheck]
 const PROOF_ICONS = [Building2, Star, LayoutDashboard, ShieldCheck]
 const WEEKLY_REVIEWS: Record<LandingLang, string> = {
   fr: '127 avis cette semaine',
-  ar: '127 review had simana',
+  ar: '127 مراجعة هذا الأسبوع',
   en: '127 reviews this week',
 }
 const PLAN_ACTION: Record<LandingLang, string> = {
   fr: 'Choisir cette offre',
-  ar: 'Ikhtar had plan',
+  ar: 'اختر هذه الخطة',
   en: 'Choose this plan',
 }
 const PLAN_FEATURED: Record<LandingLang, string> = {
   fr: 'Le plus choisi',
-  ar: 'Afdal bidaya',
+  ar: 'الأكثر اختيارا',
   en: 'Most popular',
 }
 const PRICING_BAND_TITLE: Record<LandingLang, string> = {
   fr: 'Tout est pret pour demarrer proprement',
-  ar: 'Kolchi wajed bach تبدا b nizam',
+  ar: 'كل شيء جاهز للبدء بشكل منظم',
   en: 'Everything you need to launch cleanly',
 }
 const PRICING_BAND_BODY: Record<LandingLang, string> = {
   fr: 'Chaque plan garde la meme base: QR, formulaire rapide, dashboard lisible et une structure simple a faire evoluer ensuite.',
-  ar: 'Kol plan kaybqa fih nafs l asas: QR, form sarii, dashboard wadih, w base sahla bach tzid عليها.',
+  ar: 'تتضمن كل خطة نفس الأساس: رمز QR، نموذج سريع، لوحة تحكم واضحة، وبنية سهلة للتطوير لاحقا.',
   en: 'Each plan keeps the same base: QR flow, fast form, readable dashboard, and a structure that is easy to extend later.',
+}
+
+function formatPlanPrice(price: string, lang: LandingLang) {
+  const [amount, ...currencyParts] = price.split(' ')
+  const currency = lang === 'ar' ? 'درهم' : currencyParts.join(' ') || 'MAD'
+
+  return (
+    <span className="lp-price-inline">
+      <span className="lp-price-number" dir="ltr">
+        {amount}
+      </span>
+      <span className="lp-price-currency">{currency}</span>
+    </span>
+  )
 }
 
 export default function HomePage() {
@@ -735,7 +749,7 @@ export default function HomePage() {
                     </div>
 
                     <div className="lp-price-main">
-                      <div className="metric-value lp-price-value">{plan.price}</div>
+                      <div className="metric-value lp-price-value">{formatPlanPrice(plan.price, copyLang)}</div>
                       <div className="metric-note lp-price-note-line">{plan.note}</div>
                     </div>
 

@@ -1255,6 +1255,21 @@ img {
   font-size: 34px;
 }
 
+.lp-price-inline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.lp-price-number {
+  unicode-bidi: isolate;
+}
+
+.lp-price-currency {
+  font-size: 0.76em;
+  font-weight: 700;
+}
+
 .lp-price-note-line {
   margin-top: 0;
 }
