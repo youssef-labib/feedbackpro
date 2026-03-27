@@ -3,8 +3,7 @@
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { ArrowLeft, ArrowRight, Check, ExternalLink, LoaderCircle, MessageSquareText } from 'lucide-react'
-import FlagLangSelector from '../../../components/FlagLangSelector'
-import ThemeToggle from '../../../components/ThemeToggle'
+import AppNavbar, { getPublicNavItems } from '../../../components/AppNavbar'
 import { useStoredLanguage } from '../../../components/useStoredLanguage'
 
 type Screen = 'form' | 'loading' | 'good' | 'bad'
@@ -103,6 +102,12 @@ const SCORE_STYLE = [
   { color: '#22c55e', bg: 'rgba(34, 197, 94, 0.14)' },
 ]
 
+const NAV_ACTIONS = {
+  fr: { login: 'Connexion', register: 'Creer mon espace' },
+  ar: { login: 'تسجيل الدخول', register: 'إنشاء حساب' },
+  en: { login: 'Login', register: 'Create workspace' },
+} as const
+
 export default function FeedbackFormClient({
   business,
   form,
@@ -112,6 +117,7 @@ export default function FeedbackFormClient({
 }) {
   const { lang, setLang, copyLang, isRTL } = useStoredLanguage('fr')
   const copy = COPY[copyLang]
+  const navActions = NAV_ACTIONS[copyLang]
   const [ratings, setRatings] = useState<Record<string, number>>({})
   const [comment, setComment] = useState('')
   const [screen, setScreen] = useState<Screen>('form')
@@ -165,6 +171,18 @@ export default function FeedbackFormClient({
 
   return (
     <div className="page-shell" dir={isRTL ? 'rtl' : 'ltr'}>
+      <AppNavbar
+        lang={lang}
+        setLang={setLang}
+        isRTL={isRTL}
+        navItems={getPublicNavItems(lang)}
+        actions={[
+          { href: '/login', label: navActions.login, variant: 'secondary' },
+          { href: '/register', label: navActions.register, variant: 'primary' },
+        ]}
+        mobileEyebrow="Feedback"
+      />
+
       <main className="feedback-shell">
         <div className="container" style={{ maxWidth: 760 }}>
           <header className="feedback-header">
@@ -182,10 +200,6 @@ export default function FeedbackFormClient({
                   {business.city} · {copy.intro}
                 </p>
               </div>
-            </div>
-            <div className="topbar-actions">
-              <ThemeToggle />
-              <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
             </div>
           </header>
 

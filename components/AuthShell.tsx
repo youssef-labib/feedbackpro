@@ -1,8 +1,7 @@
+'use client'
+
 import type { ReactNode } from 'react'
-import Link from 'next/link'
-import AppLogo from './AppLogo'
-import FlagLangSelector from './FlagLangSelector'
-import ThemeToggle from './ThemeToggle'
+import AppNavbar, { getPublicNavItems } from './AppNavbar'
 import type { Lang } from './useStoredLanguage'
 
 export default function AuthShell({
@@ -27,20 +26,13 @@ export default function AuthShell({
 }) {
   return (
     <div className="page-shell">
-      <header className="topbar">
-        <div className="container topbar-inner">
-          <AppLogo />
-          <div className="topbar-actions">
-            <ThemeToggle />
-            <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
-            {topLink ? (
-              <Link href={topLink.href} className="nav-link">
-                {topLink.label}
-              </Link>
-            ) : null}
-          </div>
-        </div>
-      </header>
+      <AppNavbar
+        lang={lang}
+        setLang={setLang}
+        navItems={getPublicNavItems(lang)}
+        actions={topLink ? [{ href: topLink.href, label: topLink.label, variant: 'secondary' }] : []}
+        mobileEyebrow={badge || title}
+      />
 
       <main className="split-shell auth-shell-center">
         <div className="container auth-layout">

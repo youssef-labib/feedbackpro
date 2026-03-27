@@ -1,9 +1,31 @@
+'use client'
+
 import Link from 'next/link'
 import { Lock } from 'lucide-react'
+import AppNavbar, { getPublicNavItems } from '../../../components/AppNavbar'
+import { useStoredLanguage } from '../../../components/useStoredLanguage'
 
 export default function AdminDeniedPage() {
+  const { lang, setLang, copyLang, isRTL } = useStoredLanguage('fr')
+
+  const actionLabels = {
+    fr: { dashboard: 'Retour au dashboard', home: 'Accueil' },
+    ar: { dashboard: 'العودة إلى لوحة التحكم', home: 'الصفحة الرئيسية' },
+    en: { dashboard: 'Back to dashboard', home: 'Home' },
+    es: { dashboard: 'Volver al dashboard', home: 'Inicio' },
+  }[copyLang]
+
   return (
-    <div className="page-shell">
+    <div className="page-shell" dir={isRTL ? 'rtl' : 'ltr'}>
+      <AppNavbar
+        lang={lang}
+        setLang={setLang}
+        isRTL={isRTL}
+        navItems={getPublicNavItems(lang)}
+        actions={[{ href: '/', label: actionLabels.home, variant: 'secondary' }]}
+        mobileEyebrow="Admin"
+      />
+
       <main className="section">
         <div className="container" style={{ maxWidth: 640 }}>
           <section className="surface-card empty-state">
@@ -16,10 +38,10 @@ export default function AdminDeniedPage() {
             </p>
             <div className="inline-actions" style={{ justifyContent: 'center', marginTop: 18 }}>
               <Link href="/dashboard" className="button button-secondary">
-                Back to dashboard
+                {actionLabels.dashboard}
               </Link>
               <Link href="/" className="button button-primary">
-                Go home
+                {actionLabels.home}
               </Link>
             </div>
           </section>

@@ -3,9 +3,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowDown, ArrowUp, Plus, Save, Trash2 } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
-import AppLogo from '../../components/AppLogo'
-import FlagLangSelector from '../../components/FlagLangSelector'
-import ThemeToggle from '../../components/ThemeToggle'
+import AppNavbar, { getPublicNavItems } from '../../components/AppNavbar'
 import { useStoredLanguage } from '../../components/useStoredLanguage'
 
 type Question = {
@@ -280,20 +278,18 @@ export default function SetupPage() {
 
   return (
     <div className="page-shell" dir={isRTL ? 'rtl' : 'ltr'}>
-      <header className="topbar">
-        <div className="container topbar-inner">
-          <AppLogo />
-          <div className="topbar-actions">
-            <div className="pill accent-pill">{copy.step}</div>
-            <ThemeToggle />
-            <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
-          </div>
-        </div>
-      </header>
+      <AppNavbar
+        lang={lang}
+        setLang={setLang}
+        isRTL={isRTL}
+        navItems={getPublicNavItems(lang)}
+        mobileEyebrow={copy.step}
+      />
 
       <main className="section">
         <div className="container">
           <div className="section-head">
+            <div className="pill accent-pill" style={{ width: 'fit-content', marginBottom: 14 }}>{copy.step}</div>
             <div className="section-eyebrow">Onboarding</div>
             <h1 className="section-title" style={{ fontSize: 'clamp(30px, 4vw, 42px)' }}>{copy.title}</h1>
             <p className="section-subtitle">{copy.subtitle}</p>

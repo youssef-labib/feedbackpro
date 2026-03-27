@@ -16,9 +16,7 @@ import {
 } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
-import AppLogo from '../../components/AppLogo'
-import FlagLangSelector from '../../components/FlagLangSelector'
-import ThemeToggle from '../../components/ThemeToggle'
+import AppNavbar from '../../components/AppNavbar'
 import { useStoredLanguage } from '../../components/useStoredLanguage'
 
 type Business = {
@@ -260,6 +258,18 @@ export default function DashboardClient({
 
   return (
     <div className="page-shell" dir={isRTL ? 'rtl' : 'ltr'}>
+      <AppNavbar
+        lang={lang}
+        setLang={setLang}
+        isRTL={isRTL}
+        brandHref="/dashboard"
+        brandCaption="Business workspace"
+        actions={[
+          { href: formUrl, label: 'Open form', variant: 'secondary' },
+          { label: 'Sign out', variant: 'primary', onClick: logout },
+        ]}
+        mobileEyebrow="Workspace"
+      />
       <main className="dashboard-shell">
         <div className="container">
           <header className="dashboard-header">
@@ -267,12 +277,6 @@ export default function DashboardClient({
               <div className="pill accent-pill" style={{ marginBottom: 14 }}>{business.plan} · {business.plan_status}</div>
               <h1 className="page-title">{business.name}</h1>
               <p className="page-subtitle">{userEmail} · {business.city} · {business.sector}</p>
-            </div>
-            <div className="topbar-actions">
-              <AppLogo href="/dashboard" caption="Business workspace" />
-              <ThemeToggle />
-              <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
-              <button type="button" className="button button-secondary" onClick={logout}><LogOut size={16} />Sign out</button>
             </div>
           </header>
 

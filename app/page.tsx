@@ -1,22 +1,17 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
 import {
   ArrowRight,
   Building2,
   Check,
   LayoutDashboard,
-  Menu,
   MessageSquareText,
   QrCode,
   ShieldCheck,
   Star,
-  X,
 } from 'lucide-react'
-import AppLogo from '../components/AppLogo'
-import FlagLangSelector from '../components/FlagLangSelector'
-import ThemeToggle from '../components/ThemeToggle'
+import AppNavbar, { getPublicNavItems } from '../components/AppNavbar'
 import { useStoredLanguage } from '../components/useStoredLanguage'
 
 type LandingLang = 'fr' | 'ar' | 'en'
@@ -485,97 +480,22 @@ function formatPlanPrice(price: string, lang: LandingLang) {
 
 export default function HomePage() {
   const { lang, setLang, copyLang, isRTL } = useStoredLanguage('fr')
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const copy = COPY[copyLang]
   const arrowStyle = isRTL ? { transform: 'scaleX(-1)' } : undefined
 
-  const closeMobileMenu = () => setMobileMenuOpen(false)
-
   return (
     <div className="page-shell" dir={isRTL ? 'rtl' : 'ltr'}>
-      <header className="topbar landing-topbar">
-        <div className="container topbar-inner">
-          <AppLogo />
-
-          <nav className="lp-nav">
-            <a href="#features" className="nav-link">
-              {copy.nav.features}
-            </a>
-            <a href="#workflow" className="nav-link">
-              {copy.nav.workflow}
-            </a>
-            <a href="#pricing" className="nav-link">
-              {copy.nav.pricing}
-            </a>
-          </nav>
-
-          <div className="topbar-actions">
-            <ThemeToggle />
-            <div className="lp-topbar-lang">
-              <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
-            </div>
-            <Link href="/login" className="button button-secondary landing-topbar-button">
-              {copy.nav.login}
-            </Link>
-            <Link href="/register" className="button button-primary landing-topbar-button">
-              {copy.primary}
-            </Link>
-            <button
-              type="button"
-              className="icon-button lp-mobile-menu-trigger"
-              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={mobileMenuOpen}
-              onClick={() => setMobileMenuOpen((current) => !current)}
-            >
-              {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div
-        className={`lp-mobile-drawer${mobileMenuOpen ? ' is-open' : ''}`}
-        onClick={closeMobileMenu}
-        aria-hidden={!mobileMenuOpen}
-      >
-        <div className="lp-mobile-drawer-backdrop" />
-        <aside className="lp-mobile-drawer-panel" onClick={(event) => event.stopPropagation()}>
-          <div className="lp-mobile-drawer-head">
-            <div>
-              <div className="section-eyebrow">{copy.sections.cta}</div>
-              <h2 className="landing-card-title">FeedbackPro</h2>
-            </div>
-            <button type="button" className="icon-button" aria-label="Close menu" onClick={closeMobileMenu}>
-              <X size={18} />
-            </button>
-          </div>
-
-          <nav className="lp-mobile-drawer-nav">
-            <a href="#features" className="nav-link" onClick={closeMobileMenu}>
-              {copy.nav.features}
-            </a>
-            <a href="#workflow" className="nav-link" onClick={closeMobileMenu}>
-              {copy.nav.workflow}
-            </a>
-            <a href="#pricing" className="nav-link" onClick={closeMobileMenu}>
-              {copy.nav.pricing}
-            </a>
-            <div className="lp-mobile-drawer-lang">
-              <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
-            </div>
-          </nav>
-
-          <div className="lp-mobile-drawer-actions">
-            <Link href="/login" className="button button-secondary lp-mobile-drawer-button" onClick={closeMobileMenu}>
-              {copy.nav.login}
-            </Link>
-            <Link href="/register" className="button button-primary lp-mobile-drawer-button" onClick={closeMobileMenu}>
-              {copy.primary}
-              <ArrowRight size={16} style={arrowStyle} />
-            </Link>
-          </div>
-        </aside>
-      </div>
+      <AppNavbar
+        lang={lang}
+        setLang={setLang}
+        isRTL={isRTL}
+        navItems={getPublicNavItems(lang)}
+        actions={[
+          { href: '/login', label: copy.nav.login, variant: 'secondary' },
+          { href: '/register', label: copy.primary, variant: 'primary' },
+        ]}
+        mobileEyebrow={copy.sections.cta}
+      />
 
       <main className="lp-main">
         <section className="lp-hero">

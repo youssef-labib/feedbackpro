@@ -3,8 +3,7 @@
 import { useMemo, useState } from 'react'
 import { ExternalLink, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import AppLogo from '../../components/AppLogo'
-import ThemeToggle from '../../components/ThemeToggle'
+import AppNavbar from '../../components/AppNavbar'
 
 type Business = {
   id: string
@@ -103,6 +102,15 @@ export default function AdminClient({
 
   return (
     <div className="page-shell">
+      <AppNavbar
+        lang="en"
+        setLang={() => {}}
+        brandHref="/admin"
+        brandCaption="Internal workspace"
+        actions={[{ href: '/', label: 'Go home', variant: 'secondary' }]}
+        mobileEyebrow="Admin console"
+        showLanguage={false}
+      />
       <main className="admin-shell">
         <div className="container">
           <header className="admin-header">
@@ -112,10 +120,6 @@ export default function AdminClient({
               <p className="page-subtitle">
                 Review plans, account status, review volume, and client activity from one clean control panel.
               </p>
-            </div>
-            <div className="topbar-actions">
-              <ThemeToggle />
-              <AppLogo href="/admin" caption="Internal workspace" />
             </div>
           </header>
 
