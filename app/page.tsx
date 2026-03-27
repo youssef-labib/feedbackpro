@@ -511,7 +511,9 @@ export default function HomePage() {
 
           <div className="topbar-actions">
             <ThemeToggle />
-            <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
+            <div className="lp-topbar-lang">
+              <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
+            </div>
             <Link href="/login" className="button button-secondary landing-topbar-button">
               {copy.nav.login}
             </Link>
@@ -558,6 +560,9 @@ export default function HomePage() {
             <a href="#pricing" className="nav-link" onClick={closeMobileMenu}>
               {copy.nav.pricing}
             </a>
+            <div className="lp-mobile-drawer-lang">
+              <FlagLangSelector lang={lang} setLang={setLang} options={['fr', 'ar', 'en', 'es']} />
+            </div>
           </nav>
 
           <div className="lp-mobile-drawer-actions">

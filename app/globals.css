@@ -893,6 +893,10 @@ img {
   white-space: nowrap;
 }
 
+.lp-topbar-lang {
+  display: inline-flex;
+}
+
 .lp-mobile-menu-trigger,
 .lp-mobile-drawer {
   display: none;
@@ -966,6 +970,10 @@ img {
 .lp-mobile-drawer-actions {
   display: grid;
   gap: 12px;
+}
+
+.lp-mobile-drawer-lang {
+  display: none;
 }
 
 .lp-mobile-drawer-nav .nav-link {
@@ -2518,14 +2526,22 @@ img {
     display: none;
   }
 
+  .landing-topbar .topbar-actions .lp-topbar-lang {
+    display: none;
+  }
+
   .lp-mobile-menu-trigger,
   .lp-mobile-drawer {
     display: block;
   }
 
+  .lp-mobile-menu-trigger {
+    margin-inline-start: 4px;
+  }
+
   .landing-topbar .topbar-inner {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 10px;
   }
@@ -2551,6 +2567,29 @@ img {
 
   .landing-topbar .brand-caption {
     font-size: 11px;
+  }
+
+  .lp-mobile-drawer-lang {
+    display: block;
+  }
+
+  .lp-mobile-drawer-lang .lang-select,
+  .lp-mobile-drawer-lang .lang-trigger {
+    width: 100%;
+  }
+
+  .lp-mobile-drawer-lang .lang-trigger {
+    min-height: 48px;
+    justify-content: space-between;
+    border-radius: 16px;
+    padding-inline: 14px;
+    background: var(--panel-soft);
+  }
+
+  .lp-mobile-drawer-lang .lang-menu {
+    left: 0;
+    right: auto;
+    min-width: 100%;
   }
 
   .lp-hero .hero-actions,
@@ -2651,7 +2690,7 @@ img {
 
 @media (max-width: 460px) {
   .landing-topbar .topbar-inner {
-    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .lp-mobile-drawer-panel {
