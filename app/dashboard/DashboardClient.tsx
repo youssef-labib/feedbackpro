@@ -484,11 +484,15 @@ export default function DashboardClient({
           </div>
 
           <div className="dashboard-v2-sidebar-tools">
-            <ThemeToggle />
-            <FlagLangSelector lang={lang} setLang={setLang} />
+            <div className="dashboard-v2-sidebar-label">Preferences</div>
+            <div className="dashboard-v2-sidebar-toolset">
+              <ThemeToggle />
+              <FlagLangSelector lang={lang} setLang={setLang} />
+            </div>
           </div>
 
-          <section className="dashboard-v2-sidebar-card">
+          <section className="dashboard-v2-sidebar-context">
+            <div className="dashboard-v2-sidebar-label">Business</div>
             <div className="dashboard-v2-business-row">
               <div className="dashboard-v2-avatar">
                 {logoPreview ? (
@@ -528,34 +532,38 @@ export default function DashboardClient({
             </div>
           </section>
 
-          <nav className="dashboard-v2-nav" aria-label="Dashboard sections">
-            {DASHBOARD_NAV.map((item) => {
-              const Icon = item.icon
-              const active = item.id === activeTab
+          <div className="dashboard-v2-nav-wrap">
+            <div className="dashboard-v2-sidebar-label">Workspace</div>
+            <nav className="dashboard-v2-nav" aria-label="Dashboard sections">
+              {DASHBOARD_NAV.map((item) => {
+                const Icon = item.icon
+                const active = item.id === activeTab
 
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`dashboard-v2-nav-button${active ? ' active' : ''}`}
-                  onClick={() => {
-                    setActiveTab(item.id)
-                    closeSidebar()
-                  }}
-                >
-                  <span className="dashboard-v2-nav-icon">
-                    <Icon size={18} />
-                  </span>
-                  <span className="dashboard-v2-nav-copy">
-                    <span className="dashboard-v2-nav-label">{item.label}</span>
-                    <span className="dashboard-v2-nav-hint">{item.hint}</span>
-                  </span>
-                </button>
-              )
-            })}
-          </nav>
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`dashboard-v2-nav-button${active ? ' active' : ''}`}
+                    onClick={() => {
+                      setActiveTab(item.id)
+                      closeSidebar()
+                    }}
+                  >
+                    <span className="dashboard-v2-nav-icon">
+                      <Icon size={18} />
+                    </span>
+                    <span className="dashboard-v2-nav-copy">
+                      <span className="dashboard-v2-nav-label">{item.label}</span>
+                      <span className="dashboard-v2-nav-hint">{item.hint}</span>
+                    </span>
+                  </button>
+                )
+              })}
+            </nav>
+          </div>
 
-          <section className="dashboard-v2-sidebar-card dashboard-v2-sidebar-foot">
+          <section className="dashboard-v2-sidebar-foot">
+            <div className="dashboard-v2-sidebar-label">Actions</div>
             <a href={formUrl} target="_blank" rel="noopener noreferrer" className="button button-secondary">
               Open public form
               <ExternalLink size={16} />
