@@ -58,8 +58,10 @@ export default function FlagLangSelector({
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        <span>{current.flag}</span>
-        <span className="lang-trigger-label">{current.short}</span>
+        <span className="lang-trigger-current">
+          <span>{current.flag}</span>
+          <span className="lang-trigger-label">{current.short}</span>
+        </span>
         <ChevronDown size={16} className="lang-trigger-chevron" />
       </button>
 
