@@ -481,6 +481,35 @@ export default function HomePage() {
                     </article>
                   ))}
                 </div>
+
+                <div className="landing-hero-fill">
+                  <div>
+                    <div className="section-eyebrow">Built for teams</div>
+                    <h2 className="landing-card-title" style={{ fontSize: 22 }}>
+                      {copy.proofTitle}
+                    </h2>
+                    <p className="card-copy" style={{ marginTop: 10 }}>
+                      {copy.proofSubtitle}
+                    </p>
+                  </div>
+
+                  <div className="landing-hero-note-grid">
+                    {copy.proofCards.slice(0, 2).map((item, index) => {
+                      const Icon = PROOF_ICONS[index]
+                      return (
+                        <article key={item.title} className="landing-hero-note">
+                          <div className="feature-icon">
+                            <Icon size={18} />
+                          </div>
+                          <div>
+                            <h3 className="landing-card-title">{item.title}</h3>
+                            <p className="feature-copy">{item.desc}</p>
+                          </div>
+                        </article>
+                      )
+                    })}
+                  </div>
+                </div>
               </div>
 
               <aside
@@ -552,8 +581,8 @@ export default function HomePage() {
             </div>
 
             <div className="landing-proof-strip">
-              {copy.proofCards.map((item, index) => {
-                const Icon = PROOF_ICONS[index]
+              {copy.proofCards.slice(2).map((item, index) => {
+                const Icon = PROOF_ICONS[index + 2]
                 return (
                   <article
                     key={item.title}

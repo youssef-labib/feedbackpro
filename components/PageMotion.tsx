@@ -6,17 +6,7 @@ import { useEffect } from 'react'
 const MOTION_SELECTOR = [
   '[data-reveal]',
   '.section-head',
-  '.hero-copy',
-  '.hero-card',
-  '.surface-card',
-  '.metric-card',
-  '.feature-card',
-  '.price-card',
-  '.summary-card',
-  '.settings-card',
-  '.table-card',
-  '.review-card',
-  '.empty-state',
+  '.auth-card',
   '.save-banner',
   '.dashboard-header',
   '.admin-header',
@@ -31,48 +21,34 @@ export default function PageMotion() {
     if (typeof window === 'undefined') return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue
-          const element = entry.target as HTMLElement
-          element.dataset.motionState = 'visible'
-          observer.unobserve(element)
-        }
-      },
-      {
-        threshold: 0.16,
-        rootMargin: '0px 0px -8% 0px',
-      }
-    )
+    const targets = Array.from(document.querySelectorAll(MOTION_SELECTOR)) as HTMLElement[]
+    let frameA = 0
+    let frameB = 0
 
-    function bindTargets() {
-      const targets = Array.from(document.querySelectorAll(MOTION_SELECTOR))
-      let fallbackOrder = 0
+    let fallbackOrder = 0
 
-      for (const target of targets) {
-        const element = target as HTMLElement
-        if (element.dataset.motionBound === 'true') continue
+    for (const element of targets) {
+      const customOrderValue = element.dataset.motionOrder
+      const customOrder = customOrderValue ? Number(customOrderValue) : Number.NaN
+      const order = Number.isFinite(customOrder) ? customOrder : fallbackOrder % 5
 
-        const customOrder = Number(element.dataset.motionOrder ?? '')
-        const order = Number.isFinite(customOrder) ? customOrder : fallbackOrder % 6
-
-        element.dataset.motionBound = 'true'
-        element.dataset.motionState = 'hidden'
-        element.style.setProperty('--motion-delay', `${order * 70}ms`)
-
-        observer.observe(element)
-        fallbackOrder += 1
-      }
+      element.dataset.motionBound = 'true'
+      element.dataset.motionState = 'hidden'
+      element.style.setProperty('--motion-delay', `${order * 45}ms`)
+      fallbackOrder += 1
     }
 
-    bindTargets()
-    const mutationObserver = new MutationObserver(() => bindTargets())
-    mutationObserver.observe(document.body, { childList: true, subtree: true })
+    frameA = window.requestAnimationFrame(() => {
+      frameB = window.requestAnimationFrame(() => {
+        for (const element of targets) {
+          element.dataset.motionState = 'visible'
+        }
+      })
+    })
 
     return () => {
-      mutationObserver.disconnect()
-      observer.disconnect()
+      window.cancelAnimationFrame(frameA)
+      window.cancelAnimationFrame(frameB)
     }
   }, [pathname])
 
