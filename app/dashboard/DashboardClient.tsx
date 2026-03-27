@@ -483,16 +483,38 @@ export default function DashboardClient({
             </button>
           </div>
 
-          <div className="dashboard-v2-sidebar-tools">
-            <div className="dashboard-v2-sidebar-label">Preferences</div>
-            <div className="dashboard-v2-sidebar-toolset">
-              <ThemeToggle />
-              <FlagLangSelector lang={lang} setLang={setLang} />
-            </div>
+          <div className="dashboard-v2-nav-wrap">
+            <div className="dashboard-v2-sidebar-label">Navigation</div>
+            <nav className="dashboard-v2-nav" aria-label="Dashboard sections">
+              {DASHBOARD_NAV.map((item) => {
+                const Icon = item.icon
+                const active = item.id === activeTab
+
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`dashboard-v2-nav-button${active ? ' active' : ''}`}
+                    onClick={() => {
+                      setActiveTab(item.id)
+                      closeSidebar()
+                    }}
+                  >
+                    <span className="dashboard-v2-nav-icon">
+                      <Icon size={18} />
+                    </span>
+                    <span className="dashboard-v2-nav-copy">
+                      <span className="dashboard-v2-nav-label">{item.label}</span>
+                      <span className="dashboard-v2-nav-hint">{item.hint}</span>
+                    </span>
+                  </button>
+                )
+              })}
+            </nav>
           </div>
 
-          <section className="dashboard-v2-sidebar-context">
-            <div className="dashboard-v2-sidebar-label">Business</div>
+          <section className="dashboard-v2-sidebar-profile">
+            <div className="dashboard-v2-sidebar-label">Workspace</div>
             <div className="dashboard-v2-business-row">
               <div className="dashboard-v2-avatar">
                 {logoPreview ? (
@@ -532,38 +554,19 @@ export default function DashboardClient({
             </div>
           </section>
 
-          <div className="dashboard-v2-nav-wrap">
-            <div className="dashboard-v2-sidebar-label">Workspace</div>
-            <nav className="dashboard-v2-nav" aria-label="Dashboard sections">
-              {DASHBOARD_NAV.map((item) => {
-                const Icon = item.icon
-                const active = item.id === activeTab
-
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={`dashboard-v2-nav-button${active ? ' active' : ''}`}
-                    onClick={() => {
-                      setActiveTab(item.id)
-                      closeSidebar()
-                    }}
-                  >
-                    <span className="dashboard-v2-nav-icon">
-                      <Icon size={18} />
-                    </span>
-                    <span className="dashboard-v2-nav-copy">
-                      <span className="dashboard-v2-nav-label">{item.label}</span>
-                      <span className="dashboard-v2-nav-hint">{item.hint}</span>
-                    </span>
-                  </button>
-                )
-              })}
-            </nav>
+          <div className="dashboard-v2-sidebar-tools">
+            <div className="dashboard-v2-sidebar-label">Tools</div>
+            <div className="dashboard-v2-sidebar-toolset">
+              <ThemeToggle />
+              <FlagLangSelector lang={lang} setLang={setLang} />
+            </div>
           </div>
 
           <section className="dashboard-v2-sidebar-foot">
-            <div className="dashboard-v2-sidebar-label">Actions</div>
+            <div className="dashboard-v2-sidebar-foot-note">
+              <span className="dashboard-v2-sidebar-foot-dot" />
+              <span>Public form linked to this workspace</span>
+            </div>
             <a href={formUrl} target="_blank" rel="noopener noreferrer" className="button button-secondary">
               Open public form
               <ExternalLink size={16} />
@@ -618,15 +621,31 @@ export default function DashboardClient({
               </div>
             </div>
 
-            <div className="dashboard-v2-hero-actions">
-              <button type="button" className="button button-secondary" onClick={copyFormLink}>
-                {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Copy failed' : 'Copy link'}
-                <Copy size={16} />
-              </button>
-              <a href={formUrl} target="_blank" rel="noopener noreferrer" className="button button-primary">
-                Open form
-                <ExternalLink size={16} />
-              </a>
+            <div className="dashboard-v2-hero-side">
+              <div className="dashboard-v2-hero-status">
+                <div className="dashboard-v2-hero-status-head">
+                  <span className="dashboard-v2-hero-status-label">Workspace status</span>
+                  <strong>{readinessCount}/4 ready</strong>
+                </div>
+                <div className="dashboard-v2-progress">
+                  <span style={{ width: `${(readinessCount / readinessItems.length) * 100}%` }} />
+                </div>
+                <div className="dashboard-v2-hero-status-copy">
+                  <div>{categoryAverages[0] ? `Watch ${categoryAverages[0].label} first.` : 'Start by sharing your form.'}</div>
+                  <div>{submissions.length ? `${submissions.length} reviews collected so far.` : 'No reviews collected yet.'}</div>
+                </div>
+              </div>
+
+              <div className="dashboard-v2-hero-actions">
+                <button type="button" className="button button-secondary" onClick={copyFormLink}>
+                  {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Copy failed' : 'Copy link'}
+                  <Copy size={16} />
+                </button>
+                <a href={formUrl} target="_blank" rel="noopener noreferrer" className="button button-primary">
+                  Open form
+                  <ExternalLink size={16} />
+                </a>
+              </div>
             </div>
           </header>
 
@@ -634,6 +653,11 @@ export default function DashboardClient({
             <div>
               <div className="dashboard-v2-panel-kicker">{currentTab.label}</div>
               <h2 className="dashboard-v2-panel-title">{currentTab.hint}</h2>
+            </div>
+            <div className="dashboard-v2-panel-pills">
+              <span className="pill accent-pill">{currentPlan.label}</span>
+              <span className="pill">{submissions.length} reviews</span>
+              <span className="pill">{publishedQuestions.length} questions</span>
             </div>
           </section>
 
