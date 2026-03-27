@@ -1,52 +1,66 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { createSupabaseServerClient } from '../../lib/supabase-server'
 import DashboardClient from './DashboardClient'
+import type {
+  DashboardBusiness,
+  DashboardCategory,
+  DashboardForm,
+  DashboardSubmission,
+} from './dashboard-data'
 
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
-  const cookieStore = await cookies()
+  const supabase = await createSupabaseServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll() {},
-      },
-    }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) {
+    redirect('/login')
+  }
 
   const { data: business } = await supabase
     .from('businesses')
-    .select('*')
+    .select('id, name, slug, sector, city, google_review_url, plan, plan_status, qr_generated, logo_url')
     .eq('owner_id', user.id)
     .single()
 
-  if (!business) redirect('/setup')
+  if (!business) {
+    redirect('/setup')
+  }
 
-  const { data: form } = await supabase
-    .from('feedback_forms')
-    .select('*')
-    .eq('business_id', business.id)
-    .single()
+  const [formResponse, submissionsResponse] = await Promise.all([
+    supabase
+      .from('feedback_forms')
+      .select('id, business_id, categories')
+      .eq('business_id', business.id)
+      .single(),
+    supabase
+      .from('submissions')
+      .select('id, ratings, average_score, comment, created_at')
+      .eq('business_id', business.id)
+      .order('created_at', { ascending: false }),
+  ])
 
-  const { data: submissions } = await supabase
-    .from('submissions')
-    .select('*')
-    .eq('business_id', business.id)
-    .order('created_at', { ascending: false })
+  const formData = formResponse.data
+  const submissionsData = submissionsResponse.data || []
+
+  const form: DashboardForm | null = formData
+    ? {
+        id: formData.id,
+        business_id: formData.business_id,
+        categories: Array.isArray(formData.categories)
+          ? (formData.categories as DashboardCategory[])
+          : [],
+      }
+    : null
 
   return (
     <DashboardClient
-      business={business}
+      business={business as DashboardBusiness}
       form={form}
-      submissions={submissions || []}
+      submissions={submissionsData as DashboardSubmission[]}
       userEmail={user.email || ''}
     />
   )

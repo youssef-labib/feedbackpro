@@ -1,13 +1,14 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { createBrowserClient } from '@supabase/ssr'
 import {
   ArrowDown,
   ArrowUp,
   BarChart3,
+  Building2,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   CircleAlert,
   Copy,
   Download,
@@ -16,135 +17,485 @@ import {
   LayoutDashboard,
   Link2,
   ListChecks,
+  LoaderCircle,
   LogOut,
   Menu,
   MessageSquare,
   Plus,
   QrCode,
   Save,
+  Search,
   Settings2,
   Star,
   Trash2,
+  Users,
   X,
   type LucideIcon,
 } from 'lucide-react'
-import { createBrowserClient } from '@supabase/ssr'
-import { useRouter } from 'next/navigation'
-import AppLogo from '../../components/AppLogo'
-import FlagLangSelector from '../../components/FlagLangSelector'
+import {
+  useDeferredValue,
+  useEffect,
+  useState,
+  useTransition,
+  type ChangeEvent,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from 'react'
 import ThemeToggle from '../../components/ThemeToggle'
-import { useStoredLanguage } from '../../components/useStoredLanguage'
+import styles from './dashboard.module.css'
+import {
+  buildCategoryInsights,
+  buildFeedbackRows,
+  buildRatingDistribution,
+  buildTrendSeries,
+  compareWindowMetrics,
+  compactNumber,
+  excerpt,
+  filterSubmissionsByRange,
+  formatDate,
+  formatDateTime,
+  formatRelativeDate,
+  percent,
+  planDescription,
+  planLabel,
+  questionLabel,
+  questionsDirty,
+  recurringIssueSummary,
+  scoreTone,
+  sectorLabel,
+  summarizeSubmissions,
+  toneLabel,
+  type DashboardBusiness,
+  type DashboardCategory,
+  type DashboardForm,
+  type DashboardRange,
+  type DashboardSection,
+  type DashboardSubmission,
+  type FeedbackFilter,
+  type FeedbackRow,
+  type FeedbackSort,
+  type ScoreTone,
+  type TrendPoint,
+  type TrendResolution,
+} from './dashboard-data'
 
-type Business = {
-  id: string
-  name: string
-  slug: string
-  sector: string
-  city: string
-  google_review_url: string | null
-  plan: string
-  plan_status: string
-  qr_generated?: boolean
-  logo_url?: string | null
+type Notice = {
+  tone: 'success' | 'error'
+  text: string
 }
 
-type Category = {
-  id: string
+type DraftQuestion = {
   label_fr: string
   label_ar: string
-  label_en?: string
-  label_es?: string
+  label_en: string
+  label_es: string
 }
 
-type Form = { id: string; business_id: string; categories: Category[] }
-type Submission = {
-  id: string
-  ratings: Record<string, number>
-  average_score: number
-  comment: string | null
-  created_at: string
-}
-type DashboardTab = 'overview' | 'reviews' | 'questions' | 'share' | 'settings'
-type MessageState = { type: 'success' | 'error'; text: string } | null
-type AccentTheme = 'green' | 'blue' | 'amber'
-
-const ACCENT_STORAGE_KEY = 'feedbackpro-accent'
-const ACCENT_OPTIONS: Array<{ id: AccentTheme; label: string; swatch: string }> = [
-  { id: 'green', label: 'Emerald', swatch: '#22c55e' },
-  { id: 'blue', label: 'Sky', swatch: '#3b82f6' },
-  { id: 'amber', label: 'Amber', swatch: '#f59e0b' },
-]
-
-const DASHBOARD_NAV: Array<{
-  id: DashboardTab
+type SectionMeta = {
+  id: DashboardSection
   label: string
-  hint: string
+  description: string
   icon: LucideIcon
-}> = [
-  { id: 'overview', label: 'Overview', hint: 'Live metrics and recent signals', icon: LayoutDashboard },
-  { id: 'reviews', label: 'Reviews', hint: 'Every response in one place', icon: MessageSquare },
-  { id: 'questions', label: 'Questions', hint: 'Shape the form and publish changes', icon: ListChecks },
-  { id: 'share', label: 'Share and QR', hint: 'Public link, QR, and readiness', icon: QrCode },
-  { id: 'settings', label: 'Settings', hint: 'Branding, plan, and session', icon: Settings2 },
+}
+
+type DashboardClientProps = {
+  business: DashboardBusiness
+  form: DashboardForm | null
+  submissions: DashboardSubmission[]
+  userEmail: string
+}
+
+const SECTION_META: SectionMeta[] = [
+  {
+    id: 'overview',
+    label: 'Overview',
+    description: 'Executive KPIs, service alerts, and a fast read on customer satisfaction.',
+    icon: LayoutDashboard,
+  },
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    description: 'Trends, score distribution, and question-level feedback analysis.',
+    icon: BarChart3,
+  },
+  {
+    id: 'feedback',
+    label: 'Feedback',
+    description: 'Search, filter, and inspect every customer submission in detail.',
+    icon: MessageSquare,
+  },
+  {
+    id: 'operations',
+    label: 'Operations',
+    description: 'Location readiness, service issues, and operational follow-up.',
+    icon: CircleAlert,
+  },
+  {
+    id: 'collection',
+    label: 'Collection',
+    description: 'Public form access, QR assets, and form question management.',
+    icon: QrCode,
+  },
+  {
+    id: 'settings',
+    label: 'Settings',
+    description: 'Business profile, branding, plan visibility, and workspace controls.',
+    icon: Settings2,
+  },
 ]
 
-function scoreStyle(score: number) {
-  if (score >= 4) return { color: '#22c55e', bg: 'rgba(34, 197, 94, 0.14)' }
-  if (score >= 3) return { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.16)' }
-  return { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.16)' }
+const RANGE_OPTIONS: DashboardRange[] = [7, 30, 90]
+const RESOLUTION_OPTIONS: TrendResolution[] = ['day', 'week', 'month']
+const FEEDBACK_FILTER_OPTIONS: FeedbackFilter[] = ['all', 'attention', 'positive', 'commented']
+const FEEDBACK_SORT_OPTIONS: FeedbackSort[] = ['newest', 'oldest', 'highest', 'lowest']
+
+function cn(...tokens: Array<string | false | null | undefined>) {
+  return tokens.filter(Boolean).join(' ')
 }
 
-function planMeta(plan: string) {
-  if (plan === 'starter') return { label: 'Starter', price: '149 MAD', description: 'Best for one location getting started fast.' }
-  if (plan === 'pro') return { label: 'Pro', price: '299 MAD', description: 'Best balance for growing operators.' }
-  if (plan === 'business') return { label: 'Business', price: '699 MAD', description: 'Built for larger multi-site operations.' }
-  return { label: 'Trial', price: 'Free', description: 'A simple trial workspace before activation.' }
+function cloneCategories(categories: DashboardCategory[]) {
+  return categories.map((category) => ({ ...category }))
 }
 
-function humanizeStatus(value: string) {
-  if (!value) return 'Unknown'
-  return value
-    .split(/[_\s-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ')
+function flashNotice(
+  setter: Dispatch<SetStateAction<Notice | null>>,
+  notice: Notice,
+  duration = 3200
+) {
+  setter(notice)
+  window.setTimeout(() => setter(null), duration)
 }
 
-function localeFromLang(lang: 'fr' | 'ar' | 'en' | 'es') {
-  if (lang === 'ar') return 'ar-MA'
-  if (lang === 'fr') return 'fr-FR'
-  if (lang === 'es') return 'es-ES'
-  return 'en-US'
-}
+function formatDelta(current: number, previous: number, suffix = '') {
+  const diff = Math.round((current - previous) * 10) / 10
 
-function questionLabel(question: Category, lang: 'fr' | 'ar' | 'en' | 'es') {
-  if (lang === 'ar') return question.label_ar || question.label_fr
-  if (lang === 'en') return question.label_en || question.label_fr
-  if (lang === 'es') return question.label_es || question.label_en || question.label_fr
-  return question.label_fr
-}
-
-function buildWeeklySeries(submissions: Submission[], locale: string) {
-  const counts = new Map<string, number>()
-
-  submissions.forEach((submission) => {
-    const date = new Date(submission.created_at)
-    const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
-    counts.set(key, (counts.get(key) || 0) + 1)
-  })
-
-  const formatter = new Intl.DateTimeFormat(locale, { weekday: 'short' })
-  const days: Array<{ label: string; count: number }> = []
-
-  for (let offset = 6; offset >= 0; offset -= 1) {
-    const date = new Date()
-    date.setHours(0, 0, 0, 0)
-    date.setDate(date.getDate() - offset)
-    const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
-    days.push({ label: formatter.format(date), count: counts.get(key) || 0 })
+  if (!previous && !current) {
+    return { label: 'Flat vs previous period', tone: 'neutral' as const }
   }
 
-  return days
+  if (!previous && current) {
+    return { label: `+${current}${suffix} vs previous period`, tone: 'positive' as const }
+  }
+
+  if (diff === 0) {
+    return { label: 'Flat vs previous period', tone: 'neutral' as const }
+  }
+
+  return {
+    label: `${diff > 0 ? '+' : ''}${diff}${suffix} vs previous period`,
+    tone: diff > 0 ? ('positive' as const) : ('negative' as const),
+  }
+}
+
+function statusClassName(tone: ScoreTone) {
+  if (tone === 'positive') return styles.statusPositive
+  if (tone === 'neutral') return styles.statusNeutral
+  return styles.statusNegative
+}
+
+function MetricCard({
+  label,
+  value,
+  note,
+  badge,
+  icon: Icon,
+}: {
+  label: string
+  value: string
+  note: string
+  badge?: { label: string; tone: 'positive' | 'negative' | 'neutral' }
+  icon: LucideIcon
+}) {
+  return (
+    <article className={styles.metricCard}>
+      <div className={styles.metricHead}>
+        <span className={styles.metricLabel}>{label}</span>
+        <span className={styles.metricIcon}>
+          <Icon size={18} />
+        </span>
+      </div>
+
+      <div className={styles.metricValue}>{value}</div>
+
+      <div className={styles.metricFoot}>
+        {badge ? (
+          <span
+            className={cn(
+              styles.inlineBadge,
+              badge.tone === 'positive' && styles.inlineBadgePositive,
+              badge.tone === 'negative' && styles.inlineBadgeNegative,
+              badge.tone === 'neutral' && styles.inlineBadgeNeutral
+            )}
+          >
+            {badge.label}
+          </span>
+        ) : null}
+
+        <span className={styles.metricNote}>{note}</span>
+      </div>
+    </article>
+  )
+}
+
+function Panel({
+  title,
+  description,
+  action,
+  children,
+}: {
+  title: string
+  description: string
+  action?: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <section className={styles.panel}>
+      <header className={styles.panelHeader}>
+        <div>
+          <h2 className={styles.panelTitle}>{title}</h2>
+          <p className={styles.panelDescription}>{description}</p>
+        </div>
+
+        {action ? <div className={styles.panelAction}>{action}</div> : null}
+      </header>
+
+      {children}
+    </section>
+  )
+}
+
+function SegmentedControl({
+  ariaLabel,
+  options,
+  value,
+  onChange,
+}: {
+  ariaLabel: string
+  options: Array<{ label: string; value: string }>
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <div className={styles.segmented} role="tablist" aria-label={ariaLabel}>
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          className={cn(styles.segmentedButton, value === option.value && styles.segmentedButtonActive)}
+          onClick={() => onChange(option.value)}
+          aria-pressed={value === option.value}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function TonePill({ tone, label }: { tone: ScoreTone; label?: string }) {
+  return (
+    <span className={cn(styles.statusPill, statusClassName(tone))}>
+      {label || toneLabel(tone)}
+    </span>
+  )
+}
+
+function EmptyState({
+  icon: Icon,
+  title,
+  copy,
+}: {
+  icon: LucideIcon
+  title: string
+  copy: string
+}) {
+  return (
+    <div className={styles.emptyState}>
+      <div className={styles.emptyIcon}>
+        <Icon size={18} />
+      </div>
+      <h3 className={styles.emptyTitle}>{title}</h3>
+      <p className={styles.emptyCopy}>{copy}</p>
+    </div>
+  )
+}
+
+function TrendChart({ points }: { points: TrendPoint[] }) {
+  const maxCount = Math.max(...points.map((point) => point.count), 1)
+  const maxScore = 5
+
+  const linePath = points
+    .map((point, index) => {
+      const x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100
+      const y = 100 - (point.averageScore / maxScore) * 100
+      return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
+    })
+    .join(' ')
+
+  return (
+    <div className={styles.trendChart}>
+      <div className={styles.trendPlot}>
+        <div className={styles.trendBars} aria-hidden="true">
+          {points.map((point) => (
+            <div key={point.id} className={styles.trendBarWrap}>
+              <span className={styles.trendBarTrack}>
+                <span
+                  className={styles.trendBarFill}
+                  style={{ height: `${(point.count / maxCount) * 100}%` }}
+                />
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <svg viewBox="0 0 100 100" className={styles.trendLine} preserveAspectRatio="none" aria-hidden="true">
+          <path d={linePath} className={styles.trendLinePath} />
+          {points.map((point, index) => {
+            const x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100
+            const y = 100 - (point.averageScore / maxScore) * 100
+
+            return <circle key={point.id} cx={x} cy={y} r="2.2" className={styles.trendLinePoint} />
+          })}
+        </svg>
+      </div>
+
+      <div className={styles.trendLabels}>
+        {points.map((point) => (
+          <div key={point.id} className={styles.trendLabel}>
+            <strong>{point.label}</strong>
+            <span>{point.count} responses</span>
+            <span>{point.count ? `${point.averageScore}/5 average` : 'No data'}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function DistributionChart({
+  distribution,
+  total,
+}: {
+  distribution: Array<{ score: number; count: number }>
+  total: number
+}) {
+  const peak = Math.max(...distribution.map((item) => item.count), 1)
+
+  return (
+    <div className={styles.distributionList}>
+      {distribution.map((item) => (
+        <div key={item.score} className={styles.distributionRow}>
+          <div className={styles.distributionLabel}>
+            <strong>{item.score} stars</strong>
+            <span>{item.count} responses</span>
+          </div>
+
+          <span className={styles.distributionTrack}>
+            <span
+              className={styles.distributionFill}
+              style={{ width: `${peak ? (item.count / peak) * 100 : 0}%` }}
+            />
+          </span>
+
+          <span className={styles.distributionPercent}>
+            {total ? percent(item.count / total) : percent(0)}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function FeedbackDrawer({
+  feedback,
+  categories,
+  onClose,
+}: {
+  feedback: FeedbackRow | null
+  categories: DashboardCategory[]
+  onClose: () => void
+}) {
+  if (!feedback) {
+    return null
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className={cn(styles.drawerBackdrop, styles.sidebarBackdropOpen)}
+        onClick={onClose}
+        aria-label="Close feedback details"
+      />
+
+      <aside className={styles.drawer} aria-label="Feedback details">
+        <div className={styles.drawerHeader}>
+          <div>
+            <div className={styles.drawerEyebrow}>Feedback details</div>
+            <h2 className={styles.drawerTitle}>{feedback.average_score}/5 overall score</h2>
+            <div className={styles.drawerMeta}>
+              Submitted {formatDateTime(feedback.created_at)} - {formatRelativeDate(feedback.created_at)}
+            </div>
+          </div>
+
+          <button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close feedback details">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className={styles.drawerSection}>
+          <div className={styles.drawerSummaryGrid}>
+            <div className={styles.summaryCell}>
+              <span>Status</span>
+              <strong>{toneLabel(feedback.tone)}</strong>
+            </div>
+            <div className={styles.summaryCell}>
+              <span>Weakest question</span>
+              <strong>{feedback.lowestCategoryLabel}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.drawerSection}>
+          <span className={styles.drawerSectionTitle}>Question scores</span>
+
+          <div className={styles.scoreList}>
+            {categories.length ? (
+              categories.map((category) => {
+                const score = Number(feedback.ratings?.[category.id] || 0)
+
+                return (
+                  <div key={category.id} className={styles.scoreRow}>
+                    <div className={styles.scoreRowHead}>
+                      <strong>{questionLabel(category)}</strong>
+                      <TonePill tone={scoreTone(score || 5)} label={score ? `${score}/5` : 'No score'} />
+                    </div>
+                    <span className={styles.scoreTrack}>
+                      <span className={styles.scoreFill} style={{ width: `${(score / 5) * 100}%` }} />
+                    </span>
+                  </div>
+                )
+              })
+            ) : (
+              <EmptyState
+                icon={ListChecks}
+                title="No structured ratings"
+                copy="This feedback entry only contains the overall score and any written comment."
+              />
+            )}
+          </div>
+        </div>
+
+        <div className={styles.drawerSection}>
+          <span className={styles.drawerSectionTitle}>Customer comment</span>
+          <div className={styles.commentCard}>
+            {feedback.hasComment ? feedback.commentText : 'No written comment was left on this response.'}
+          </div>
+        </div>
+      </aside>
+    </>
+  )
 }
 
 export default function DashboardClient({
@@ -152,194 +503,131 @@ export default function DashboardClient({
   form,
   submissions,
   userEmail,
-}: {
-  business: Business
-  form: Form | null
-  submissions: Submission[]
-  userEmail: string
-}) {
+}: DashboardClientProps) {
   const router = useRouter()
-  const { lang, setLang, isRTL } = useStoredLanguage('fr')
-  const [activeTab, setActiveTab] = useState<DashboardTab>('overview')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [businessState, setBusinessState] = useState(business)
-  const [businessName, setBusinessName] = useState(business.name)
-  const [selectedPlan, setSelectedPlan] = useState(business.plan)
-  const [googleUrl, setGoogleUrl] = useState(business.google_review_url || '')
-  const [saving, setSaving] = useState(false)
-  const [settingsMessage, setSettingsMessage] = useState<MessageState>(null)
-  const [qrGenerated, setQrGenerated] = useState(Boolean(business.qr_generated))
-  const [qrLoading, setQrLoading] = useState(false)
-  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle')
-  const [questions, setQuestions] = useState<Category[]>(form?.categories || [])
-  const [baselineQuestions, setBaselineQuestions] = useState<Category[]>(form?.categories || [])
-  const [questionsDirty, setQuestionsDirty] = useState(false)
-  const [questionsSaving, setQuestionsSaving] = useState(false)
-  const [questionMessage, setQuestionMessage] = useState<MessageState>(null)
-  const [newQuestion, setNewQuestion] = useState({ fr: '', ar: '', en: '', es: '' })
-  const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(form?.categories?.[0]?.id || null)
-  const [questionModalOpen, setQuestionModalOpen] = useState(false)
-  const [accentTheme, setAccentTheme] = useState<AccentTheme>('green')
-  const [logoPreview, setLogoPreview] = useState(business.logo_url || '')
-  const [logoUploading, setLogoUploading] = useState(false)
-  const [logoMessage, setLogoMessage] = useState<MessageState>(null)
-  const [formUrl, setFormUrl] = useState(`/r/${business.slug}`)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  const [supabase] = useState(() =>
+    createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
   )
+  const [activeSection, setActiveSection] = useState<DashboardSection>('overview')
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [selectedRange, setSelectedRange] = useState<DashboardRange>(30)
+  const [trendResolution, setTrendResolution] = useState<TrendResolution>('day')
+  const [search, setSearch] = useState('')
+  const deferredSearch = useDeferredValue(search)
+  const [feedbackFilter, setFeedbackFilter] = useState<FeedbackFilter>('all')
+  const [feedbackSort, setFeedbackSort] = useState<FeedbackSort>('newest')
+  const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(null)
+  const [businessState, setBusinessState] = useState<DashboardBusiness>({ ...business })
+  const [logoPreview, setLogoPreview] = useState(business.logo_url || '')
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle')
+  const [qrVersion, setQrVersion] = useState(0)
+  const [isSavingSettings, setIsSavingSettings] = useState(false)
+  const [isPublishingQuestions, setIsPublishingQuestions] = useState(false)
+  const [isRefreshingQr, setIsRefreshingQr] = useState(false)
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [settingsNotice, setSettingsNotice] = useState<Notice | null>(null)
+  const [questionNotice, setQuestionNotice] = useState<Notice | null>(null)
+  const [origin, setOrigin] = useState('')
+  const [isViewPending, startViewTransition] = useTransition()
+  const [publishedQuestions, setPublishedQuestions] = useState<DashboardCategory[]>(() =>
+    cloneCategories(form?.categories || [])
+  )
+  const [draftQuestions, setDraftQuestions] = useState<DashboardCategory[]>(() =>
+    cloneCategories(form?.categories || [])
+  )
+  const [newQuestion, setNewQuestion] = useState<DraftQuestion>({
+    label_fr: '',
+    label_ar: '',
+    label_en: '',
+    label_es: '',
+  })
 
   useEffect(() => {
-    const nextFormPath = `/r/${businessState.slug}`
-    if (typeof window === 'undefined') {
-      setFormUrl(nextFormPath)
-      return
+    setOrigin(window.location.origin)
+  }, [])
+
+  useEffect(() => {
+    function handleKeydown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setMobileNavOpen(false)
+        setSelectedFeedbackId(null)
+      }
     }
-    setFormUrl(new URL(nextFormPath, window.location.origin).toString())
-  }, [businessState.slug])
+
+    window.addEventListener('keydown', handleKeydown)
+    return () => window.removeEventListener('keydown', handleKeydown)
+  }, [])
 
   useEffect(() => {
-    if (!sidebarOpen && !questionModalOpen) return
+    const shouldLock = mobileNavOpen || Boolean(selectedFeedbackId)
     const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+
+    if (shouldLock) {
+      document.body.style.overflow = 'hidden'
+    }
+
     return () => {
       document.body.style.overflow = previousOverflow
     }
-  }, [questionModalOpen, sidebarOpen])
+  }, [mobileNavOpen, selectedFeedbackId])
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const stored = window.localStorage.getItem('feedbackpro-dashboard-sidebar')
-    setSidebarCollapsed(stored === 'collapsed')
-  }, [])
+  const livePath = `/r/${business.slug}`
+  const liveUrl = origin ? `${origin}${livePath}` : livePath
+  const qrUrl = `/api/qr?url=${encodeURIComponent(liveUrl)}&v=${qrVersion}`
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const stored = window.localStorage.getItem(ACCENT_STORAGE_KEY)
-    if (stored === 'green' || stored === 'blue' || stored === 'amber') {
-      setAccentTheme(stored)
-      return
-    }
-    document.documentElement.dataset.accent = 'green'
-  }, [])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    window.localStorage.setItem(
-      'feedbackpro-dashboard-sidebar',
-      sidebarCollapsed ? 'collapsed' : 'expanded'
-    )
-  }, [sidebarCollapsed])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    document.documentElement.dataset.accent = accentTheme
-    window.localStorage.setItem(ACCENT_STORAGE_KEY, accentTheme)
-  }, [accentTheme])
-
-  useEffect(() => {
-    if (questions.length === 0) {
-      setSelectedQuestionId(null)
-      return
-    }
-
-    const exists = questions.some((question) => question.id === selectedQuestionId)
-    if (!exists) {
-      setSelectedQuestionId(questions[0].id)
-    }
-  }, [questions, selectedQuestionId])
-
-  const locale = localeFromLang(lang)
-  const publishedQuestions = questionsDirty ? baselineQuestions : questions
-  const averageScore = submissions.length
-    ? Math.round((submissions.reduce((sum, item) => sum + item.average_score, 0) / submissions.length) * 10) / 10
-    : 0
-  const weekSubmissions = submissions.filter((item) => Date.now() - new Date(item.created_at).getTime() < 7 * 864e5)
-  const reviewsWithComments = submissions.filter((submission) => submission.comment?.trim()).length
-  const positiveReviews = submissions.filter((submission) => submission.average_score >= 4).length
-  const neutralReviews = submissions.filter((submission) => submission.average_score >= 3 && submission.average_score < 4).length
-  const attentionReviews = submissions.filter((submission) => submission.average_score < 3).length
-  const weeklySeries = buildWeeklySeries(submissions, locale)
-  const maxWeeklyCount = Math.max(...weeklySeries.map((item) => item.count), 1)
-  const weeklyTotal = weeklySeries.reduce((sum, item) => sum + item.count, 0)
-  const bestDay = weeklySeries.reduce(
-    (best, item) => (item.count > best.count ? item : best),
-    weeklySeries[0] || { label: '-', count: 0 }
-  )
-  const quietDays = weeklySeries.filter((item) => item.count === 0).length
-
-  const categoryScores: Record<string, number[]> = {}
-  submissions.forEach((submission) => {
-    Object.entries(submission.ratings || {}).forEach(([id, value]) => {
-      if (!categoryScores[id]) categoryScores[id] = []
-      categoryScores[id].push(value)
-    })
+  const visibleSubmissions = filterSubmissionsByRange(submissions, selectedRange)
+  const summary = summarizeSubmissions(visibleSubmissions)
+  const comparison = compareWindowMetrics(submissions, selectedRange)
+  const distribution = buildRatingDistribution(visibleSubmissions)
+  const categoryInsights = buildCategoryInsights(visibleSubmissions, publishedQuestions)
+  const recurringIssues = recurringIssueSummary(categoryInsights)
+  const trendPoints = buildTrendSeries(visibleSubmissions, trendResolution, selectedRange)
+  const allFeedbackRows = buildFeedbackRows(visibleSubmissions, publishedQuestions, {
+    query: '',
+    filter: 'all',
+    sort: 'newest',
   })
+  const feedbackRows = buildFeedbackRows(visibleSubmissions, publishedQuestions, {
+    query: deferredSearch,
+    filter: feedbackFilter,
+    sort: feedbackSort,
+  })
+  const selectedFeedback = allFeedbackRows.find((item) => item.id === selectedFeedbackId) || null
+  const sectionMeta = SECTION_META.find((section) => section.id === activeSection) || SECTION_META[0]
+  const averageDelta = formatDelta(comparison.current.averageScore, comparison.previous.averageScore, '/5')
+  const feedbackDelta = formatDelta(comparison.current.totalFeedback, comparison.previous.totalFeedback)
+  const satisfactionDelta = formatDelta(
+    Math.round(comparison.current.satisfactionRate * 100),
+    Math.round(comparison.previous.satisfactionRate * 100),
+    ' pts'
+  )
+  const attentionDelta = formatDelta(comparison.current.attentionCount, comparison.previous.attentionCount)
+  const strongestCategory = [...categoryInsights].reverse().find((item) => item.responses > 0) || null
+  const weakestCategory = categoryInsights.find((item) => item.responses > 0) || null
+  const positiveCount = visibleSubmissions.filter((item) => scoreTone(item.average_score) === 'positive').length
+  const neutralCount = visibleSubmissions.filter((item) => scoreTone(item.average_score) === 'neutral').length
+  const negativeCount = visibleSubmissions.filter((item) => scoreTone(item.average_score) === 'negative').length
+  const questionChangesPending = questionsDirty(draftQuestions, publishedQuestions)
+  const planCopy = planDescription(businessState.plan)
 
-  const categoryAverages = Object.entries(categoryScores)
-    .map(([id, values]) => ({
-      id,
-      label: questionLabel(
-        publishedQuestions.find((item) => item.id === id) || { id, label_fr: id, label_ar: id, label_en: id, label_es: id },
-        lang
-      ),
-      average: Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10,
-    }))
-    .sort((a, b) => a.average - b.average)
-
-  const readinessItems = [
-    { label: 'At least 3 form questions', ready: questions.length >= 3 },
-    { label: 'QR code generated', ready: qrGenerated },
-    { label: 'Google review link added', ready: Boolean(googleUrl.trim()) },
-    { label: 'Logo uploaded', ready: Boolean(logoPreview) },
-  ]
-  const readinessCount = readinessItems.filter((item) => item.ready).length
-  const readinessPercentage = (readinessCount / readinessItems.length) * 100
-  const currentPlan = planMeta(selectedPlan)
-  const currentTab = DASHBOARD_NAV.find((item) => item.id === activeTab) || DASHBOARD_NAV[0]
-  const selectedQuestion =
-    questions.find((question) => question.id === selectedQuestionId) || questions[0] || null
-  const selectedQuestionIndex = selectedQuestion
-    ? questions.findIndex((question) => question.id === selectedQuestion.id)
-    : -1
-  const qrUrl = `/api/qr?url=${encodeURIComponent(formUrl)}`
-  const topConcern = categoryAverages[0]?.label || 'No weak area yet'
-  const latestComment = submissions.find((submission) => submission.comment?.trim())
-
-  function flashMessage(
-    setter: React.Dispatch<React.SetStateAction<MessageState>>,
-    value: MessageState,
-    delay = 2400
-  ) {
-    setter(value)
-    if (value) {
-      window.setTimeout(() => setter(null), delay)
+  useEffect(() => {
+    if (selectedFeedbackId && !allFeedbackRows.some((item) => item.id === selectedFeedbackId)) {
+      setSelectedFeedbackId(null)
     }
+  }, [allFeedbackRows, selectedFeedbackId])
+
+  function navigateToSection(section: DashboardSection) {
+    setMobileNavOpen(false)
+    startViewTransition(() => setActiveSection(section))
   }
 
-  function closeSidebar() {
-    setSidebarOpen(false)
-  }
-
-  function toggleSidebarCollapsed() {
-    setSidebarCollapsed((current) => !current)
-  }
-
-  function closeQuestionModal() {
-    setQuestionModalOpen(false)
-  }
-
-  async function logout() {
-    await supabase.auth.signOut()
-    window.location.href = '/'
-  }
-
-  async function copyFormLink() {
+  async function copyLiveFormLink() {
     try {
-      await navigator.clipboard.writeText(formUrl)
+      await navigator.clipboard.writeText(liveUrl)
       setCopyState('copied')
       window.setTimeout(() => setCopyState('idle'), 2200)
     } catch {
@@ -348,1536 +636,1419 @@ export default function DashboardClient({
     }
   }
 
-  async function saveBusinessSettings() {
-    setSaving(true)
-    setSettingsMessage(null)
+  async function refreshQrAsset() {
+    setIsRefreshingQr(true)
+    setQrVersion((current) => current + 1)
+    window.setTimeout(() => setIsRefreshingQr(false), 500)
+  }
+
+  async function downloadQrAsset() {
+    const response = await fetch(qrUrl, { cache: 'no-store' })
+    const blob = await response.blob()
+    const objectUrl = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = objectUrl
+    anchor.download = `${business.slug}-feedback-qr.png`
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(objectUrl)
+  }
+
+  async function saveSettings() {
+    setIsSavingSettings(true)
+
     try {
       const response = await fetch('/api/business/update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           businessId: businessState.id,
-          name: businessName,
-          google_review_url: googleUrl,
-          plan: selectedPlan,
+          name: businessState.name,
+          google_review_url: businessState.google_review_url || '',
+          plan: businessState.plan,
         }),
       })
 
-      const data = await response.json()
+      const payload = await response.json()
+
       if (!response.ok) {
-        flashMessage(setSettingsMessage, { type: 'error', text: data.error || 'Could not save your changes.' })
-        return
+        throw new Error(payload.error || 'Could not save business settings.')
       }
 
-      const nextName = businessName.trim() || businessState.name
-      setBusinessName(nextName)
-      setBusinessState((current) => ({
-        ...current,
-        name: nextName,
-        google_review_url: googleUrl.trim(),
-        plan: selectedPlan,
-      }))
-      flashMessage(setSettingsMessage, { type: 'success', text: 'Business settings updated.' })
+      flashNotice(setSettingsNotice, {
+        tone: 'success',
+        text: 'Business settings updated successfully.',
+      })
       router.refresh()
-    } catch {
-      flashMessage(setSettingsMessage, { type: 'error', text: 'Could not save your changes.' })
+    } catch (error) {
+      flashNotice(setSettingsNotice, {
+        tone: 'error',
+        text: error instanceof Error ? error.message : 'Could not save business settings.',
+      })
     } finally {
-      setSaving(false)
+      setIsSavingSettings(false)
     }
   }
 
-  async function generateQr() {
-    setQrLoading(true)
-    try {
-      const response = await fetch(qrUrl)
-      if (!response.ok) throw new Error('failed')
-      await supabase.from('businesses').update({ qr_generated: true }).eq('id', businessState.id)
-      setQrGenerated(true)
-      setBusinessState((current) => ({ ...current, qr_generated: true }))
-      router.refresh()
-    } catch {
-      flashMessage(setSettingsMessage, { type: 'error', text: 'QR generation failed. Please try again.' })
-    } finally {
-      setQrLoading(false)
-    }
-  }
-
-  function downloadQr() {
-    const link = document.createElement('a')
-    link.href = qrUrl
-    link.download = `feedbackpro-${businessState.slug}.png`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
-  async function handleLogoUpload(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleLogoUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
-    if (!file) return
-    if (!file.type.startsWith('image/')) {
-      flashMessage(setLogoMessage, { type: 'error', text: 'Please choose an image file.' })
-      return
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      flashMessage(setLogoMessage, { type: 'error', text: 'Image must stay under 2 MB.' })
+
+    if (!file) {
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = () => setLogoPreview(reader.result as string)
-    reader.readAsDataURL(file)
-    setLogoUploading(true)
+    setIsUploadingLogo(true)
 
     try {
       const formData = new FormData()
       formData.append('file', file)
       formData.append('businessId', businessState.id)
-      const response = await fetch('/api/upload-logo', { method: 'POST', body: formData })
-      const data = await response.json()
-      if (!response.ok || !data.success) throw new Error(data.error || 'Upload failed')
-      setLogoPreview(data.url)
-      setBusinessState((current) => ({ ...current, logo_url: data.url }))
-      flashMessage(setLogoMessage, { type: 'success', text: 'Logo updated.' })
+
+      const response = await fetch('/api/upload-logo', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const payload = await response.json()
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Could not upload logo.')
+      }
+
+      setLogoPreview(payload.url || '')
+      setBusinessState((current) => ({
+        ...current,
+        logo_url: payload.url || '',
+      }))
+
+      flashNotice(setSettingsNotice, {
+        tone: 'success',
+        text: 'Brand logo updated successfully.',
+      })
       router.refresh()
-    } catch {
-      setLogoPreview(businessState.logo_url || '')
-      flashMessage(setLogoMessage, { type: 'error', text: 'Upload failed. Please try again.' })
+    } catch (error) {
+      flashNotice(setSettingsNotice, {
+        tone: 'error',
+        text: error instanceof Error ? error.message : 'Could not upload logo.',
+      })
     } finally {
-      setLogoUploading(false)
+      event.target.value = ''
+      setIsUploadingLogo(false)
     }
-  }
-
-  async function removeLogo() {
-    await supabase.from('businesses').update({ logo_url: null }).eq('id', businessState.id)
-    setLogoPreview('')
-    setBusinessState((current) => ({ ...current, logo_url: null }))
-    flashMessage(setLogoMessage, { type: 'success', text: 'Logo removed.' })
-    router.refresh()
-  }
-
-  function updateQuestions(next: Category[]) {
-    setQuestions(next)
-    setQuestionsDirty(true)
-    setQuestionMessage(null)
-  }
-
-  function updateQuestionField(id: string, field: 'label_fr' | 'label_ar' | 'label_en' | 'label_es', value: string) {
-    updateQuestions(questions.map((question) => (question.id === id ? { ...question, [field]: value } : question)))
-  }
-
-  function moveQuestion(index: number, direction: 'up' | 'down') {
-    const target = direction === 'up' ? index - 1 : index + 1
-    if (target < 0 || target >= questions.length) return
-    const next = [...questions]
-    ;[next[index], next[target]] = [next[target], next[index]]
-    updateQuestions(next)
-  }
-
-  function removeQuestion(id: string) {
-    if (questions.length <= 1) {
-      flashMessage(setQuestionMessage, { type: 'error', text: 'At least one question is required.' })
-      return
-    }
-    updateQuestions(questions.filter((item) => item.id !== id))
   }
 
   function addQuestion() {
-    if (!newQuestion.fr.trim()) {
-      flashMessage(setQuestionMessage, { type: 'error', text: 'The French field is required.' })
+    if (draftQuestions.length >= 10) {
+      flashNotice(setQuestionNotice, {
+        tone: 'error',
+        text: 'The form can contain up to 10 questions.',
+      })
       return
     }
-    if (questions.length >= 10) {
-      flashMessage(setQuestionMessage, { type: 'error', text: 'You can keep up to 10 questions.' })
+
+    if (!newQuestion.label_fr.trim()) {
+      flashNotice(setQuestionNotice, {
+        tone: 'error',
+        text: 'A French label is required before adding a new question.',
+      })
       return
     }
-    const nextId = String(Date.now())
-    updateQuestions([
-      ...questions,
-      {
-        id: nextId,
-        label_fr: newQuestion.fr.trim(),
-        label_ar: newQuestion.ar.trim() || newQuestion.fr.trim(),
-        label_en: newQuestion.en.trim() || newQuestion.fr.trim(),
-        label_es: newQuestion.es.trim() || newQuestion.en.trim() || newQuestion.fr.trim(),
-      },
-    ])
-    setSelectedQuestionId(nextId)
-    setNewQuestion({ fr: '', ar: '', en: '', es: '' })
-    setQuestionModalOpen(false)
-    flashMessage(setQuestionMessage, { type: 'success', text: 'New question added. Publish when you are ready.' })
+
+    const nextQuestion: DashboardCategory = {
+      id: String(draftQuestions.length + 1),
+      label_fr: newQuestion.label_fr.trim(),
+      label_ar: newQuestion.label_ar.trim() || newQuestion.label_fr.trim(),
+      label_en: newQuestion.label_en.trim() || newQuestion.label_fr.trim(),
+      label_es: newQuestion.label_es.trim() || newQuestion.label_en.trim() || newQuestion.label_fr.trim(),
+    }
+
+    setDraftQuestions((current) => [...current, nextQuestion])
+    setNewQuestion({
+      label_fr: '',
+      label_ar: '',
+      label_en: '',
+      label_es: '',
+    })
+
+    flashNotice(setQuestionNotice, {
+      tone: 'success',
+      text: 'Question added to the draft form.',
+    })
   }
 
-  async function saveQuestions() {
-    if (!form?.id) {
-      flashMessage(setQuestionMessage, { type: 'error', text: 'No feedback form is connected to this business yet.' })
+  function moveQuestion(index: number, direction: 'up' | 'down') {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1
+
+    if (targetIndex < 0 || targetIndex >= draftQuestions.length) {
       return
     }
 
-    setQuestionsSaving(true)
+    setDraftQuestions((current) => {
+      const next = [...current]
+      const [moved] = next.splice(index, 1)
+      next.splice(targetIndex, 0, moved)
+      return next.map((question, questionIndex) => ({
+        ...question,
+        id: String(questionIndex + 1),
+      }))
+    })
+  }
+
+  function removeQuestion(index: number) {
+    if (draftQuestions.length === 1) {
+      flashNotice(setQuestionNotice, {
+        tone: 'error',
+        text: 'The form must keep at least one question.',
+      })
+      return
+    }
+
+    setDraftQuestions((current) =>
+      current
+        .filter((_, currentIndex) => currentIndex !== index)
+        .map((question, questionIndex) => ({
+          ...question,
+          id: String(questionIndex + 1),
+        }))
+    )
+  }
+
+  function updateQuestionField(index: number, field: keyof DashboardCategory, value: string) {
+    setDraftQuestions((current) =>
+      current.map((question, currentIndex) =>
+        currentIndex === index
+          ? {
+              ...question,
+              [field]: value,
+            }
+          : question
+      )
+    )
+  }
+
+  async function publishQuestions() {
+    if (!form) {
+      flashNotice(setQuestionNotice, {
+        tone: 'error',
+        text: 'No feedback form exists for this workspace yet.',
+      })
+      return
+    }
+
+    if (!draftQuestions.length) {
+      flashNotice(setQuestionNotice, {
+        tone: 'error',
+        text: 'Add at least one question before publishing.',
+      })
+      return
+    }
+
+    setIsPublishingQuestions(true)
+
     try {
       const response = await fetch('/api/forms/save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ formId: form.id, categories: questions }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          formId: form.id,
+          categories: draftQuestions,
+        }),
       })
-      const data = await response.json()
+
+      const payload = await response.json()
+
       if (!response.ok) {
-        flashMessage(setQuestionMessage, { type: 'error', text: data.error || 'Could not save your questions.' })
-        return
+        throw new Error(payload.error || 'Could not publish form questions.')
       }
-      const normalized = Array.isArray(data.categories) ? data.categories : questions
-      setQuestions(normalized)
-      setBaselineQuestions(normalized)
-      setQuestionsDirty(false)
-      flashMessage(setQuestionMessage, { type: 'success', text: 'Questions published to your public form.' })
+
+      const nextQuestions = Array.isArray(payload.categories)
+        ? (payload.categories as DashboardCategory[])
+        : cloneCategories(draftQuestions)
+
+      setPublishedQuestions(cloneCategories(nextQuestions))
+      setDraftQuestions(cloneCategories(nextQuestions))
+
+      flashNotice(setQuestionNotice, {
+        tone: 'success',
+        text: 'Live form questions updated successfully.',
+      })
       router.refresh()
-    } catch {
-      flashMessage(setQuestionMessage, { type: 'error', text: 'Could not save your questions.' })
+    } catch (error) {
+      flashNotice(setQuestionNotice, {
+        tone: 'error',
+        text: error instanceof Error ? error.message : 'Could not publish form questions.',
+      })
     } finally {
-      setQuestionsSaving(false)
+      setIsPublishingQuestions(false)
     }
   }
 
-  return (
-    <div
-      className={`page-shell dashboard-v2-page${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}
-      dir={isRTL ? 'rtl' : 'ltr'}
-    >
-      <div
-        className={`dashboard-v2-backdrop${sidebarOpen ? ' is-open' : ''}`}
-        aria-hidden={!sidebarOpen}
-        onClick={closeSidebar}
-      />
+  async function logout() {
+    setIsLoggingOut(true)
 
-      <div className="dashboard-v2-frame">
-        <aside className={`dashboard-v2-sidebar${sidebarOpen ? ' is-open' : ''}`}>
-          <div className="dashboard-v2-sidebar-head">
-            <AppLogo href="/dashboard" title="FeedbackPro" caption="Business workspace" />
-            <div className="dashboard-v2-sidebar-head-actions">
-              <button
-                type="button"
-                className="icon-button dashboard-v2-sidebar-collapse"
-                onClick={toggleSidebarCollapsed}
-                aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              >
-                {sidebarCollapsed
-                  ? isRTL
-                    ? <ChevronLeft size={18} />
-                    : <ChevronRight size={18} />
-                  : isRTL
-                    ? <ChevronRight size={18} />
-                    : <ChevronLeft size={18} />}
-              </button>
-              <button
-                type="button"
-                className="icon-button dashboard-v2-sidebar-close"
-                onClick={closeSidebar}
-                aria-label="Close dashboard menu"
-              >
-                <X size={18} />
-              </button>
-            </div>
-          </div>
+    try {
+      await supabase.auth.signOut()
+      router.push('/login')
+      router.refresh()
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }
 
-          <div className="dashboard-v2-nav-wrap">
-            <div className="dashboard-v2-sidebar-label">Navigation</div>
-            <nav className="dashboard-v2-nav" aria-label="Dashboard sections">
-              {DASHBOARD_NAV.map((item) => {
-                const Icon = item.icon
-                const active = item.id === activeTab
+  const watchlist = [
+    summary.attentionCount > 0
+      ? {
+          id: 'attention',
+          title: `${summary.attentionCount} low-rating submission${summary.attentionCount === 1 ? '' : 's'} require follow-up`,
+          copy: 'Scores below 3/5 signal service recovery opportunities that should be reviewed quickly.',
+          tone: 'negative' as const,
+        }
+      : null,
+    weakestCategory && weakestCategory.averageScore < 4
+      ? {
+          id: 'weakest-category',
+          title: `${weakestCategory.label} is the weakest service area`,
+          copy: `${weakestCategory.averageScore}/5 average with ${percent(weakestCategory.lowScoreRate)} low-score share in the selected window.`,
+          tone: weakestCategory.tone,
+        }
+      : null,
+    comparison.previous.totalFeedback > 0 && comparison.current.averageScore < comparison.previous.averageScore
+      ? {
+          id: 'rating-drift',
+          title: 'Average rating is softening vs the previous period',
+          copy: `${averageDelta.label}. Review the most recent negative comments for context.`,
+          tone: 'neutral' as const,
+        }
+      : null,
+    summary.commentCoverage < 0.25 && summary.totalFeedback >= 6
+      ? {
+          id: 'comment-coverage',
+          title: 'Written comments are still sparse',
+          copy: `Only ${percent(summary.commentCoverage)} of customers left written context, which limits issue diagnosis.`,
+          tone: 'neutral' as const,
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    id: string
+    title: string
+    copy: string
+    tone: ScoreTone
+  }>
 
-                return (
+  function renderOverviewSection() {
+    return (
+      <div className={styles.sectionStack}>
+        <div className={styles.kpiGrid}>
+          <MetricCard
+            label="Average rating"
+            value={`${summary.averageScore || 0}/5`}
+            note="Overall satisfaction trend for the selected reporting window."
+            badge={{ label: averageDelta.label, tone: averageDelta.tone }}
+            icon={Star}
+          />
+          <MetricCard
+            label="Total feedback"
+            value={compactNumber(summary.totalFeedback)}
+            note="Every submission received in the current reporting window."
+            badge={{ label: feedbackDelta.label, tone: feedbackDelta.tone }}
+            icon={MessageSquare}
+          />
+          <MetricCard
+            label="Satisfaction rate"
+            value={percent(summary.satisfactionRate)}
+            note="Share of responses scoring 4/5 or higher."
+            badge={{ label: satisfactionDelta.label, tone: satisfactionDelta.tone }}
+            icon={CheckCircle2}
+          />
+          <MetricCard
+            label="Negative alerts"
+            value={String(summary.attentionCount)}
+            note="Low-rating responses that deserve fast operational review."
+            badge={{ label: attentionDelta.label, tone: attentionDelta.tone }}
+            icon={CircleAlert}
+          />
+        </div>
+
+        <div className={styles.twoColumnGrid}>
+          <Panel
+            title="Response trend"
+            description="Submission volume and average rating over the selected reporting window."
+            action={
+              <SegmentedControl
+                ariaLabel="Trend resolution"
+                value={trendResolution}
+                onChange={(value) => setTrendResolution(value as TrendResolution)}
+                options={RESOLUTION_OPTIONS.map((option) => ({
+                  label: option.charAt(0).toUpperCase() + option.slice(1),
+                  value: option,
+                }))}
+              />
+            }
+          >
+            {visibleSubmissions.length ? (
+              <TrendChart points={trendPoints} />
+            ) : (
+              <EmptyState
+                icon={BarChart3}
+                title="No feedback in this range"
+                copy="Widen the date range or wait for new responses to start filling the dashboard."
+              />
+            )}
+          </Panel>
+
+          <Panel
+            title="Operational watchlist"
+            description="The most important service and experience signals to review right now."
+          >
+            {watchlist.length ? (
+              <div className={styles.alertList}>
+                {watchlist.map((item) => (
+                  <div key={item.id} className={styles.alertRow}>
+                    <div className={cn(styles.alertIcon, statusClassName(item.tone))}>
+                      <CircleAlert size={18} />
+                    </div>
+                    <div style={{ display: 'grid', gap: 6, flex: 1 }}>
+                      <strong>{item.title}</strong>
+                      <p className={styles.drawerMeta}>{item.copy}</p>
+                    </div>
+                    <TonePill tone={item.tone} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={CheckCircle2}
+                title="No urgent service issues"
+                copy="The current data window looks healthy. New risks will appear here as feedback changes."
+              />
+            )}
+          </Panel>
+        </div>
+
+        <div className={styles.twoColumnGrid}>
+          <Panel
+            title="Recent feedback"
+            description="Latest customer responses with the fastest path into detailed review."
+          >
+            {allFeedbackRows.length ? (
+              <div className={styles.latestList}>
+                {allFeedbackRows.slice(0, 4).map((feedback) => (
                   <button
-                    key={item.id}
+                    key={feedback.id}
                     type="button"
-                    className={`dashboard-v2-nav-button${active ? ' active' : ''}`}
-                    title={sidebarCollapsed ? item.label : undefined}
+                    className={styles.latestRow}
                     onClick={() => {
-                      setActiveTab(item.id)
-                      closeSidebar()
+                      setSelectedFeedbackId(feedback.id)
+                      navigateToSection('feedback')
                     }}
                   >
-                    <span className="dashboard-v2-nav-icon">
-                      <Icon size={18} />
-                    </span>
-                    <span className="dashboard-v2-nav-copy">
-                      <span className="dashboard-v2-nav-label">{item.label}</span>
-                      <span className="dashboard-v2-nav-hint">{item.hint}</span>
-                    </span>
+                    <div className={styles.latestRowHead}>
+                      <div>
+                        <span>{formatDate(feedback.created_at)}</span>
+                        <div className={styles.latestRowLabel}>{feedback.lowestCategoryLabel}</div>
+                      </div>
+                      <TonePill tone={feedback.tone} label={`${feedback.average_score}/5`} />
+                    </div>
+                    <p>{excerpt(feedback.commentText, 110)}</p>
                   </button>
-                )
-              })}
-            </nav>
-          </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={MessageSquare}
+                title="No recent feedback yet"
+                copy="Once customers submit feedback, the latest responses will be surfaced here."
+              />
+            )}
+          </Panel>
 
-          <div className="dashboard-v2-sidebar-tools">
-            <div className="dashboard-v2-sidebar-label">Tools</div>
-            <div className="dashboard-v2-sidebar-mini-note">
-              <strong>{businessName || businessState.name}</strong>
-              <span>{businessState.city} • {businessState.sector}</span>
-            </div>
-            <div className="dashboard-v2-sidebar-toolset">
-              <ThemeToggle />
-              <FlagLangSelector lang={lang} setLang={setLang} />
-            </div>
-          </div>
-
-          <section className="dashboard-v2-sidebar-foot">
-            <button type="button" className="button button-primary" onClick={logout}>
-              Sign out
-              <LogOut size={16} />
-            </button>
-          </section>
-        </aside>
-
-        <main className="dashboard-v2-main">
-          <div className="dashboard-v2-mobilebar">
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="Open dashboard menu"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu size={18} />
-            </button>
-            <AppLogo href="/dashboard" title="FeedbackPro" caption="Workspace" />
-            <ThemeToggle />
-          </div>
-
-          <section className="dashboard-v2-topbar">
-            <div className="dashboard-v2-topbar-start">
-              <button
-                type="button"
-                className="icon-button dashboard-v2-topbar-toggle"
-                onClick={toggleSidebarCollapsed}
-                aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              >
-                {sidebarCollapsed
-                  ? isRTL
-                    ? <ChevronLeft size={18} />
-                    : <ChevronRight size={18} />
-                  : isRTL
-                    ? <ChevronRight size={18} />
-                    : <ChevronLeft size={18} />}
-              </button>
-
-              <div>
-                <div className="dashboard-v2-topbar-kicker">Workspace view</div>
-                <div className="dashboard-v2-topbar-title">{currentTab.label}</div>
+          <Panel
+            title="Performance snapshot"
+            description="A concise summary of service health, category quality, and comment coverage."
+          >
+            <div className={styles.summaryList}>
+              <div className={styles.summaryCell}>
+                <span>Strongest category</span>
+                <strong>
+                  {strongestCategory
+                    ? `${strongestCategory.label} (${strongestCategory.averageScore}/5)`
+                    : 'No category data yet'}
+                </strong>
+              </div>
+              <div className={styles.summaryCell}>
+                <span>Weakest category</span>
+                <strong>
+                  {weakestCategory
+                    ? `${weakestCategory.label} (${weakestCategory.averageScore}/5)`
+                    : 'No category data yet'}
+                </strong>
+              </div>
+              <div className={styles.summaryCell}>
+                <span>Comment coverage</span>
+                <strong>{percent(summary.commentCoverage)}</strong>
+              </div>
+              <div className={styles.summaryCell}>
+                <span>Feedback mix</span>
+                <strong>
+                  {positiveCount} positive - {neutralCount} neutral - {negativeCount} attention
+                </strong>
               </div>
             </div>
+          </Panel>
+        </div>
+      </div>
+    )
+  }
 
-            <div className="dashboard-v2-topbar-actions">
-              <span className="pill accent-pill">{currentPlan.label}</span>
-              <span className="pill">{submissions.length} reviews</span>
-              <span className="pill">{publishedQuestions.length} questions</span>
+  function renderAnalyticsSection() {
+    return (
+      <div className={styles.sectionStack}>
+        <div className={styles.twoColumnGrid}>
+          <Panel
+            title="Ratings trend"
+            description="Track response volume and average score over time by day, week, or month."
+            action={
+              <SegmentedControl
+                ariaLabel="Analytics trend resolution"
+                value={trendResolution}
+                onChange={(value) => setTrendResolution(value as TrendResolution)}
+                options={RESOLUTION_OPTIONS.map((option) => ({
+                  label: option.charAt(0).toUpperCase() + option.slice(1),
+                  value: option,
+                }))}
+              />
+            }
+          >
+            {visibleSubmissions.length ? (
+              <TrendChart points={trendPoints} />
+            ) : (
+              <EmptyState
+                icon={BarChart3}
+                title="Trend analytics need fresh data"
+                copy="There is not enough feedback in the selected window to build a reliable trend."
+              />
+            )}
+          </Panel>
+
+          <Panel
+            title="Ratings distribution"
+            description="A score-by-score breakdown of the overall rating experience."
+          >
+            {visibleSubmissions.length ? (
+              <div className={styles.sectionStack}>
+                <DistributionChart distribution={distribution} total={visibleSubmissions.length} />
+
+                <div className={styles.mixCard}>
+                  <div className={styles.mixBar} aria-label="Feedback sentiment mix">
+                    <span
+                      className={cn(styles.mixSegment, styles.mixPositive)}
+                      style={{ width: `${visibleSubmissions.length ? (positiveCount / visibleSubmissions.length) * 100 : 0}%` }}
+                    />
+                    <span
+                      className={cn(styles.mixSegment, styles.mixNeutral)}
+                      style={{ width: `${visibleSubmissions.length ? (neutralCount / visibleSubmissions.length) * 100 : 0}%` }}
+                    />
+                    <span
+                      className={cn(styles.mixSegment, styles.mixNegative)}
+                      style={{ width: `${visibleSubmissions.length ? (negativeCount / visibleSubmissions.length) * 100 : 0}%` }}
+                    />
+                  </div>
+
+                  <div className={styles.mixLegend}>
+                    <div className={styles.mixLegendRow}>
+                      <span className={cn(styles.legendSwatch, styles.mixPositive)} />
+                      <span>Positive</span>
+                      <strong>{positiveCount}</strong>
+                    </div>
+                    <div className={styles.mixLegendRow}>
+                      <span className={cn(styles.legendSwatch, styles.mixNeutral)} />
+                      <span>Neutral</span>
+                      <strong>{neutralCount}</strong>
+                    </div>
+                    <div className={styles.mixLegendRow}>
+                      <span className={cn(styles.legendSwatch, styles.mixNegative)} />
+                      <span>Attention</span>
+                      <strong>{negativeCount}</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <EmptyState
+                icon={Star}
+                title="Distribution unavailable"
+                copy="Score distribution becomes useful once the selected date range contains real feedback."
+              />
+            )}
+          </Panel>
+        </div>
+
+        <Panel
+          title="Question performance"
+          description="Question-by-question scoring to pinpoint what customers value and where service slips."
+        >
+          {categoryInsights.some((item) => item.responses > 0) ? (
+            <div className={styles.categoryList}>
+              {categoryInsights.map((item) => (
+                <div key={item.id} className={styles.categoryRow}>
+                  <div className={styles.categoryCopy}>
+                    <div className={styles.categoryTitleRow}>
+                      <strong>{item.label}</strong>
+                      <TonePill tone={item.tone} label={`${item.averageScore || 0}/5`} />
+                    </div>
+                    <p>{item.responses} responses - {percent(item.lowScoreRate)} low-score share</p>
+                  </div>
+                  <span className={styles.scoreTrack}>
+                    <span className={styles.scoreFill} style={{ width: `${(item.averageScore / 5) * 100}%` }} />
+                  </span>
+                </div>
+              ))}
             </div>
-          </section>
+          ) : (
+            <EmptyState
+              icon={ListChecks}
+              title="Question analytics need more data"
+              copy="Question-level insights will appear as soon as customers rate the live form questions."
+            />
+          )}
+        </Panel>
 
-          <header className="dashboard-v2-hero">
-            <div className="dashboard-v2-hero-main">
-              <div className="section-eyebrow">Dashboard</div>
-              <div className="dashboard-v2-hero-title-row">
-                <div>
-                  <h1 className="dashboard-v2-title">{businessName || businessState.name}</h1>
-                  <p className="dashboard-v2-subtitle">
-                    One clear workspace for the live form, reviews, QR assets, and the updates your
-                    team needs to act on fast.
+        <div className={styles.twoColumnGrid}>
+          <Panel
+            title="Recurring issues"
+            description="Weak categories that are showing up often enough to deserve operational action."
+          >
+            {recurringIssues.length ? (
+              <div className={styles.issueList}>
+                {recurringIssues.map((issue) => (
+                  <div key={issue.id} className={styles.issueRow}>
+                    <div>
+                      <strong>{issue.label}</strong>
+                      <p>{issue.responses} responses - {percent(issue.lowScoreRate)} low-score share</p>
+                    </div>
+                    <span className={cn(styles.issueScore, statusClassName(issue.tone))}>
+                      {issue.averageScore}/5
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={CheckCircle2}
+                title="No recurring issue pattern"
+                copy="As soon as a question becomes a consistent problem, it will be highlighted here."
+              />
+            )}
+          </Panel>
+
+          <Panel
+            title="Executive summary"
+            description="A compact view for weekly reporting and stakeholder check-ins."
+          >
+            <div className={styles.summaryList}>
+              <div className={styles.summaryCell}>
+                <span>Average rating</span>
+                <strong>{summary.averageScore || 0}/5</strong>
+              </div>
+              <div className={styles.summaryCell}>
+                <span>Feedback count</span>
+                <strong>{summary.totalFeedback}</strong>
+              </div>
+              <div className={styles.summaryCell}>
+                <span>Satisfaction rate</span>
+                <strong>{percent(summary.satisfactionRate)}</strong>
+              </div>
+              <div className={styles.summaryCell}>
+                <span>Current window</span>
+                <strong>Last {selectedRange} days</strong>
+              </div>
+            </div>
+          </Panel>
+        </div>
+      </div>
+    )
+  }
+
+  function renderFeedbackSection() {
+    return (
+      <div className={styles.sectionStack}>
+        <Panel
+          title="Feedback list"
+          description="Search comments, sort by score or date, and open full submission details in a side drawer."
+          action={<span className={styles.feedbackCount}>{feedbackRows.length} result{feedbackRows.length === 1 ? '' : 's'}</span>}
+        >
+          <div className={styles.feedbackControls}>
+            <label className={styles.searchField}>
+              <Search size={16} />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search comments or question names"
+                aria-label="Search feedback"
+              />
+            </label>
+
+            <div className={styles.inlineControls}>
+              <select
+                className={styles.select}
+                value={feedbackFilter}
+                onChange={(event) => setFeedbackFilter(event.target.value as FeedbackFilter)}
+                aria-label="Filter feedback"
+              >
+                {FEEDBACK_FILTER_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option.charAt(0).toUpperCase() + option.slice(1)}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                className={styles.select}
+                value={feedbackSort}
+                onChange={(event) => setFeedbackSort(event.target.value as FeedbackSort)}
+                aria-label="Sort feedback"
+              >
+                {FEEDBACK_SORT_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    Sort: {option.charAt(0).toUpperCase() + option.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {feedbackRows.length ? (
+            <div className={styles.feedbackTable}>
+              <div className={styles.feedbackHead}>
+                <span>Date</span>
+                <span>Score</span>
+                <span>Weakest area</span>
+                <span>Comment</span>
+                <span>Status</span>
+              </div>
+
+              <div className={styles.feedbackBody}>
+                {feedbackRows.map((feedback) => (
+                  <button
+                    key={feedback.id}
+                    type="button"
+                    className={cn(styles.feedbackRow, selectedFeedbackId === feedback.id && styles.feedbackRowActive)}
+                    onClick={() => setSelectedFeedbackId(feedback.id)}
+                  >
+                    <span className={styles.feedbackCell}>
+                      <strong>{formatDate(feedback.created_at)}</strong>
+                      <small>{formatRelativeDate(feedback.created_at)}</small>
+                    </span>
+                    <span className={styles.feedbackCell}>
+                      <strong>{feedback.average_score}/5</strong>
+                      <small>{Object.keys(feedback.ratings || {}).length} rated areas</small>
+                    </span>
+                    <span className={styles.feedbackCell}>
+                      <strong>{feedback.lowestCategoryLabel}</strong>
+                      <small>{feedback.lowestCategoryScore}/5</small>
+                    </span>
+                    <span className={styles.feedbackCell}>
+                      <strong>{feedback.hasComment ? excerpt(feedback.commentText, 84) : 'No written comment'}</strong>
+                    </span>
+                    <span className={styles.feedbackCell}>
+                      <TonePill tone={feedback.tone} />
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <EmptyState
+              icon={MessageSquare}
+              title="No feedback matches these filters"
+              copy="Try a wider date range or clear the active search, filter, and sort combination."
+            />
+          )}
+        </Panel>
+      </div>
+    )
+  }
+
+  function renderOperationsSection() {
+    return (
+      <div className={styles.sectionStack}>
+        <div className={styles.twoColumnGrid}>
+          <Panel
+            title="Current location snapshot"
+            description="Today the workspace maps to a single business entity, so this panel acts as the live location overview."
+          >
+            <div className={styles.summaryList}>
+              <div className={styles.summaryCell}>
+                <span>Location</span>
+                <strong>{businessState.name}</strong>
+              </div>
+              <div className={styles.summaryCell}>
+                <span>City</span>
+                <strong>{businessState.city}</strong>
+              </div>
+              <div className={styles.summaryCell}>
+                <span>Sector</span>
+                <strong>{sectorLabel(businessState.sector)}</strong>
+              </div>
+              <div className={styles.summaryCell}>
+                <span>Latest feedback</span>
+                <strong>{allFeedbackRows[0] ? formatRelativeDate(allFeedbackRows[0].created_at) : 'No feedback yet'}</strong>
+              </div>
+            </div>
+          </Panel>
+
+          <Panel
+            title="Branches and locations"
+            description="Prepared for multi-location analytics, while staying honest about the current backend limits."
+          >
+            <EmptyState
+              icon={Building2}
+              title="Branch comparison is not available yet"
+              copy="The backend currently stores a single business workspace without branch entities or per-location submission ownership. Once those models exist, this area can show top and worst-performing locations."
+            />
+          </Panel>
+        </div>
+
+        <div className={styles.twoColumnGrid}>
+          <Panel
+            title="Service insights"
+            description="Operational reading of the weakest categories, even before staff-level tracking exists."
+          >
+            {categoryInsights.some((item) => item.responses > 0) ? (
+              <div className={styles.issueList}>
+                {categoryInsights
+                  .filter((item) => item.responses > 0)
+                  .slice(0, 4)
+                  .map((item) => (
+                    <div key={item.id} className={styles.issueRow}>
+                      <div>
+                        <strong>{item.label}</strong>
+                        <p>{item.responses} responses - {percent(item.lowScoreRate)} low-score share</p>
+                      </div>
+                      <span className={cn(styles.issueScore, statusClassName(item.tone))}>
+                        {item.averageScore}/5
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={Users}
+                title="Not enough operational signal"
+                copy="As more responses arrive, service issues and recurring weak spots will be easier to separate from noise."
+              />
+            )}
+          </Panel>
+
+          <Panel
+            title="Operational checklist"
+            description="Action prompts for managers based on current product and data readiness."
+          >
+            <div className={styles.checklist}>
+              <div className={styles.checklistRow}>
+                <div className={cn(styles.checkIcon, summary.attentionCount === 0 ? styles.checkIconReady : styles.checkIconMuted)}>
+                  <CheckCircle2 size={18} />
+                </div>
+                <div style={{ display: 'grid', gap: 6, flex: 1 }}>
+                  <strong>Review low-scoring feedback daily</strong>
+                  <p className={styles.drawerMeta}>
+                    {summary.attentionCount
+                      ? `${summary.attentionCount} item${summary.attentionCount === 1 ? '' : 's'} still need attention in the selected window.`
+                      : 'No low-scoring submissions are currently surfacing in this reporting window.'}
                   </p>
                 </div>
-                <div className="dashboard-v2-chip-row">
-                  <span className="pill accent-pill">{currentPlan.label}</span>
-                  <span className="pill">{humanizeStatus(businessState.plan_status)}</span>
+              </div>
+
+              <div className={styles.checklistRow}>
+                <div className={cn(styles.checkIcon, publishedQuestions.length ? styles.checkIconReady : styles.checkIconMuted)}>
+                  <ListChecks size={18} />
+                </div>
+                <div style={{ display: 'grid', gap: 6, flex: 1 }}>
+                  <strong>Keep the live form aligned with operations</strong>
+                  <p className={styles.drawerMeta}>
+                    {publishedQuestions.length
+                      ? `${publishedQuestions.length} live question${publishedQuestions.length === 1 ? '' : 's'} currently drive customer feedback collection.`
+                      : 'No live questions are configured yet.'}
+                  </p>
                 </div>
               </div>
 
-              <div className="dashboard-v2-hero-summary-grid">
-                <div className="dashboard-v2-hero-summary-card">
-                  <span>Owner</span>
-                  <strong>{userEmail}</strong>
+              <div className={styles.checklistRow}>
+                <div className={cn(styles.checkIcon, summary.commentCoverage >= 0.3 ? styles.checkIconReady : styles.checkIconMuted)}>
+                  <MessageSquare size={18} />
                 </div>
-                <div className="dashboard-v2-hero-summary-card">
-                  <span>City</span>
-                  <strong>{businessState.city}</strong>
-                </div>
-                <div className="dashboard-v2-hero-summary-card">
-                  <span>Questions live</span>
-                  <strong>{publishedQuestions.length}</strong>
-                </div>
-                <div className="dashboard-v2-hero-summary-card">
-                  <span>Reviews collected</span>
-                  <strong>{submissions.length}</strong>
-                </div>
-              </div>
-            </div>
-
-            <div className="dashboard-v2-hero-side">
-              <div className="dashboard-v2-hero-action-card">
-                <div className="dashboard-v2-hero-action-head">
-                  <div>
-                    <div className="dashboard-v2-hero-status-label">Public form</div>
-                    <strong>Ready to share</strong>
-                  </div>
-                  <span className="pill">{qrGenerated ? 'QR ready' : 'QR pending'}</span>
-                </div>
-
-                <div className="dashboard-v2-link-box">
-                  <Link2 size={16} />
-                  <span>{formUrl}</span>
-                </div>
-
-                <div className="dashboard-v2-hero-actions">
-                  <button type="button" className="button button-secondary" onClick={copyFormLink}>
-                    {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Copy failed' : 'Copy link'}
-                    <Copy size={16} />
-                  </button>
-                  <a href={formUrl} target="_blank" rel="noopener noreferrer" className="button button-primary">
-                    Open form
-                    <ExternalLink size={16} />
-                  </a>
+                <div style={{ display: 'grid', gap: 6, flex: 1 }}>
+                  <strong>Improve written context from guests</strong>
+                  <p className={styles.drawerMeta}>
+                    {summary.commentCoverage >= 0.3
+                      ? `Written feedback coverage is at ${percent(summary.commentCoverage)}, which gives better qualitative detail.`
+                      : `Written feedback coverage is only ${percent(summary.commentCoverage)}, so issue diagnosis still depends heavily on score patterns.`}
+                  </p>
                 </div>
               </div>
 
-              <div className="dashboard-v2-hero-focus-grid">
-                <div className="dashboard-v2-hero-focus-card">
-                  <span>Readiness</span>
-                  <strong>{readinessCount}/4 ready</strong>
-                  <div className="dashboard-v2-progress">
-                    <span style={{ width: `${readinessPercentage}%` }} />
-                  </div>
+              <div className={styles.checklistRow}>
+                <div className={cn(styles.checkIcon, styles.checkIconMuted)}>
+                  <Building2 size={18} />
                 </div>
-                <div className="dashboard-v2-hero-focus-card">
-                  <span>Watch first</span>
-                  <strong>{topConcern}</strong>
-                  <small>
-                    {latestComment?.comment?.trim()
-                      ? 'Latest written review is already in the Reviews tab.'
-                      : 'Written comments will surface here once customers leave one.'}
-                  </small>
+                <div style={{ display: 'grid', gap: 6, flex: 1 }}>
+                  <strong>Prepare branch and staff dimensions</strong>
+                  <p className={styles.drawerMeta}>
+                    Multi-branch and staff performance views need backend tables for locations, staff members, and submission relationships.
+                  </p>
                 </div>
               </div>
             </div>
-          </header>
-
-          <section className="dashboard-v2-panel-head">
-            <div>
-              <div className="dashboard-v2-panel-kicker">{currentTab.label}</div>
-              <h2 className="dashboard-v2-panel-title">{currentTab.hint}</h2>
-            </div>
-            <div className="dashboard-v2-panel-pills">
-              <span className="pill accent-pill">{currentPlan.label}</span>
-              <span className="pill">{submissions.length} reviews</span>
-              <span className="pill">{publishedQuestions.length} questions</span>
-            </div>
-          </section>
-
-          {activeTab === 'overview' ? (
-            <>
-              <div className="dashboard-v2-stack">
-                <section className="dashboard-v2-metrics">
-                  {[
-                    {
-                      label: 'Average score',
-                      value: averageScore ? `${averageScore}/5` : '-',
-                      note: submissions.length ? 'Across all collected responses' : 'No responses yet',
-                      icon: Star,
-                    },
-                    {
-                      label: 'Total reviews',
-                      value: String(submissions.length),
-                      note: 'Every submission stored in your workspace',
-                      icon: MessageSquare,
-                    },
-                    {
-                      label: 'This week',
-                      value: String(weekSubmissions.length),
-                      note: 'Fresh activity from the last 7 days',
-                      icon: BarChart3,
-                    },
-                    {
-                      label: 'Questions live',
-                      value: String(publishedQuestions.length),
-                      note: form ? 'Current form question count' : 'No form connected yet',
-                      icon: ListChecks,
-                    },
-                  ].map((metric) => {
-                    const Icon = metric.icon
-
-                    return (
-                      <article key={metric.label} className="dashboard-v2-card dashboard-v2-metric-card">
-                        <div className="dashboard-v2-card-badge">
-                          <Icon size={17} />
-                        </div>
-                        <div className="dashboard-v2-metric-label">{metric.label}</div>
-                        <div className="dashboard-v2-metric-value">{metric.value}</div>
-                        <p className="dashboard-v2-metric-note">{metric.note}</p>
-                      </article>
-                    )
-                  })}
-                </section>
-
-                <section className="dashboard-v2-stack">
-                  <article className="dashboard-v2-card">
-                    <div className="dashboard-v2-card-head">
-                      <div>
-                        <div className="dashboard-v2-card-title">Weekly activity</div>
-                        <p className="dashboard-v2-card-copy">
-                          Daily review volume without the heavy chart, so the team can spot quiet and busy days faster.
-                        </p>
-                      </div>
-                      <div className="dashboard-v2-activity-head-stats">
-                        <strong>{weeklyTotal}</strong>
-                        <span>reviews in the last 7 days</span>
-                      </div>
-                    </div>
-
-                    <div className="dashboard-v2-activity-layout">
-                      <div className="dashboard-v2-activity-days">
-                        {weeklySeries.map((item) => (
-                          <div
-                            key={item.label}
-                            className={`dashboard-v2-activity-day${
-                              item.count > 0 && item.count === bestDay.count ? ' is-peak' : ''
-                            }${item.count === 0 ? ' is-quiet' : ''}`}
-                          >
-                            <div className="dashboard-v2-activity-day-top">
-                              <span>{item.label}</span>
-                              <strong>{item.count}</strong>
-                            </div>
-                            <div className="dashboard-v2-activity-day-copy">
-                              {item.count === 0 ? 'No reviews' : item.count === 1 ? '1 review' : `${item.count} reviews`}
-                            </div>
-                            <div className="dashboard-v2-activity-day-line">
-                              <span
-                                style={{
-                                  width: `${Math.max((item.count / maxWeeklyCount) * 100, item.count ? 16 : 6)}%`,
-                                }}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="dashboard-v2-activity-summary">
-                        {[
-                          ['Weekly total', String(weeklyTotal)],
-                          ['Best day', bestDay.count ? `${bestDay.label} - ${bestDay.count}` : 'No activity'],
-                          ['Quiet days', String(quietDays)],
-                        ].map(([label, value]) => (
-                          <div key={label} className="dashboard-v2-activity-stat">
-                            <span>{label}</span>
-                            <strong>{value}</strong>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </article>
-
-                  <article className="dashboard-v2-card">
-                    <div className="dashboard-v2-card-head">
-                      <div>
-                        <div className="dashboard-v2-card-title">Category health</div>
-                        <p className="dashboard-v2-card-copy">
-                          Lowest scores stay visible so your team knows what to improve next.
-                        </p>
-                      </div>
-                      {categoryAverages[0] ? <span className="pill">{categoryAverages[0].label}</span> : null}
-                    </div>
-
-                    {categoryAverages.length === 0 ? (
-                      <div className="dashboard-v2-empty">
-                        <div className="dashboard-v2-empty-icon">
-                          <BarChart3 size={18} />
-                        </div>
-                        <h3 className="dashboard-v2-empty-title">No category scores yet</h3>
-                        <p className="dashboard-v2-empty-copy">
-                          Share your form and the dashboard will start ranking weak and strong areas.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="dashboard-v2-list">
-                        {categoryAverages.map((item) => {
-                          const style = scoreStyle(item.average)
-
-                          return (
-                            <div key={item.id} className="dashboard-v2-score-row">
-                              <div className="dashboard-v2-score-copy">
-                                <strong>{item.label}</strong>
-                                <div className="dashboard-v2-score-track">
-                                  <span
-                                    className="dashboard-v2-score-fill"
-                                    style={{
-                                      width: `${(item.average / 5) * 100}%`,
-                                      background: style.color,
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                              <span className="score-pill" style={{ background: style.bg, color: style.color }}>
-                                {item.average}/5
-                              </span>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </article>
-                </section>
-
-                <article className="dashboard-v2-card">
-                  <div className="dashboard-v2-card-head">
-                    <div>
-                      <div className="dashboard-v2-card-title">Latest feedback</div>
-                      <p className="dashboard-v2-card-copy">
-                        Recent comments and scores without leaving the main view.
-                      </p>
-                    </div>
-                    {submissions.length ? <span className="pill">{submissions.length} total</span> : null}
-                  </div>
-
-                  {submissions.length === 0 ? (
-                    <div className="dashboard-v2-empty">
-                      <div className="dashboard-v2-empty-icon">
-                        <MessageSquare size={18} />
-                      </div>
-                      <h3 className="dashboard-v2-empty-title">Nothing has been submitted yet</h3>
-                      <p className="dashboard-v2-empty-copy">
-                        Once customers submit feedback, the latest responses will show up here first.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="dashboard-v2-review-list">
-                      {submissions.slice(0, 5).map((submission) => {
-                        const style = scoreStyle(submission.average_score)
-
-                        return (
-                          <article key={submission.id} className="dashboard-v2-review-item">
-                            <div className="dashboard-v2-review-top">
-                              <span className="score-pill" style={{ background: style.bg, color: style.color }}>
-                                {submission.average_score}/5
-                              </span>
-                              <span className="dashboard-v2-review-date">
-                                {new Intl.DateTimeFormat(locale, {
-                                  dateStyle: 'medium',
-                                  timeStyle: 'short',
-                                }).format(new Date(submission.created_at))}
-                              </span>
-                            </div>
-
-                            <div className="dashboard-v2-rating-pills">
-                              {Object.entries(submission.ratings || {}).map(([id, value]) => (
-                                <span key={id} className="pill">
-                                  {(publishedQuestions.find((item) => item.id === id)?.label_fr || id).slice(0, 22)}:{' '}
-                                  {value}/5
-                                </span>
-                              ))}
-                            </div>
-
-                            <p className="dashboard-v2-review-comment">
-                              {submission.comment?.trim() || 'No written comment for this response.'}
-                            </p>
-                          </article>
-                        )
-                      })}
-                    </div>
-                  )}
-                </article>
-              </div>
-            </>
-          ) : null}
-
-          {activeTab === 'reviews' ? (
-            <>
-              <div className="dashboard-v2-stack">
-                <section className="dashboard-v2-metrics dashboard-v2-metrics-compact">
-                  {[
-                    {
-                      label: 'Positive',
-                      value: positiveReviews,
-                      note: '4 and 5 star average responses',
-                      icon: CheckCircle2,
-                    },
-                    {
-                      label: 'Neutral',
-                      value: neutralReviews,
-                      note: 'Responses around the middle',
-                      icon: CircleAlert,
-                    },
-                    {
-                      label: 'Needs attention',
-                      value: attentionReviews,
-                      note: 'Low scores to investigate',
-                      icon: CircleAlert,
-                    },
-                    {
-                      label: 'With comments',
-                      value: reviewsWithComments,
-                      note: 'Responses with written feedback',
-                      icon: MessageSquare,
-                    },
-                  ].map((metric) => {
-                    const Icon = metric.icon
-
-                    return (
-                      <article key={metric.label} className="dashboard-v2-card dashboard-v2-metric-card">
-                        <div className="dashboard-v2-card-badge">
-                          <Icon size={17} />
-                        </div>
-                        <div className="dashboard-v2-metric-label">{metric.label}</div>
-                        <div className="dashboard-v2-metric-value">{metric.value}</div>
-                        <p className="dashboard-v2-metric-note">{metric.note}</p>
-                      </article>
-                    )
-                  })}
-                </section>
-
-                <article className="dashboard-v2-card">
-                  <div className="dashboard-v2-card-head">
-                    <div>
-                      <div className="dashboard-v2-card-title">All reviews</div>
-                      <p className="dashboard-v2-card-copy">
-                        Full review history with the scores that came with each submission.
-                      </p>
-                    </div>
-                  </div>
-
-                  {submissions.length === 0 ? (
-                    <div className="dashboard-v2-empty">
-                      <div className="dashboard-v2-empty-icon">
-                        <MessageSquare size={18} />
-                      </div>
-                      <h3 className="dashboard-v2-empty-title">No reviews yet</h3>
-                      <p className="dashboard-v2-empty-copy">
-                        Once your QR and public form are live, every new response will appear here.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="dashboard-v2-review-list">
-                      {submissions.map((submission) => {
-                        const style = scoreStyle(submission.average_score)
-
-                        return (
-                          <article key={submission.id} className="dashboard-v2-review-item">
-                            <div className="dashboard-v2-review-top">
-                              <span className="score-pill" style={{ background: style.bg, color: style.color }}>
-                                {submission.average_score}/5
-                              </span>
-                              <span className="dashboard-v2-review-date">
-                                {new Intl.DateTimeFormat(locale, {
-                                  dateStyle: 'medium',
-                                  timeStyle: 'short',
-                                }).format(new Date(submission.created_at))}
-                              </span>
-                            </div>
-
-                            <div className="dashboard-v2-rating-pills">
-                              {Object.entries(submission.ratings || {}).map(([id, value]) => (
-                                <span key={id} className="pill">
-                                  {(publishedQuestions.find((item) => item.id === id)?.label_fr || id).slice(0, 22)}:{' '}
-                                  {value}/5
-                                </span>
-                              ))}
-                            </div>
-
-                            <p className="dashboard-v2-review-comment">
-                              {submission.comment?.trim() || 'No written comment for this response.'}
-                            </p>
-                          </article>
-                        )
-                      })}
-                    </div>
-                  )}
-                </article>
-              </div>
-            </>
-          ) : null}
-
-          {activeTab === 'questions' ? (
-            <>
-              <div className="dashboard-v2-grid dashboard-v2-grid-questions">
-                <section className="dashboard-v2-card">
-                  <div className="dashboard-v2-card-head">
-                    <div>
-                      <div className="dashboard-v2-card-title">Question flow</div>
-                      <p className="dashboard-v2-card-copy">
-                        Keep the public form sharp: choose a question, edit it, then publish the full set.
-                      </p>
-                    </div>
-                    <div className="dashboard-v2-question-flow-actions">
-                      <span className="pill">{questions.length} / 10 live</span>
-                      <button
-                        type="button"
-                        className="button button-primary"
-                        onClick={() => setQuestionModalOpen(true)}
-                      >
-                        Open composer
-                        <Plus size={16} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {questions.length === 0 ? (
-                    <div className="dashboard-v2-empty">
-                      <div className="dashboard-v2-empty-icon">
-                        <ListChecks size={18} />
-                      </div>
-                      <h3 className="dashboard-v2-empty-title">No questions yet</h3>
-                      <p className="dashboard-v2-empty-copy">
-                        Open the composer, add the first question, then publish it to the live form.
-                      </p>
-                      <button
-                        type="button"
-                        className="button button-primary"
-                        style={{ marginTop: 18 }}
-                        onClick={() => setQuestionModalOpen(true)}
-                      >
-                        Open composer
-                        <Plus size={16} />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="dashboard-v2-question-browser">
-                      {questions.map((question, index) => (
-                        <button
-                          key={question.id}
-                          type="button"
-                          className={`dashboard-v2-question-tile${selectedQuestion?.id === question.id ? ' active' : ''}`}
-                          onClick={() => setSelectedQuestionId(question.id)}
-                        >
-                          <span className="dashboard-v2-question-order">{index + 1}</span>
-                          <span className="dashboard-v2-question-tile-copy">
-                            <span className="dashboard-v2-question-index">Question {index + 1}</span>
-                            <span className="dashboard-v2-question-preview">
-                              {questionLabel(question, lang)}
-                            </span>
-                            <span className="dashboard-v2-question-tile-meta">
-                              FR and AR required. EN and ES optional.
-                            </span>
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </section>
-
-                <div className="dashboard-v2-side-stack">
-                  <section className="dashboard-v2-card">
-                    <div className="dashboard-v2-card-head">
-                      <div>
-                        <div className="dashboard-v2-card-title">Question editor</div>
-                        <p className="dashboard-v2-card-copy">
-                          Edit the selected question and keep the wording simple on mobile.
-                        </p>
-                      </div>
-                    </div>
-
-                    {selectedQuestion ? (
-                      <div className="dashboard-v2-question-editor">
-                        <div className="dashboard-v2-question-editor-top">
-                          <div className="dashboard-v2-question-editor-title">
-                            Editing question {selectedQuestionIndex + 1}
-                          </div>
-                          <div className="dashboard-v2-question-actions">
-                            <button
-                              type="button"
-                              className="mini-button"
-                              onClick={() => moveQuestion(selectedQuestionIndex, 'up')}
-                              disabled={selectedQuestionIndex <= 0}
-                              aria-label="Move question up"
-                            >
-                              <ArrowUp size={16} />
-                            </button>
-                            <button
-                              type="button"
-                              className="mini-button"
-                              onClick={() => moveQuestion(selectedQuestionIndex, 'down')}
-                              disabled={selectedQuestionIndex === questions.length - 1}
-                              aria-label="Move question down"
-                            >
-                              <ArrowDown size={16} />
-                            </button>
-                            <button
-                              type="button"
-                              className="mini-button"
-                              onClick={() => removeQuestion(selectedQuestion.id)}
-                              aria-label="Remove question"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="dashboard-v2-question-preview-box">
-                          <div className="dashboard-v2-question-preview-label">Current preview</div>
-                          <div className="dashboard-v2-question-preview-large">
-                            {questionLabel(selectedQuestion, lang)}
-                          </div>
-                        </div>
-
-                        <div className="dashboard-v2-field-grid">
-                          <div className="field">
-                            <label className="label">French</label>
-                            <input
-                              className="input"
-                              value={selectedQuestion.label_fr}
-                              onChange={(event) =>
-                                updateQuestionField(selectedQuestion.id, 'label_fr', event.target.value)
-                              }
-                            />
-                          </div>
-                          <div className="field">
-                            <label className="label">Arabic</label>
-                            <input
-                              className="input"
-                              value={selectedQuestion.label_ar}
-                              onChange={(event) =>
-                                updateQuestionField(selectedQuestion.id, 'label_ar', event.target.value)
-                              }
-                            />
-                          </div>
-                          <div className="field">
-                            <label className="label">English</label>
-                            <input
-                              className="input"
-                              value={selectedQuestion.label_en || ''}
-                              onChange={(event) =>
-                                updateQuestionField(selectedQuestion.id, 'label_en', event.target.value)
-                              }
-                            />
-                          </div>
-                          <div className="field">
-                            <label className="label">Spanish</label>
-                            <input
-                              className="input"
-                              value={selectedQuestion.label_es || ''}
-                              onChange={(event) =>
-                                updateQuestionField(selectedQuestion.id, 'label_es', event.target.value)
-                              }
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="dashboard-v2-empty">
-                        <div className="dashboard-v2-empty-icon">
-                          <ListChecks size={18} />
-                        </div>
-                        <h3 className="dashboard-v2-empty-title">Nothing selected</h3>
-                        <p className="dashboard-v2-empty-copy">
-                          Select a question from the list to edit its labels and order.
-                        </p>
-                      </div>
-                    )}
-                  </section>
-
-                  <section className="dashboard-v2-card dashboard-v2-question-launcher">
-                    <div className="dashboard-v2-card-head">
-                      <div>
-                        <div className="dashboard-v2-card-title">Question composer</div>
-                        <p className="dashboard-v2-card-copy">
-                          New questions now open in a larger composer so writing and translation work feels smoother.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="dashboard-v2-share-mini-grid">
-                      <div className="dashboard-v2-share-mini-card">
-                        <span>Required</span>
-                        <strong>French and Arabic</strong>
-                      </div>
-                      <div className="dashboard-v2-share-mini-card">
-                        <span>Optional</span>
-                        <strong>English and Spanish</strong>
-                      </div>
-                      <div className="dashboard-v2-share-mini-card">
-                        <span>Recommended</span>
-                        <strong>Keep it under one sentence</strong>
-                      </div>
-                    </div>
-
-                    <div className="dashboard-v2-action-row" style={{ marginTop: 20 }}>
-                      <button
-                        type="button"
-                        className="button button-primary"
-                        onClick={() => setQuestionModalOpen(true)}
-                      >
-                        Open composer
-                        <Plus size={16} />
-                      </button>
-                    </div>
-                  </section>
-
-                  {(questionMessage || questionsDirty) ? (
-                    <section className="dashboard-v2-card dashboard-v2-sticky-card">
-                      <div className="dashboard-v2-card-head">
-                        <div>
-                          <div className="dashboard-v2-card-title">Publish changes</div>
-                          <p className="dashboard-v2-card-copy">
-                            Save the question list so the public feedback page reflects the new version.
-                          </p>
-                        </div>
-                      </div>
-
-                      {questionMessage ? (
-                        <div
-                          className={`message ${questionMessage.type === 'error' ? 'message-error' : 'message-success'}`}
-                          style={{ marginBottom: 0 }}
-                        >
-                          {questionMessage.text}
-                        </div>
-                      ) : null}
-
-                      {questionsDirty ? (
-                        <div className="dashboard-v2-action-row" style={{ marginTop: 18 }}>
-                          <button
-                            type="button"
-                            className="button button-secondary"
-                            onClick={() => {
-                              setQuestions(baselineQuestions)
-                              setQuestionsDirty(false)
-                              setQuestionMessage(null)
-                            }}
-                          >
-                            Reset edits
-                          </button>
-                          <button
-                            type="button"
-                            className="button button-primary"
-                            onClick={saveQuestions}
-                            disabled={questionsSaving}
-                          >
-                            {questionsSaving ? 'Saving...' : 'Publish'}
-                            <Save size={16} />
-                          </button>
-                        </div>
-                      ) : null}
-                    </section>
-                  ) : null}
-                </div>
-              </div>
-            </>
-          ) : null}
-
-          {activeTab === 'share' ? (
-            <>
-              <div className="dashboard-v2-stack">
-                <section className="dashboard-v2-card dashboard-v2-share-hero">
-                  <div className="dashboard-v2-card-head">
-                    <div>
-                      <div className="dashboard-v2-card-title">Share center</div>
-                      <p className="dashboard-v2-card-copy">
-                        Everything you need to open the live page, copy the link, and prepare the QR for staff on site.
-                      </p>
-                    </div>
-                    <span className="pill accent-pill">{qrGenerated ? 'Ready to print' : 'Needs QR'}</span>
-                  </div>
-
-                  <div className="dashboard-v2-share-hero-grid">
-                    <div className="dashboard-v2-share-stack">
-                      <div className="dashboard-v2-link-box">
-                        <Link2 size={16} />
-                        <span>{formUrl}</span>
-                      </div>
-
-                      <div className="dashboard-v2-action-row">
-                        <button type="button" className="button button-secondary" onClick={copyFormLink}>
-                          {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Copy failed' : 'Copy link'}
-                          <Copy size={16} />
-                        </button>
-                        <a href={formUrl} target="_blank" rel="noopener noreferrer" className="button button-primary">
-                          Open form
-                          <ExternalLink size={16} />
-                        </a>
-                      </div>
-                    </div>
-
-                    <div className="dashboard-v2-share-mini-grid">
-                      {[
-                        ['Questions live', String(publishedQuestions.length)],
-                        ['Google reviews', googleUrl.trim() ? 'Connected' : 'Missing'],
-                        ['QR file', qrGenerated ? 'Generated' : 'Not generated'],
-                      ].map(([label, value]) => (
-                        <div key={label} className="dashboard-v2-share-mini-card">
-                          <span>{label}</span>
-                          <strong>{value}</strong>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </section>
-
-                <section className="dashboard-v2-grid dashboard-v2-grid-share">
-                  <article className="dashboard-v2-card">
-                    <div className="dashboard-v2-card-head">
-                      <div>
-                        <div className="dashboard-v2-card-title">QR studio</div>
-                        <p className="dashboard-v2-card-copy">
-                          Generate, preview, and download the asset your team can place on tables, counters, or reception.
-                        </p>
-                      </div>
-                    </div>
-
-                    {!qrGenerated ? (
-                      <div className="dashboard-v2-empty">
-                        <div className="dashboard-v2-empty-icon">
-                          <QrCode size={18} />
-                        </div>
-                        <h3 className="dashboard-v2-empty-title">Generate the first QR code</h3>
-                        <p className="dashboard-v2-empty-copy">
-                          The public form link already works. Creating the QR simply makes the on-site journey faster.
-                        </p>
-                        <button
-                          type="button"
-                          className="button button-primary"
-                          style={{ marginTop: 18 }}
-                          onClick={generateQr}
-                          disabled={qrLoading}
-                        >
-                          {qrLoading ? 'Generating...' : 'Generate QR'}
-                          <QrCode size={16} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="dashboard-v2-qr-studio">
-                        <div className="qr-box">
-                          <img src={qrUrl} alt="QR code" width={220} height={220} />
-                        </div>
-
-                        <div className="dashboard-v2-share-mini-grid">
-                          {[
-                            ['File type', 'PNG ready'],
-                            ['Link mode', 'Stable live URL'],
-                            ['Best use', 'Tables and counters'],
-                          ].map(([label, value]) => (
-                            <div key={label} className="dashboard-v2-share-mini-card">
-                              <span>{label}</span>
-                              <strong>{value}</strong>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="dashboard-v2-action-row">
-                          <button type="button" className="button button-primary" onClick={downloadQr}>
-                            Download QR
-                            <Download size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            className="button button-secondary"
-                            onClick={generateQr}
-                            disabled={qrLoading}
-                          >
-                            {qrLoading ? 'Generating...' : 'Refresh asset'}
-                            <QrCode size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </article>
-
-                  <article className="dashboard-v2-card">
-                    <div className="dashboard-v2-card-head">
-                      <div>
-                        <div className="dashboard-v2-card-title">Placement playbook</div>
-                        <p className="dashboard-v2-card-copy">
-                          A better on-site setup usually comes from small placement decisions, not extra complexity.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="dashboard-v2-hint-list">
-                      {[
-                        'Put the QR where customers naturally pause, not where they need to search for it.',
-                        'Keep the invitation short and clear so the form feels like it takes under a minute.',
-                        'After editing questions, open the live page once so staff know what customers now see.',
-                      ].map((item) => (
-                        <div key={item} className="dashboard-v2-hint-row">
-                          <span className="dashboard-v2-hint-dot" />
-                          <span>{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </article>
-                </section>
-
-                <section className="dashboard-v2-card">
-                  <div className="dashboard-v2-card-head">
-                    <div>
-                      <div className="dashboard-v2-card-title">Go-live board</div>
-                      <p className="dashboard-v2-card-copy">
-                        A clearer readiness view before the team prints the QR and starts collecting responses.
-                      </p>
-                    </div>
-                    <span className="pill">{readinessCount}/4 complete</span>
-                  </div>
-
-                  <div className="dashboard-v2-share-status-grid">
-                    {readinessItems.map((item) => (
-                      <div
-                        key={item.label}
-                        className={`dashboard-v2-share-status-card${item.ready ? ' is-ready' : ''}`}
-                      >
-                        <span className={`dashboard-v2-check-icon${item.ready ? ' ready' : ''}`}>
-                          {item.ready ? <CheckCircle2 size={16} /> : <CircleAlert size={16} />}
-                        </span>
-                        <strong>{item.label}</strong>
-                        <p>{item.ready ? 'Ready to use across the workspace.' : 'Still missing before launch.'}</p>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              </div>
-            </>
-          ) : null}
-
-          {activeTab === 'settings' ? (
-            <>
-              <div className="dashboard-v2-stack">
-                <section className="dashboard-v2-card dashboard-v2-settings-shell">
-                  <div className="dashboard-v2-card-head">
-                    <div>
-                      <div className="dashboard-v2-card-title">Workspace customization</div>
-                      <p className="dashboard-v2-card-copy">
-                        Update the workspace details, refresh branding, and choose the accent style used across the app.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="dashboard-v2-settings-shell-grid">
-                    <div className="dashboard-v2-card dashboard-v2-settings-inner">
-                      <div className="dashboard-v2-card-head">
-                        <div>
-                          <div className="dashboard-v2-card-title">Theme accent</div>
-                          <p className="dashboard-v2-card-copy">
-                            The light and dark mode toggle still controls brightness. This chooses the accent color.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="dashboard-v2-theme-grid">
-                        {ACCENT_OPTIONS.map((option) => (
-                          <button
-                            key={option.id}
-                            type="button"
-                            className={`dashboard-v2-theme-option${accentTheme === option.id ? ' active' : ''}`}
-                            onClick={() => setAccentTheme(option.id)}
-                          >
-                            <span
-                              className="dashboard-v2-theme-option-swatch"
-                              style={{ background: option.swatch }}
-                            />
-                            <span className="dashboard-v2-theme-option-copy">
-                              <strong>{option.label}</strong>
-                              <span>{option.id === 'green' ? 'Default workspace accent' : 'Apply across dashboard and site'}</span>
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="dashboard-v2-card dashboard-v2-settings-inner">
-                      <div className="dashboard-v2-card-head">
-                        <div>
-                          <div className="dashboard-v2-card-title">Workspace preview</div>
-                          <p className="dashboard-v2-card-copy">
-                            Quick snapshot of the current business identity and launch state.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="dashboard-v2-settings-preview">
-                        <div className="dashboard-v2-logo-panel">
-                          <div className="dashboard-v2-avatar dashboard-v2-avatar-large">
-                            {logoPreview ? (
-                              <img
-                                src={logoPreview}
-                                alt={businessName || businessState.name}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                              />
-                            ) : (
-                              (businessName || businessState.name).slice(0, 2).toUpperCase()
-                            )}
-                          </div>
-
-                          <div>
-                            <div className="dashboard-v2-business-name">{businessName || businessState.name}</div>
-                            <div className="dashboard-v2-business-meta">
-                              {businessState.city} • {businessState.sector}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="dashboard-v2-share-mini-grid">
-                          {[
-                            ['Plan', currentPlan.label],
-                            ['Status', humanizeStatus(businessState.plan_status)],
-                            ['Launch', `${readinessCount}/4 ready`],
-                          ].map(([label, value]) => (
-                            <div key={label} className="dashboard-v2-share-mini-card">
-                              <span>{label}</span>
-                              <strong>{value}</strong>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                <div className="dashboard-v2-grid dashboard-v2-grid-settings">
-                  <section className="dashboard-v2-card">
-                    <div className="dashboard-v2-card-head">
-                      <div>
-                        <div className="dashboard-v2-card-title">Workspace details</div>
-                        <p className="dashboard-v2-card-copy">
-                          Update the key business information without leaving the dashboard.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="field">
-                      <label className="label">Business name</label>
-                      <input
-                        className="input"
-                        value={businessName}
-                        onChange={(event) => setBusinessName(event.target.value)}
-                      />
-                    </div>
-
-                    <div className="field">
-                      <label className="label">Google Reviews URL</label>
-                      <input
-                        className="input"
-                        value={googleUrl}
-                        onChange={(event) => setGoogleUrl(event.target.value)}
-                      />
-                    </div>
-
-                    <div className="field">
-                      <label className="label">Plan</label>
-                      <select
-                        className="select"
-                        value={selectedPlan}
-                        onChange={(event) => setSelectedPlan(event.target.value)}
-                      >
-                        <option value="trial">Trial</option>
-                        <option value="starter">Starter - 149 MAD</option>
-                        <option value="pro">Pro - 299 MAD</option>
-                        <option value="business">Business - 699 MAD</option>
-                      </select>
-                    </div>
-
-                    <p className="help-text">
-                      Payments can be connected later. For now the plan change stays manual from the dashboard.
-                    </p>
-
-                    {settingsMessage ? (
-                      <div className={`message ${settingsMessage.type === 'error' ? 'message-error' : 'message-success'}`}>
-                        {settingsMessage.text}
-                      </div>
-                    ) : null}
-
-                    <div className="dashboard-v2-action-row">
-                      <button
-                        type="button"
-                        className="button button-primary"
-                        onClick={saveBusinessSettings}
-                        disabled={saving}
-                      >
-                        {saving ? 'Saving...' : 'Save changes'}
-                        <Save size={16} />
-                      </button>
-                    </div>
-                  </section>
-
-                  <section className="dashboard-v2-card">
-                    <div className="dashboard-v2-card-head">
-                      <div>
-                        <div className="dashboard-v2-card-title">Brand assets</div>
-                        <p className="dashboard-v2-card-copy">
-                          Upload the logo customers and staff will connect with this workspace.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="dashboard-v2-logo-stack">
-                      <div className="dashboard-v2-logo-showcase">
-                        <div className="dashboard-v2-avatar dashboard-v2-avatar-large">
-                          {logoPreview ? (
-                            <img
-                              src={logoPreview}
-                              alt={businessName || businessState.name}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                          ) : (
-                            (businessName || businessState.name).slice(0, 2).toUpperCase()
-                          )}
-                        </div>
-                        <div>
-                          <div className="dashboard-v2-business-name">{businessName || businessState.name}</div>
-                          <div className="dashboard-v2-business-meta">
-                            {logoPreview ? 'Custom logo active' : 'Using the initials placeholder'}
-                          </div>
-                        </div>
-                      </div>
-
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={handleLogoUpload}
-                      />
-
-                      <div className="dashboard-v2-action-row">
-                        <button
-                          type="button"
-                          className="button button-primary"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={logoUploading}
-                        >
-                          {logoUploading ? 'Uploading...' : 'Choose image'}
-                          <ImageUp size={16} />
-                        </button>
-                        {logoPreview ? (
-                          <button type="button" className="button button-secondary" onClick={removeLogo}>
-                            Remove logo
-                            <Trash2 size={16} />
-                          </button>
-                        ) : null}
-                      </div>
-
-                      {logoMessage ? (
-                        <div className={`message ${logoMessage.type === 'error' ? 'message-error' : 'message-success'}`}>
-                          {logoMessage.text}
-                        </div>
-                      ) : null}
-                    </div>
-                  </section>
-
-                  <section className="dashboard-v2-card">
-                    <div className="dashboard-v2-card-head">
-                      <div>
-                        <div className="dashboard-v2-card-title">Workspace snapshot</div>
-                        <p className="dashboard-v2-card-copy">
-                          A cleaner read of the current setup instead of the older summary list.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="dashboard-v2-share-status-grid">
-                      {[
-                        ['Plan', currentPlan.label],
-                        ['Price', currentPlan.price],
-                        ['Questions', String(publishedQuestions.length)],
-                        ['Reviews', String(submissions.length)],
-                      ].map(([label, value]) => (
-                        <div key={label} className="dashboard-v2-share-status-card">
-                          <span>{label}</span>
-                          <strong>{value}</strong>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="dashboard-v2-plan-note">
-                      <div className="dashboard-v2-plan-note-title">{currentPlan.label}</div>
-                      <p>{currentPlan.description}</p>
-                    </div>
-                  </section>
-
-                  <section className="dashboard-v2-card">
-                    <div className="dashboard-v2-card-head">
-                      <div>
-                        <div className="dashboard-v2-card-title">Session</div>
-                        <p className="dashboard-v2-card-copy">
-                          Sign out when this workspace is being used on a shared machine.
-                        </p>
-                      </div>
-                    </div>
-
-                    <button type="button" className="button button-danger" onClick={logout}>
-                      Sign out
-                      <LogOut size={16} />
-                    </button>
-                  </section>
-                </div>
-              </div>
-            </>
-          ) : null}
-        </main>
+          </Panel>
+        </div>
       </div>
+    )
+  }
 
-      {questionModalOpen ? (
-        <div className="modal-backdrop" onClick={closeQuestionModal}>
-          <div className="modal-card dashboard-v2-question-modal" onClick={(event) => event.stopPropagation()}>
-            <div className="dashboard-v2-question-modal-head">
-              <div>
-                <div className="dashboard-v2-card-title">Add a new question</div>
-                <p className="dashboard-v2-card-copy">
-                  Write the French and Arabic versions first, then add English and Spanish if needed.
-                </p>
+  function renderCollectionSection() {
+    return (
+      <div className={styles.sectionStack}>
+        <div className={styles.twoColumnGrid}>
+          <Panel
+            title="Collection channels"
+            description="Everything needed to distribute the feedback form and monitor collection readiness."
+          >
+            <div className={styles.collectionStatusGrid}>
+              <div className={styles.collectionStatusCard}>
+                <strong>Live form</strong>
+                <p>{form ? 'Configured and ready to collect feedback.' : 'No feedback form is currently attached to this workspace.'}</p>
               </div>
-
-              <button type="button" className="icon-button" onClick={closeQuestionModal} aria-label="Close composer">
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="dashboard-v2-field-grid">
-              <div className="field">
-                <label className="label">French</label>
-                <input
-                  className="input"
-                  value={newQuestion.fr}
-                  onChange={(event) =>
-                    setNewQuestion((current) => ({ ...current, fr: event.target.value }))
-                  }
-                />
+              <div className={styles.collectionStatusCard}>
+                <strong>QR asset</strong>
+                <p>{business.qr_generated ? 'QR generation is enabled for this workspace.' : 'QR has not yet been marked as generated in the current data model.'}</p>
               </div>
-              <div className="field">
-                <label className="label">Arabic</label>
-                <input
-                  className="input"
-                  value={newQuestion.ar}
-                  onChange={(event) =>
-                    setNewQuestion((current) => ({ ...current, ar: event.target.value }))
-                  }
-                />
+              <div className={styles.collectionStatusCard}>
+                <strong>Google review link</strong>
+                <p>{businessState.google_review_url ? 'External review destination is configured.' : 'No Google review URL has been added yet.'}</p>
               </div>
-              <div className="field">
-                <label className="label">English</label>
-                <input
-                  className="input"
-                  value={newQuestion.en}
-                  onChange={(event) =>
-                    setNewQuestion((current) => ({ ...current, en: event.target.value }))
-                  }
-                />
-              </div>
-              <div className="field">
-                <label className="label">Spanish</label>
-                <input
-                  className="input"
-                  value={newQuestion.es}
-                  onChange={(event) =>
-                    setNewQuestion((current) => ({ ...current, es: event.target.value }))
-                  }
-                />
+              <div className={styles.collectionStatusCard}>
+                <strong>Branding</strong>
+                <p>{logoPreview ? 'Brand logo is present on the workspace.' : 'Add a logo to make collection assets feel production-ready.'}</p>
               </div>
             </div>
+          </Panel>
 
-            <div className="dashboard-v2-question-modal-foot">
-              <button type="button" className="button button-secondary" onClick={closeQuestionModal}>
-                Cancel
-              </button>
-              <button type="button" className="button button-primary" onClick={addQuestion}>
-                Add question
-                <Plus size={16} />
-              </button>
+          <Panel
+            title="Public form access"
+            description="Direct access to the live customer-facing feedback flow."
+          >
+            <div className={styles.collectionHero}>
+              <div className={styles.linkCard}>
+                <div className={styles.linkCardHead}>
+                  <strong>Live form URL</strong>
+                  <Link href={livePath} className={styles.secondaryButton} target="_blank" rel="noreferrer">
+                    Open
+                    <ExternalLink size={16} />
+                  </Link>
+                </div>
+                <span>{liveUrl}</span>
+              </div>
+
+              <div className={styles.actionRow}>
+                <button type="button" className={styles.primaryButton} onClick={copyLiveFormLink}>
+                  {copyState === 'copied' ? 'Copied link' : copyState === 'error' ? 'Copy failed' : 'Copy form link'}
+                  <Copy size={16} />
+                </button>
+
+                {businessState.google_review_url ? (
+                  <Link href={businessState.google_review_url} className={styles.secondaryButton} target="_blank" rel="noreferrer">
+                    Google reviews
+                    <ExternalLink size={16} />
+                  </Link>
+                ) : null}
+              </div>
             </div>
+          </Panel>
+        </div>
+
+        <div className={styles.twoColumnGrid}>
+          <Panel
+            title="QR asset"
+            description="Download or refresh a high-resolution QR code that points directly to the live feedback form."
+          >
+            <div className={styles.qrStudio}>
+              <div className={styles.qrPreview} style={{ backgroundImage: `url("${qrUrl}")` }} />
+
+              <div className={styles.actionRow}>
+                <button type="button" className={styles.secondaryButton} onClick={refreshQrAsset}>
+                  {isRefreshingQr ? <LoaderCircle size={16} className={styles.spin} /> : <QrCode size={16} />}
+                  Refresh preview
+                </button>
+                <button type="button" className={styles.primaryButton} onClick={downloadQrAsset}>
+                  Download PNG
+                  <Download size={16} />
+                </button>
+              </div>
+            </div>
+          </Panel>
+
+          <Panel
+            title="Live question set"
+            description="Edit the customer feedback form without leaving the dashboard."
+            action={
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={publishQuestions}
+                disabled={!form || isPublishingQuestions || !questionChangesPending}
+              >
+                {isPublishingQuestions ? <LoaderCircle size={16} className={styles.spin} /> : <Save size={16} />}
+                Publish changes
+              </button>
+            }
+          >
+            {questionNotice ? (
+              <div className={cn(styles.notice, questionNotice.tone === 'success' ? styles.noticeSuccess : styles.noticeError)}>
+                {questionNotice.text}
+              </div>
+            ) : null}
+
+            {draftQuestions.length ? (
+              <div className={styles.questionList}>
+                {draftQuestions.map((question, index) => (
+                  <article key={`${question.id}-${index}`} className={styles.questionCard}>
+                    <div className={styles.questionCardHead}>
+                      <div>
+                        <span className={styles.questionIndex}>Question {String(index + 1).padStart(2, '0')}</span>
+                        <strong>{questionLabel(question)}</strong>
+                      </div>
+
+                      <div className={styles.iconButtonRow}>
+                        <button
+                          type="button"
+                          className={styles.iconButton}
+                          onClick={() => moveQuestion(index, 'up')}
+                          disabled={index === 0}
+                          aria-label={`Move question ${index + 1} up`}
+                        >
+                          <ArrowUp size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.iconButton}
+                          onClick={() => moveQuestion(index, 'down')}
+                          disabled={index === draftQuestions.length - 1}
+                          aria-label={`Move question ${index + 1} down`}
+                        >
+                          <ArrowDown size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.iconButton}
+                          onClick={() => removeQuestion(index)}
+                          aria-label={`Remove question ${index + 1}`}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className={styles.questionFieldGrid}>
+                      <label className={styles.field}>
+                        <span>French label</span>
+                        <input
+                          className={styles.input}
+                          value={question.label_fr}
+                          onChange={(event) => updateQuestionField(index, 'label_fr', event.target.value)}
+                        />
+                      </label>
+
+                      <label className={styles.field}>
+                        <span>Arabic label</span>
+                        <input
+                          className={styles.input}
+                          value={question.label_ar}
+                          onChange={(event) => updateQuestionField(index, 'label_ar', event.target.value)}
+                        />
+                      </label>
+
+                      <label className={styles.field}>
+                        <span>English label</span>
+                        <input
+                          className={styles.input}
+                          value={question.label_en || ''}
+                          onChange={(event) => updateQuestionField(index, 'label_en', event.target.value)}
+                        />
+                      </label>
+
+                      <label className={styles.field}>
+                        <span>Spanish label</span>
+                        <input
+                          className={styles.input}
+                          value={question.label_es || ''}
+                          onChange={(event) => updateQuestionField(index, 'label_es', event.target.value)}
+                        />
+                      </label>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={ListChecks}
+                title="No questions configured"
+                copy="Create the first question below to start collecting structured customer feedback."
+              />
+            )}
+
+            <div className={styles.questionComposer}>
+              <div className={styles.questionCardHead}>
+                <div>
+                  <span className={styles.questionIndex}>New question</span>
+                  <strong>Add a new question to the draft form</strong>
+                </div>
+
+                <button type="button" className={styles.secondaryButton} onClick={addQuestion}>
+                  Add question
+                  <Plus size={16} />
+                </button>
+              </div>
+
+              <div className={styles.questionFieldGrid}>
+                <label className={styles.field}>
+                  <span>French label</span>
+                  <input
+                    className={styles.input}
+                    value={newQuestion.label_fr}
+                    onChange={(event) => setNewQuestion((current) => ({ ...current, label_fr: event.target.value }))}
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Arabic label</span>
+                  <input
+                    className={styles.input}
+                    value={newQuestion.label_ar}
+                    onChange={(event) => setNewQuestion((current) => ({ ...current, label_ar: event.target.value }))}
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>English label</span>
+                  <input
+                    className={styles.input}
+                    value={newQuestion.label_en}
+                    onChange={(event) => setNewQuestion((current) => ({ ...current, label_en: event.target.value }))}
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Spanish label</span>
+                  <input
+                    className={styles.input}
+                    value={newQuestion.label_es}
+                    onChange={(event) => setNewQuestion((current) => ({ ...current, label_es: event.target.value }))}
+                  />
+                </label>
+              </div>
+            </div>
+          </Panel>
+        </div>
+      </div>
+    )
+  }
+
+  function renderSettingsSection() {
+    return (
+      <div className={styles.sectionStack}>
+        <div className={styles.twoColumnGrid}>
+          <Panel
+            title="Business settings"
+            description="Core workspace details used across the feedback experience."
+            action={
+              <button type="button" className={styles.primaryButton} onClick={saveSettings} disabled={isSavingSettings}>
+                {isSavingSettings ? <LoaderCircle size={16} className={styles.spin} /> : <Save size={16} />}
+                Save settings
+              </button>
+            }
+          >
+            {settingsNotice ? (
+              <div className={cn(styles.notice, settingsNotice.tone === 'success' ? styles.noticeSuccess : styles.noticeError)}>
+                {settingsNotice.text}
+              </div>
+            ) : null}
+
+            <div className={styles.formGrid}>
+              <label className={styles.field}>
+                <span>Business name</span>
+                <input
+                  className={styles.input}
+                  value={businessState.name}
+                  onChange={(event) =>
+                    setBusinessState((current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label className={styles.field}>
+                <span>Plan</span>
+                <select
+                  className={styles.select}
+                  value={businessState.plan}
+                  onChange={(event) =>
+                    setBusinessState((current) => ({
+                      ...current,
+                      plan: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="trial">Trial</option>
+                  <option value="starter">Starter</option>
+                  <option value="pro">Pro</option>
+                  <option value="business">Business</option>
+                </select>
+              </label>
+
+              <label className={styles.field}>
+                <span>Google review URL</span>
+                <input
+                  className={styles.input}
+                  value={businessState.google_review_url || ''}
+                  onChange={(event) =>
+                    setBusinessState((current) => ({
+                      ...current,
+                      google_review_url: event.target.value,
+                    }))
+                  }
+                  placeholder="https://..."
+                />
+              </label>
+
+              <div className={styles.readOnlyBlock}>
+                <span>Plan status</span>
+                <strong>{businessState.plan_status.replace(/[_-]+/g, ' ')}</strong>
+              </div>
+
+              <div className={styles.readOnlyBlock}>
+                <span>City</span>
+                <strong>{businessState.city}</strong>
+              </div>
+
+              <div className={styles.readOnlyBlock}>
+                <span>Sector</span>
+                <strong>{sectorLabel(businessState.sector)}</strong>
+              </div>
+            </div>
+          </Panel>
+
+          <Panel
+            title="Branding and workspace"
+            description="Keep the admin workspace polished and aligned with the business brand."
+          >
+            <div className={styles.brandingCard}>
+              <div className={styles.workspaceCard}>
+                <div
+                  className={styles.brandPreview}
+                  style={logoPreview ? { backgroundImage: `url("${logoPreview}")` } : undefined}
+                >
+                  {!logoPreview ? businessState.name.slice(0, 2).toUpperCase() : null}
+                </div>
+
+                <div className={styles.workspaceCopy}>
+                  <strong>{businessState.name}</strong>
+                  <span>{sectorLabel(businessState.sector)} - {businessState.city}</span>
+                </div>
+
+                <div className={styles.workspaceMeta}>
+                  <span>{planLabel(businessState.plan)}</span>
+                  <span>{logoPreview ? 'Logo uploaded' : 'No logo yet'}</span>
+                </div>
+
+                <div className={styles.actionRow}>
+                  <label className={styles.secondaryButton}>
+                    {isUploadingLogo ? <LoaderCircle size={16} className={styles.spin} /> : <ImageUp size={16} />}
+                    {logoPreview ? 'Replace logo' : 'Upload logo'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className={styles.sessionCard}>
+                <div className={styles.sessionMeta}>
+                  <strong>Workspace owner</strong>
+                  <span>{userEmail || 'Signed in user'}</span>
+                </div>
+
+                <div className={styles.sessionMeta}>
+                  <strong>Plan guidance</strong>
+                  <span>{planCopy}</span>
+                </div>
+
+                <button type="button" className={styles.ghostButton} onClick={logout} disabled={isLoggingOut}>
+                  {isLoggingOut ? <LoaderCircle size={16} className={styles.spin} /> : <LogOut size={16} />}
+                  Sign out
+                </button>
+              </div>
+            </div>
+          </Panel>
+        </div>
+      </div>
+    )
+  }
+
+  function renderSectionContent() {
+    if (activeSection === 'overview') return renderOverviewSection()
+    if (activeSection === 'analytics') return renderAnalyticsSection()
+    if (activeSection === 'feedback') return renderFeedbackSection()
+    if (activeSection === 'operations') return renderOperationsSection()
+    if (activeSection === 'collection') return renderCollectionSection()
+    return renderSettingsSection()
+  }
+
+  return (
+    <div className={styles.shell}>
+      <button
+        type="button"
+        className={cn(styles.sidebarBackdrop, mobileNavOpen && styles.sidebarBackdropOpen)}
+        onClick={() => setMobileNavOpen(false)}
+        aria-label="Close navigation"
+      />
+
+      <aside className={cn(styles.sidebar, mobileNavOpen && styles.sidebarOpen)}>
+        <div className={styles.sidebarHeader}>
+          <Link href="/dashboard" className={styles.brand}>
+            <span className={styles.brandMark}>FP</span>
+            <span className={styles.brandCopy}>
+              <strong>FeedbackPro</strong>
+              <span>Customer feedback workspace</span>
+            </span>
+          </Link>
+
+          <button
+            type="button"
+            className={styles.iconButton}
+            onClick={() => setMobileNavOpen(false)}
+            aria-label="Close navigation"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className={styles.workspaceCard}>
+          <div
+            className={styles.workspaceLogo}
+            style={logoPreview ? { backgroundImage: `url("${logoPreview}")` } : undefined}
+          >
+            {!logoPreview ? businessState.name.slice(0, 2).toUpperCase() : null}
+          </div>
+
+          <div className={styles.workspaceCopy}>
+            <strong>{businessState.name}</strong>
+            <span>{businessState.city} - {sectorLabel(businessState.sector)}</span>
+          </div>
+
+          <div className={styles.workspaceMeta}>
+            <span>{planLabel(businessState.plan)}</span>
+            <span>{submissions.length} total feedback</span>
           </div>
         </div>
-      ) : null}
+
+        <nav className={styles.nav}>
+          {SECTION_META.map((section) => {
+            const Icon = section.icon
+
+            return (
+              <button
+                key={section.id}
+                type="button"
+                className={cn(styles.navButton, activeSection === section.id && styles.navButtonActive)}
+                onClick={() => navigateToSection(section.id)}
+              >
+                <span className={styles.navIcon}>
+                  <Icon size={18} />
+                </span>
+                <span className={styles.navCopy}>
+                  <strong>{section.label}</strong>
+                  <span>{section.description}</span>
+                </span>
+              </button>
+            )
+          })}
+        </nav>
+
+        <div className={styles.sidebarFoot}>
+          <div className={styles.sidebarHint}>
+            <strong>Data limitations</strong>
+            <p>Branch and staff analytics remain placeholder-first until the backend exposes those entities explicitly.</p>
+          </div>
+        </div>
+      </aside>
+
+      <div className={styles.canvas}>
+        <div className={styles.mobileBar}>
+          <button type="button" className={styles.iconButton} onClick={() => setMobileNavOpen(true)} aria-label="Open navigation">
+            <Menu size={16} />
+          </button>
+
+          <div className={styles.mobileBarCopy}>
+            <strong>{sectionMeta.label}</strong>
+            <span>{businessState.name}</span>
+          </div>
+
+          <ThemeToggle />
+        </div>
+
+        <header className={styles.header}>
+          <div className={styles.headerCopy}>
+            <div className={styles.headerEyebrow}>
+              {isViewPending ? 'Updating workspace view' : 'Workspace dashboard'}
+            </div>
+            <h1 className={styles.headerTitle}>{sectionMeta.label}</h1>
+            <p className={styles.headerDescription}>{sectionMeta.description}</p>
+          </div>
+
+          <div className={styles.headerActions}>
+            <SegmentedControl
+              ariaLabel="Reporting range"
+              value={String(selectedRange)}
+              onChange={(value) => setSelectedRange(Number(value) as DashboardRange)}
+              options={RANGE_OPTIONS.map((range) => ({
+                label: `${range}d`,
+                value: String(range),
+              }))}
+            />
+
+            <ThemeToggle />
+
+            <Link href={livePath} className={styles.secondaryButton} target="_blank" rel="noreferrer">
+              Open form
+              <ExternalLink size={16} />
+            </Link>
+
+            <button type="button" className={styles.primaryButton} onClick={copyLiveFormLink}>
+              {copyState === 'copied' ? 'Copied link' : copyState === 'error' ? 'Copy failed' : 'Copy form link'}
+              <Link2 size={16} />
+            </button>
+          </div>
+        </header>
+
+        <main className={styles.main}>{renderSectionContent()}</main>
+      </div>
+
+      <FeedbackDrawer
+        feedback={selectedFeedback}
+        categories={publishedQuestions}
+        onClose={() => setSelectedFeedbackId(null)}
+      />
     </div>
   )
 }
+
