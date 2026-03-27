@@ -442,115 +442,164 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main>
+      <main className="landing-main">
         <section className="landing-hero">
-          <div className="container hero-grid landing-hero-grid">
-            <div className="hero-copy landing-hero-copy">
-              <div>
-                <div className="pill accent-pill" style={{ marginBottom: 18 }}>
-                  {copy.badge}
+          <div className="container landing-hero-stack">
+            <div className="hero-grid landing-hero-grid">
+              <div className="hero-copy landing-hero-copy" data-reveal="" data-motion-order="0">
+                <div>
+                  <div className="pill accent-pill" style={{ marginBottom: 18 }}>
+                    {copy.badge}
+                  </div>
+                  <h1 className="section-title">{copy.title}</h1>
+                  <p className="section-subtitle">{copy.subtitle}</p>
                 </div>
-                <h1 className="section-title">{copy.title}</h1>
-                <p className="section-subtitle">{copy.subtitle}</p>
-              </div>
 
-              <div className="hero-actions">
-                <Link href="/register" className="button button-primary">
-                  {copy.primary}
-                  <ArrowRight size={16} style={arrowStyle} />
-                </Link>
-                <a href="#pricing" className="button button-secondary">
-                  {copy.secondary}
-                </a>
-              </div>
+                <div className="landing-kicker">
+                  {copy.chips.map((chip) => (
+                    <span key={chip} className="landing-chip">
+                      {chip}
+                    </span>
+                  ))}
+                </div>
 
-              <div className="landing-kicker">
-                {copy.chips.map((chip) => (
-                  <span key={chip} className="landing-chip">
-                    {chip}
-                  </span>
-                ))}
-              </div>
+                <div className="hero-actions">
+                  <Link href="/register" className="button button-primary">
+                    {copy.primary}
+                    <ArrowRight size={16} style={arrowStyle} />
+                  </Link>
+                  <a href="#pricing" className="button button-secondary">
+                    {copy.secondary}
+                  </a>
+                </div>
 
-              <div className="landing-stat-row">
-                {copy.stats.map((item) => (
-                  <article key={item.label} className="metric-card">
-                    <div className="metric-label">{item.label}</div>
-                    <div className="metric-value">{item.value}</div>
-                  </article>
-                ))}
-              </div>
-            </div>
-
-            <aside className="hero-card landing-showcase">
-              <div className="landing-showcase-main">
-                <div className="section-eyebrow">Live product</div>
-                <h2 className="landing-card-title">{copy.panelTitle}</h2>
-                <p className="card-copy">{copy.panelBody}</p>
-
-                <div className="stack" style={{ marginTop: 20 }}>
-                  {copy.panelHighlights.map((item) => (
-                    <div key={item} className="landing-signal">
-                      <span className="feature-icon landing-signal-icon">
-                        <Check size={16} />
-                      </span>
-                      <span>{item}</span>
-                    </div>
+                <div className="landing-stat-row">
+                  {copy.stats.map((item) => (
+                    <article key={item.label} className="metric-card">
+                      <div className="metric-label">{item.label}</div>
+                      <div className="metric-value">{item.value}</div>
+                    </article>
                   ))}
                 </div>
               </div>
 
-              <div className="landing-mini-grid">
-                {copy.features.map((feature, index) => {
-                  const Icon = FEATURE_ICONS[index]
-                  return (
-                    <article key={feature.title} className="landing-mini-card">
-                      <div className="feature-icon">
-                        <Icon size={18} />
-                      </div>
-                      <h3 className="landing-card-title" style={{ marginTop: 16 }}>
-                        {feature.title}
-                      </h3>
-                      <p className="feature-copy">{feature.desc}</p>
-                    </article>
-                  )
-                })}
-              </div>
-            </aside>
+              <aside
+                className="hero-card landing-stage-card"
+                data-reveal=""
+                data-motion-order="1"
+                data-motion-variant="right"
+              >
+                <div className="landing-stage-top">
+                  <div className="pill accent-pill">Live product</div>
+                  <div className="landing-live-pill">
+                    <span className="landing-live-dot" />
+                    QR flow active
+                  </div>
+                </div>
+
+                <div className="landing-stage-grid">
+                  <div className="landing-stage-panel">
+                    <h2 className="landing-card-title">{copy.panelTitle}</h2>
+                    <p className="card-copy">{copy.panelBody}</p>
+
+                    <div className="stack" style={{ marginTop: 20 }}>
+                      {copy.panelHighlights.map((item) => (
+                        <div key={item} className="landing-signal">
+                          <span className="feature-icon landing-signal-icon">
+                            <Check size={16} />
+                          </span>
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="landing-stage-stack">
+                    {copy.features.slice(0, 2).map((feature, index) => {
+                      const Icon = FEATURE_ICONS[index]
+                      return (
+                        <article key={feature.title} className="landing-stage-mini">
+                          <div className="feature-icon">
+                            <Icon size={18} />
+                          </div>
+                          <h3 className="landing-card-title" style={{ marginTop: 16 }}>
+                            {feature.title}
+                          </h3>
+                          <p className="feature-copy">{feature.desc}</p>
+                        </article>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div className="landing-feature-rail">
+                  {copy.features.slice(2).map((feature, index) => {
+                    const Icon = FEATURE_ICONS[index + 2]
+                    return (
+                      <article key={feature.title} className="landing-rail-card">
+                        <div className="feature-icon">
+                          <Icon size={18} />
+                        </div>
+                        <div>
+                          <h3 className="landing-card-title">{feature.title}</h3>
+                          <p className="feature-copy">{feature.desc}</p>
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              </aside>
+            </div>
+
+            <div className="landing-proof-strip">
+              {copy.proofCards.map((item, index) => {
+                const Icon = PROOF_ICONS[index]
+                return (
+                  <article
+                    key={item.title}
+                    className="feature-card landing-proof-card"
+                    data-reveal=""
+                    data-motion-order={`${index + 2}`}
+                  >
+                    <div className="feature-icon">
+                      <Icon size={18} />
+                    </div>
+                    <h3 className="feature-title">{item.title}</h3>
+                    <p className="feature-copy">{item.desc}</p>
+                  </article>
+                )
+              })}
+            </div>
           </div>
         </section>
 
         <section id="features" className="section">
-          <div className="container landing-feature-split">
-            <article className="surface-card landing-section-card">
-              <div className="section-eyebrow">Product structure</div>
-              <h2 className="card-title landing-section-title">{copy.featuresTitle}</h2>
-              <p className="card-copy">{copy.featuresSubtitle}</p>
+          <div className="container landing-story-grid">
+            <article className="surface-card landing-system-card" data-reveal="" data-motion-variant="left">
+              <div>
+                <div className="section-eyebrow">Feedback loop</div>
+                <h2 className="card-title landing-section-title">{copy.featuresTitle}</h2>
+                <p className="card-copy">{copy.featuresSubtitle}</p>
+              </div>
 
-              <div className="landing-stacked-cards">
-                <div className="landing-detail-card">
-                  <div className="landing-detail-head">
-                    <span className="feature-icon">
-                      <ScanLine size={18} />
-                    </span>
+              <div className="landing-system-map">
+                {copy.workflow.map((item) => (
+                  <div key={item.step} className="landing-system-step">
+                    <div className="landing-step-badge">{item.step}</div>
                     <div>
-                      <h3 className="landing-card-title">{copy.workflow[0].title}</h3>
-                      <p className="feature-copy">{copy.workflow[0].desc}</p>
+                      <h3 className="landing-card-title">{item.title}</h3>
+                      <p className="feature-copy">{item.desc}</p>
                     </div>
                   </div>
-                </div>
+                ))}
+              </div>
 
-                <div className="landing-detail-card">
-                  <div className="landing-detail-head">
-                    <span className="feature-icon">
-                      <LayoutDashboard size={18} />
-                    </span>
-                    <div>
-                      <h3 className="landing-card-title">{copy.workflow[2].title}</h3>
-                      <p className="feature-copy">{copy.workflow[2].desc}</p>
-                    </div>
+              <div className="landing-system-foot">
+                {copy.panelHighlights.map((item) => (
+                  <div key={item} className="landing-badge-card">
+                    {item}
                   </div>
-                </div>
+                ))}
               </div>
             </article>
 
@@ -558,7 +607,12 @@ export default function HomePage() {
               {copy.features.map((feature, index) => {
                 const Icon = FEATURE_ICONS[index]
                 return (
-                  <article key={feature.title} className="feature-card landing-proof-card">
+                  <article
+                    key={feature.title}
+                    className="feature-card landing-proof-card"
+                    data-reveal=""
+                    data-motion-order={`${index + 1}`}
+                  >
                     <div className="feature-icon">
                       <Icon size={18} />
                     </div>
@@ -572,8 +626,8 @@ export default function HomePage() {
         </section>
 
         <section id="workflow" className="section">
-          <div className="container">
-            <div className="section-head">
+          <div className="container landing-workflow-layout">
+            <div className="section-head" data-reveal="">
               <div className="section-eyebrow">Workflow</div>
               <h2 className="section-title" style={{ fontSize: 'clamp(28px, 4vw, 44px)' }}>
                 {copy.workflowTitle}
@@ -582,47 +636,34 @@ export default function HomePage() {
             </div>
 
             <div className="landing-flow">
-              {copy.workflow.map((item) => (
-                <article key={item.step} className="surface-card landing-step-card">
+              {copy.workflow.map((item, index) => (
+                <article
+                  key={item.step}
+                  className="surface-card landing-step-card"
+                  data-reveal=""
+                  data-motion-order={`${index + 1}`}
+                >
                   <div className="landing-step-number">{item.step}</div>
                   <h3 className="landing-card-title">{item.title}</h3>
                   <p className="feature-copy">{item.desc}</p>
                 </article>
               ))}
             </div>
-          </div>
-        </section>
 
-        <section className="section">
-          <div className="container">
-            <div className="section-head">
-              <div className="section-eyebrow">Built for teams</div>
-              <h2 className="section-title" style={{ fontSize: 'clamp(28px, 4vw, 44px)' }}>
-                {copy.proofTitle}
-              </h2>
-              <p className="section-subtitle">{copy.proofSubtitle}</p>
-            </div>
-
-            <div className="landing-proof-grid">
-              {copy.proofCards.map((item, index) => {
-                const Icon = PROOF_ICONS[index]
-                return (
-                  <article key={item.title} className="feature-card landing-proof-card">
-                    <div className="feature-icon">
-                      <Icon size={18} />
-                    </div>
-                    <h3 className="feature-title">{item.title}</h3>
-                    <p className="feature-copy">{item.desc}</p>
-                  </article>
-                )
-              })}
+            <div className="surface-card landing-quote-card" data-reveal="" data-motion-variant="pop">
+              <div className="landing-quote-mark">&ldquo;</div>
+              <p className="landing-quote-copy">{copy.proofSubtitle}</p>
+              <div className="landing-quote-meta">
+                <div className="pill accent-pill">{copy.panelHighlights[0]}</div>
+                <span className="muted-copy">{copy.proofTitle}</span>
+              </div>
             </div>
           </div>
         </section>
 
         <section id="pricing" className="section">
           <div className="container">
-            <div className="section-head">
+            <div className="section-head" data-reveal="">
               <div className="section-eyebrow">Pricing</div>
               <h2 className="section-title" style={{ fontSize: 'clamp(28px, 4vw, 44px)' }}>
                 {copy.pricingTitle}
@@ -630,38 +671,55 @@ export default function HomePage() {
               <p className="section-subtitle">{copy.pricingSubtitle}</p>
             </div>
 
-            <div className="price-grid">
-              {copy.pricing.map((plan, index) => (
-                <article
-                  key={plan.name}
-                  className="price-card landing-price-card"
-                  style={index === 1 ? { borderColor: 'rgba(34, 197, 94, 0.3)' } : undefined}
-                >
-                  <div className={index === 1 ? 'pill accent-pill' : 'pill'} style={{ marginBottom: 18 }}>
-                    {plan.name}
-                  </div>
-                  <div className="metric-value" style={{ fontSize: 34 }}>
-                    {plan.price}
-                  </div>
-                  <div className="metric-note">{plan.note}</div>
+            <div className="landing-pricing-stack">
+              <div className="price-grid">
+                {copy.pricing.map((plan, index) => (
+                  <article
+                    key={plan.name}
+                    className="price-card landing-price-card"
+                    data-reveal=""
+                    data-motion-order={`${index + 1}`}
+                    style={index === 1 ? { borderColor: 'rgba(34, 197, 94, 0.3)' } : undefined}
+                  >
+                    <div className={index === 1 ? 'pill accent-pill' : 'pill'} style={{ marginBottom: 18 }}>
+                      {plan.name}
+                    </div>
+                    <div className="metric-value" style={{ fontSize: 34 }}>
+                      {plan.price}
+                    </div>
+                    <div className="metric-note">{plan.note}</div>
 
-                  <div className="list" style={{ marginTop: 22 }}>
-                    {plan.features.map((feature) => (
-                      <div key={feature} className="list-row">
-                        <Check size={18} style={{ color: 'var(--accent)', marginTop: 2, flexShrink: 0 }} />
-                        <span>{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-              ))}
+                    <div className="list" style={{ marginTop: 22 }}>
+                      {plan.features.map((feature) => (
+                        <div key={feature} className="list-row">
+                          <Check size={18} style={{ color: 'var(--accent)', marginTop: 2, flexShrink: 0 }} />
+                          <span>{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
+
+              <div className="surface-card landing-pricing-note" data-reveal="" data-motion-variant="pop">
+                <div className="section-eyebrow">Why it feels lighter</div>
+                <h3 className="card-title landing-section-title">{copy.ctaTitle}</h3>
+                <div className="landing-system-foot">
+                  {copy.proofCards.slice(0, 3).map((item) => (
+                    <div key={item.title} className="landing-badge-card">
+                      <strong style={{ display: 'block', marginBottom: 6 }}>{item.title}</strong>
+                      <span>{item.desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
         <section className="section">
           <div className="container">
-            <div className="surface-card landing-cta-card">
+            <div className="surface-card landing-cta-card" data-reveal="" data-motion-variant="pop">
               <div>
                 <div className="section-eyebrow">Ready to launch</div>
                 <h2 className="card-title landing-section-title">{copy.ctaTitle}</h2>
