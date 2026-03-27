@@ -940,8 +940,9 @@ img {
 }
 
 .lp-hero-layout {
-  grid-template-columns: minmax(0, 1.02fr) minmax(360px, 0.98fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
+  gap: 24px;
 }
 
 .lp-copy,
@@ -951,6 +952,10 @@ img {
 .lp-cta-copy {
   display: grid;
   gap: 18px;
+}
+
+.lp-copy {
+  max-width: 760px;
 }
 
 .lp-chip-row {
@@ -980,6 +985,13 @@ img {
 
 .lp-stat-card {
   min-height: 0;
+}
+
+.lp-hero-showcase {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr);
+  gap: 18px;
+  align-items: stretch;
 }
 
 .lp-stage {
@@ -1104,9 +1116,20 @@ img {
 
 .lp-stage-card,
 .lp-proof-card,
-.lp-feature-card {
+.lp-feature-card,
+.lp-hero-rail-card {
   display: grid;
   gap: 12px;
+}
+
+.lp-hero-rail {
+  display: grid;
+  gap: 14px;
+}
+
+.lp-hero-rail-card {
+  min-height: 0;
+  padding: 18px;
 }
 
 .lp-proof-layout {
@@ -1191,10 +1214,58 @@ img {
 
 .lp-price-card {
   min-height: 100%;
+  display: grid;
+  gap: 18px;
+  align-content: start;
 }
 
 .lp-price-card-active {
   border-color: rgba(34, 197, 94, 0.3);
+}
+
+.lp-price-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lp-price-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lp-price-main {
+  display: grid;
+  gap: 8px;
+}
+
+.lp-price-value {
+  margin-top: 0;
+  font-size: 34px;
+}
+
+.lp-price-note-line {
+  margin-top: 0;
+}
+
+.lp-price-list {
+  margin-top: 6px;
+}
+
+.lp-price-action {
+  width: 100%;
+  margin-top: auto;
 }
 
 .lp-cta {
@@ -1209,10 +1280,7 @@ img {
 }
 
 @media (max-width: 1080px) {
-  .lp-hero-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
+  .lp-hero-showcase,
   .lp-stage-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -2140,6 +2208,10 @@ img {
     grid-template-columns: 1fr;
   }
 
+  .lp-hero-showcase {
+    grid-template-columns: 1fr;
+  }
+
   .lp-nav {
     display: none;
   }
@@ -2204,6 +2276,10 @@ img {
     padding: 20px 0 10px;
   }
 
+  .lp-copy {
+    max-width: none;
+  }
+
   .lp-stage,
   .lp-process-panel,
   .lp-feature-lead,
@@ -2217,6 +2293,10 @@ img {
   .lp-proof-grid,
   .lp-feature-grid,
   .lp-pricing-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-hero-rail {
     grid-template-columns: 1fr;
   }
 
@@ -2322,6 +2402,7 @@ img {
   .lp-process-item,
   .lp-process-note,
   .lp-price-note-item,
+  .lp-hero-rail-card,
   .lp-feature-card,
   .lp-price-card,
   .lp-cta {

@@ -440,6 +440,31 @@ const COPY: Record<LandingLang, LandingCopy> = {
 
 const FEATURE_ICONS = [QrCode, MessageSquareText, LayoutDashboard, ShieldCheck]
 const PROOF_ICONS = [Building2, Star, LayoutDashboard, ShieldCheck]
+const WEEKLY_REVIEWS: Record<LandingLang, string> = {
+  fr: '127 avis cette semaine',
+  ar: '127 review had simana',
+  en: '127 reviews this week',
+}
+const PLAN_ACTION: Record<LandingLang, string> = {
+  fr: 'Choisir cette offre',
+  ar: 'Ikhtar had plan',
+  en: 'Choose this plan',
+}
+const PLAN_FEATURED: Record<LandingLang, string> = {
+  fr: 'Le plus choisi',
+  ar: 'Afdal bidaya',
+  en: 'Most popular',
+}
+const PRICING_BAND_TITLE: Record<LandingLang, string> = {
+  fr: 'Tout est pret pour demarrer proprement',
+  ar: 'Kolchi wajed bach تبدا b nizam',
+  en: 'Everything you need to launch cleanly',
+}
+const PRICING_BAND_BODY: Record<LandingLang, string> = {
+  fr: 'Chaque plan garde la meme base: QR, formulaire rapide, dashboard lisible et une structure simple a faire evoluer ensuite.',
+  ar: 'Kol plan kaybqa fih nafs l asas: QR, form sarii, dashboard wadih, w base sahla bach tzid عليها.',
+  en: 'Each plan keeps the same base: QR flow, fast form, readable dashboard, and a structure that is easy to extend later.',
+}
 
 export default function HomePage() {
   const { lang, setLang, copyLang, isRTL } = useStoredLanguage('fr')
@@ -513,56 +538,73 @@ export default function HomePage() {
               </div>
             </div>
 
-            <aside className="surface-card lp-stage">
-              <div className="lp-stage-top">
-                <span className="lp-stage-label">{copy.sections.live}</span>
-                <span className="lp-status-pill">
-                  <span className="lp-status-dot" />
-                  FeedbackPro
-                </span>
-              </div>
-
-              <div className="lp-stage-grid">
-                <article className="lp-stage-primary">
-                  <div className="lp-score-row">
-                    <div className="lp-score-main">
-                      <Star size={18} fill="currentColor" />
-                      <span>4.8</span>
-                    </div>
-                    <span className="metric-note">127 reviews this week</span>
-                  </div>
-
-                  <h2 className="landing-card-title">{copy.panelTitle}</h2>
-                  <p className="card-copy">{copy.panelBody}</p>
-
-                  <div className="lp-highlight-list">
-                    {copy.panelHighlights.map((item) => (
-                      <div key={item} className="lp-highlight-row">
-                        <span className="lp-check">
-                          <Check size={15} />
-                        </span>
-                        <span>{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-
-                <div className="lp-stage-side">
-                  {copy.features.slice(0, 2).map((feature, index) => {
-                    const Icon = FEATURE_ICONS[index]
-                    return (
-                      <article key={feature.title} className="lp-stage-card">
-                        <div className="feature-icon">
-                          <Icon size={18} />
-                        </div>
-                        <h3 className="landing-card-title">{feature.title}</h3>
-                        <p className="feature-copy">{feature.desc}</p>
-                      </article>
-                    )
-                  })}
+            <div className="lp-hero-showcase">
+              <aside className="surface-card lp-stage">
+                <div className="lp-stage-top">
+                  <span className="lp-stage-label">{copy.sections.live}</span>
+                  <span className="lp-status-pill">
+                    <span className="lp-status-dot" />
+                    FeedbackPro
+                  </span>
                 </div>
+
+                <div className="lp-stage-grid">
+                  <article className="lp-stage-primary">
+                    <div className="lp-score-row">
+                      <div className="lp-score-main">
+                        <Star size={18} fill="currentColor" />
+                        <span>4.8</span>
+                      </div>
+                      <span className="metric-note">{WEEKLY_REVIEWS[copyLang]}</span>
+                    </div>
+
+                    <h2 className="landing-card-title">{copy.panelTitle}</h2>
+                    <p className="card-copy">{copy.panelBody}</p>
+
+                    <div className="lp-highlight-list">
+                      {copy.panelHighlights.map((item) => (
+                        <div key={item} className="lp-highlight-row">
+                          <span className="lp-check">
+                            <Check size={15} />
+                          </span>
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+
+                  <div className="lp-stage-side">
+                    {copy.features.slice(0, 2).map((feature, index) => {
+                      const Icon = FEATURE_ICONS[index]
+                      return (
+                        <article key={feature.title} className="lp-stage-card">
+                          <div className="feature-icon">
+                            <Icon size={18} />
+                          </div>
+                          <h3 className="landing-card-title">{feature.title}</h3>
+                          <p className="feature-copy">{feature.desc}</p>
+                        </article>
+                      )
+                    })}
+                  </div>
+                </div>
+              </aside>
+
+              <div className="lp-hero-rail">
+                {copy.proofCards.slice(0, 3).map((item, index) => {
+                  const Icon = PROOF_ICONS[index]
+                  return (
+                    <article key={item.title} className="surface-card lp-hero-rail-card">
+                      <div className="feature-icon">
+                        <Icon size={18} />
+                      </div>
+                      <h3 className="landing-card-title">{item.title}</h3>
+                      <p className="feature-copy">{item.desc}</p>
+                    </article>
+                  )
+                })}
               </div>
-            </aside>
+            </div>
           </div>
         </section>
 
@@ -685,15 +727,17 @@ export default function HomePage() {
                     key={plan.name}
                     className={`price-card lp-price-card${index === 1 ? ' lp-price-card-active' : ''}`}
                   >
-                    <div className={index === 1 ? 'pill accent-pill' : 'pill'} style={{ marginBottom: 18 }}>
-                      {plan.name}
+                    <div className="lp-price-top">
+                      <div className={index === 1 ? 'pill accent-pill' : 'pill'}>{plan.name}</div>
+                      {index === 1 ? <span className="lp-price-badge">{PLAN_FEATURED[copyLang]}</span> : null}
                     </div>
-                    <div className="metric-value" style={{ fontSize: 34 }}>
-                      {plan.price}
-                    </div>
-                    <div className="metric-note">{plan.note}</div>
 
-                    <div className="list" style={{ marginTop: 22 }}>
+                    <div className="lp-price-main">
+                      <div className="metric-value lp-price-value">{plan.price}</div>
+                      <div className="metric-note lp-price-note-line">{plan.note}</div>
+                    </div>
+
+                    <div className="list lp-price-list">
                       {plan.features.map((feature) => (
                         <div key={feature} className="list-row">
                           <Check size={18} style={{ color: 'var(--accent)', marginTop: 2, flexShrink: 0 }} />
@@ -701,13 +745,23 @@ export default function HomePage() {
                         </div>
                       ))}
                     </div>
+
+                    <Link
+                      href="/register"
+                      className={`button ${index === 1 ? 'button-primary' : 'button-secondary'} lp-price-action`}
+                    >
+                      {PLAN_ACTION[copyLang]}
+                      <ArrowRight size={16} style={arrowStyle} />
+                    </Link>
                   </article>
                 ))}
               </div>
 
               <aside className="surface-card lp-price-note">
                 <div className="section-eyebrow">{copy.sections.summary}</div>
-                <h3 className="card-title landing-section-title">{copy.ctaTitle}</h3>
+                <h3 className="card-title landing-section-title">{PRICING_BAND_TITLE[copyLang]}</h3>
+                <p className="card-copy">{PRICING_BAND_BODY[copyLang]}</p>
+
                 <div className="lp-price-note-list">
                   {copy.proofCards.slice(0, 3).map((item) => (
                     <div key={item.title} className="lp-price-note-item">
