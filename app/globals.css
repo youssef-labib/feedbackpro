@@ -358,7 +358,7 @@ img {
 }
 
 .section {
-  padding: 68px 0;
+  padding: 78px 0;
 }
 
 .landing-main {
@@ -926,7 +926,7 @@ img {
 }
 
 .lp-hero {
-  padding: 32px 0 28px;
+  padding: 36px 0 34px;
 }
 
 .lp-hero-layout,
@@ -1272,11 +1272,18 @@ img {
   max-width: none;
   display: grid;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 30px;
 }
 
 .lp-feature-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.lp-feature-card {
+  min-height: 220px;
+  padding: 24px;
+  align-content: start;
 }
 
 .lp-cta {
