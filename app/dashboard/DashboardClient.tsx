@@ -8,6 +8,8 @@ import {
   BarChart3,
   Building2,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   CircleAlert,
   Copy,
   Download,
@@ -156,6 +158,7 @@ export default function DashboardClient({
   const { lang, setLang, isRTL } = useStoredLanguage('fr')
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [businessState, setBusinessState] = useState(business)
   const [businessName, setBusinessName] = useState(business.name)
   const [selectedPlan, setSelectedPlan] = useState(business.plan)
@@ -171,6 +174,7 @@ export default function DashboardClient({
   const [questionsSaving, setQuestionsSaving] = useState(false)
   const [questionMessage, setQuestionMessage] = useState<MessageState>(null)
   const [newQuestion, setNewQuestion] = useState({ fr: '', ar: '', en: '', es: '' })
+  const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(form?.categories?.[0]?.id || null)
   const [logoPreview, setLogoPreview] = useState(business.logo_url || '')
   const [logoUploading, setLogoUploading] = useState(false)
   const [logoMessage, setLogoMessage] = useState<MessageState>(null)
@@ -200,6 +204,32 @@ export default function DashboardClient({
     }
   }, [sidebarOpen])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const stored = window.localStorage.getItem('feedbackpro-dashboard-sidebar')
+    setSidebarCollapsed(stored === 'collapsed')
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(
+      'feedbackpro-dashboard-sidebar',
+      sidebarCollapsed ? 'collapsed' : 'expanded'
+    )
+  }, [sidebarCollapsed])
+
+  useEffect(() => {
+    if (questions.length === 0) {
+      setSelectedQuestionId(null)
+      return
+    }
+
+    const exists = questions.some((question) => question.id === selectedQuestionId)
+    if (!exists) {
+      setSelectedQuestionId(questions[0].id)
+    }
+  }, [questions, selectedQuestionId])
+
   const locale = localeFromLang(lang)
   const publishedQuestions = questionsDirty ? baselineQuestions : questions
   const averageScore = submissions.length
@@ -212,6 +242,12 @@ export default function DashboardClient({
   const attentionReviews = submissions.filter((submission) => submission.average_score < 3).length
   const weeklySeries = buildWeeklySeries(submissions, locale)
   const maxWeeklyCount = Math.max(...weeklySeries.map((item) => item.count), 1)
+  const weeklyTotal = weeklySeries.reduce((sum, item) => sum + item.count, 0)
+  const bestDay = weeklySeries.reduce(
+    (best, item) => (item.count > best.count ? item : best),
+    weeklySeries[0] || { label: '-', count: 0 }
+  )
+  const quietDays = weeklySeries.filter((item) => item.count === 0).length
 
   const categoryScores: Record<string, number[]> = {}
   submissions.forEach((submission) => {
@@ -241,6 +277,11 @@ export default function DashboardClient({
   const readinessCount = readinessItems.filter((item) => item.ready).length
   const currentPlan = planMeta(selectedPlan)
   const currentTab = DASHBOARD_NAV.find((item) => item.id === activeTab) || DASHBOARD_NAV[0]
+  const selectedQuestion =
+    questions.find((question) => question.id === selectedQuestionId) || questions[0] || null
+  const selectedQuestionIndex = selectedQuestion
+    ? questions.findIndex((question) => question.id === selectedQuestion.id)
+    : -1
   const qrUrl = `/api/qr?url=${encodeURIComponent(formUrl)}`
 
   function flashMessage(
@@ -256,6 +297,10 @@ export default function DashboardClient({
 
   function closeSidebar() {
     setSidebarOpen(false)
+  }
+
+  function toggleSidebarCollapsed() {
+    setSidebarCollapsed((current) => !current)
   }
 
   async function logout() {
@@ -416,16 +461,18 @@ export default function DashboardClient({
       flashMessage(setQuestionMessage, { type: 'error', text: 'You can keep up to 10 questions.' })
       return
     }
+    const nextId = String(Date.now())
     updateQuestions([
       ...questions,
       {
-        id: String(Date.now()),
+        id: nextId,
         label_fr: newQuestion.fr.trim(),
         label_ar: newQuestion.ar.trim() || newQuestion.fr.trim(),
         label_en: newQuestion.en.trim() || newQuestion.fr.trim(),
         label_es: newQuestion.es.trim() || newQuestion.en.trim() || newQuestion.fr.trim(),
       },
     ])
+    setSelectedQuestionId(nextId)
     setNewQuestion({ fr: '', ar: '', en: '', es: '' })
     flashMessage(setQuestionMessage, { type: 'success', text: 'New question added. Publish when you are ready.' })
   }
@@ -462,7 +509,10 @@ export default function DashboardClient({
   }
 
   return (
-    <div className="page-shell dashboard-v2-page" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div
+      className={`page-shell dashboard-v2-page${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}
+      dir={isRTL ? 'rtl' : 'ltr'}
+    >
       <div
         className={`dashboard-v2-backdrop${sidebarOpen ? ' is-open' : ''}`}
         aria-hidden={!sidebarOpen}
@@ -473,14 +523,30 @@ export default function DashboardClient({
         <aside className={`dashboard-v2-sidebar${sidebarOpen ? ' is-open' : ''}`}>
           <div className="dashboard-v2-sidebar-head">
             <AppLogo href="/dashboard" title="FeedbackPro" caption="Business workspace" />
-            <button
-              type="button"
-              className="icon-button dashboard-v2-sidebar-close"
-              onClick={closeSidebar}
-              aria-label="Close dashboard menu"
-            >
-              <X size={18} />
-            </button>
+            <div className="dashboard-v2-sidebar-head-actions">
+              <button
+                type="button"
+                className="icon-button dashboard-v2-sidebar-collapse"
+                onClick={toggleSidebarCollapsed}
+                aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {sidebarCollapsed
+                  ? isRTL
+                    ? <ChevronLeft size={18} />
+                    : <ChevronRight size={18} />
+                  : isRTL
+                    ? <ChevronRight size={18} />
+                    : <ChevronLeft size={18} />}
+              </button>
+              <button
+                type="button"
+                className="icon-button dashboard-v2-sidebar-close"
+                onClick={closeSidebar}
+                aria-label="Close dashboard menu"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
           <div className="dashboard-v2-nav-wrap">
@@ -495,6 +561,7 @@ export default function DashboardClient({
                     key={item.id}
                     type="button"
                     className={`dashboard-v2-nav-button${active ? ' active' : ''}`}
+                    title={sidebarCollapsed ? item.label : undefined}
                     onClick={() => {
                       setActiveTab(item.id)
                       closeSidebar()
@@ -591,6 +658,36 @@ export default function DashboardClient({
             <AppLogo href="/dashboard" title="FeedbackPro" caption="Workspace" />
             <ThemeToggle />
           </div>
+
+          <section className="dashboard-v2-topbar">
+            <div className="dashboard-v2-topbar-start">
+              <button
+                type="button"
+                className="icon-button dashboard-v2-topbar-toggle"
+                onClick={toggleSidebarCollapsed}
+                aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {sidebarCollapsed
+                  ? isRTL
+                    ? <ChevronLeft size={18} />
+                    : <ChevronRight size={18} />
+                  : isRTL
+                    ? <ChevronRight size={18} />
+                    : <ChevronLeft size={18} />}
+              </button>
+
+              <div>
+                <div className="dashboard-v2-topbar-kicker">Workspace view</div>
+                <div className="dashboard-v2-topbar-title">{currentTab.label}</div>
+              </div>
+            </div>
+
+            <div className="dashboard-v2-topbar-actions">
+              <span className="pill accent-pill">{currentPlan.label}</span>
+              <span className="pill">{submissions.length} reviews</span>
+              <span className="pill">{publishedQuestions.length} questions</span>
+            </div>
+          </section>
 
           <header className="dashboard-v2-hero">
             <div className="dashboard-v2-hero-copy">
@@ -712,27 +809,42 @@ export default function DashboardClient({
                       <div>
                         <div className="dashboard-v2-card-title">Weekly activity</div>
                         <p className="dashboard-v2-card-copy">
-                          Quick visual of how many responses came in each day.
+                          A clearer weekly view of response volume and where the pace is strongest.
                         </p>
                       </div>
                       <span className="pill">{weekSubmissions.length} this week</span>
                     </div>
 
-                    <div className="dashboard-v2-chart">
-                      {weeklySeries.map((item) => (
-                        <div key={item.label} className="dashboard-v2-chart-item">
-                          <div className="dashboard-v2-chart-value">{item.count}</div>
-                          <div className="dashboard-v2-chart-track">
-                            <span
-                              className="dashboard-v2-chart-fill"
-                              style={{
-                                height: `${Math.max((item.count / maxWeeklyCount) * 100, item.count ? 12 : 4)}%`,
-                              }}
-                            />
+                    <div className="dashboard-v2-activity-layout">
+                      <div className="dashboard-v2-chart">
+                        {weeklySeries.map((item) => (
+                          <div key={item.label} className="dashboard-v2-chart-item">
+                            <div className="dashboard-v2-chart-value">{item.count}</div>
+                            <div className="dashboard-v2-chart-track">
+                              <span
+                                className="dashboard-v2-chart-fill"
+                                style={{
+                                  height: `${Math.max((item.count / maxWeeklyCount) * 100, item.count ? 12 : 4)}%`,
+                                }}
+                              />
+                            </div>
+                            <div className="dashboard-v2-chart-label">{item.label}</div>
                           </div>
-                          <div className="dashboard-v2-chart-label">{item.label}</div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+
+                      <div className="dashboard-v2-activity-summary">
+                        {[
+                          ['Weekly total', String(weeklyTotal)],
+                          ['Best day', bestDay.count ? `${bestDay.label} - ${bestDay.count}` : 'No activity'],
+                          ['Quiet days', String(quietDays)],
+                        ].map(([label, value]) => (
+                          <div key={label} className="dashboard-v2-activity-stat">
+                            <span>{label}</span>
+                            <strong>{value}</strong>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </article>
 
@@ -961,9 +1073,9 @@ export default function DashboardClient({
                 <section className="dashboard-v2-card">
                   <div className="dashboard-v2-card-head">
                     <div>
-                      <div className="dashboard-v2-card-title">Live form questions</div>
+                      <div className="dashboard-v2-card-title">Question flow</div>
                       <p className="dashboard-v2-card-copy">
-                        Reorder, edit, and publish the exact questions customers see.
+                        Choose a question, edit it on the right, and publish when the full list is ready.
                       </p>
                     </div>
                     <span className="pill">{questions.length}/10</span>
@@ -980,90 +1092,25 @@ export default function DashboardClient({
                       </p>
                     </div>
                   ) : (
-                    <div className="dashboard-v2-question-list">
+                    <div className="dashboard-v2-question-browser">
                       {questions.map((question, index) => (
-                        <article key={question.id} className="dashboard-v2-question-card">
-                          <div className="dashboard-v2-question-head">
-                            <div>
-                              <div className="dashboard-v2-question-index">Question {index + 1}</div>
-                              <div className="dashboard-v2-question-preview">
-                                {questionLabel(question, lang)}
-                              </div>
-                            </div>
-
-                            <div className="dashboard-v2-question-actions">
-                              <button
-                                type="button"
-                                className="mini-button"
-                                onClick={() => moveQuestion(index, 'up')}
-                                disabled={index === 0}
-                                aria-label="Move question up"
-                              >
-                                <ArrowUp size={16} />
-                              </button>
-                              <button
-                                type="button"
-                                className="mini-button"
-                                onClick={() => moveQuestion(index, 'down')}
-                                disabled={index === questions.length - 1}
-                                aria-label="Move question down"
-                              >
-                                <ArrowDown size={16} />
-                              </button>
-                              <button
-                                type="button"
-                                className="mini-button"
-                                onClick={() => removeQuestion(question.id)}
-                                aria-label="Remove question"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="dashboard-v2-field-grid">
-                            <div className="field">
-                              <label className="label">French</label>
-                              <input
-                                className="input"
-                                value={question.label_fr}
-                                onChange={(event) =>
-                                  updateQuestionField(question.id, 'label_fr', event.target.value)
-                                }
-                              />
-                            </div>
-                            <div className="field">
-                              <label className="label">Arabic</label>
-                              <input
-                                className="input"
-                                value={question.label_ar}
-                                onChange={(event) =>
-                                  updateQuestionField(question.id, 'label_ar', event.target.value)
-                                }
-                              />
-                            </div>
-                            <div className="field">
-                              <label className="label">English</label>
-                              <input
-                                className="input"
-                                value={question.label_en || ''}
-                                onChange={(event) =>
-                                  updateQuestionField(question.id, 'label_en', event.target.value)
-                                }
-                              />
-                            </div>
-                            <div className="field">
-                              <label className="label">Spanish</label>
-                              <input
-                                className="input"
-                                value={question.label_es || ''}
-                                onChange={(event) =>
-                                  updateQuestionField(question.id, 'label_es', event.target.value)
-                                }
-                              />
-                            </div>
-                          </div>
-                        </article>
+                        <button
+                          key={question.id}
+                          type="button"
+                          className={`dashboard-v2-question-tile${selectedQuestion?.id === question.id ? ' active' : ''}`}
+                          onClick={() => setSelectedQuestionId(question.id)}
+                        >
+                          <span className="dashboard-v2-question-order">{index + 1}</span>
+                          <span className="dashboard-v2-question-tile-copy">
+                            <span className="dashboard-v2-question-index">Question {index + 1}</span>
+                            <span className="dashboard-v2-question-preview">
+                              {questionLabel(question, lang)}
+                            </span>
+                            <span className="dashboard-v2-question-tile-meta">
+                              FR and AR required. EN and ES optional.
+                            </span>
+                          </span>
+                        </button>
                       ))}
                     </div>
                   )}
@@ -1073,9 +1120,118 @@ export default function DashboardClient({
                   <section className="dashboard-v2-card">
                     <div className="dashboard-v2-card-head">
                       <div>
+                        <div className="dashboard-v2-card-title">Question editor</div>
+                        <p className="dashboard-v2-card-copy">
+                          Update the selected question and keep the public form clear on mobile.
+                        </p>
+                      </div>
+                    </div>
+
+                    {selectedQuestion ? (
+                      <div className="dashboard-v2-question-editor">
+                        <div className="dashboard-v2-question-editor-top">
+                          <div className="dashboard-v2-question-editor-title">
+                            Editing question {selectedQuestionIndex + 1}
+                          </div>
+                          <div className="dashboard-v2-question-actions">
+                            <button
+                              type="button"
+                              className="mini-button"
+                              onClick={() => moveQuestion(selectedQuestionIndex, 'up')}
+                              disabled={selectedQuestionIndex <= 0}
+                              aria-label="Move question up"
+                            >
+                              <ArrowUp size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              className="mini-button"
+                              onClick={() => moveQuestion(selectedQuestionIndex, 'down')}
+                              disabled={selectedQuestionIndex === questions.length - 1}
+                              aria-label="Move question down"
+                            >
+                              <ArrowDown size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              className="mini-button"
+                              onClick={() => removeQuestion(selectedQuestion.id)}
+                              aria-label="Remove question"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="dashboard-v2-question-preview-box">
+                          <div className="dashboard-v2-question-preview-label">Current preview</div>
+                          <div className="dashboard-v2-question-preview-large">
+                            {questionLabel(selectedQuestion, lang)}
+                          </div>
+                        </div>
+
+                        <div className="dashboard-v2-field-grid">
+                          <div className="field">
+                            <label className="label">French</label>
+                            <input
+                              className="input"
+                              value={selectedQuestion.label_fr}
+                              onChange={(event) =>
+                                updateQuestionField(selectedQuestion.id, 'label_fr', event.target.value)
+                              }
+                            />
+                          </div>
+                          <div className="field">
+                            <label className="label">Arabic</label>
+                            <input
+                              className="input"
+                              value={selectedQuestion.label_ar}
+                              onChange={(event) =>
+                                updateQuestionField(selectedQuestion.id, 'label_ar', event.target.value)
+                              }
+                            />
+                          </div>
+                          <div className="field">
+                            <label className="label">English</label>
+                            <input
+                              className="input"
+                              value={selectedQuestion.label_en || ''}
+                              onChange={(event) =>
+                                updateQuestionField(selectedQuestion.id, 'label_en', event.target.value)
+                              }
+                            />
+                          </div>
+                          <div className="field">
+                            <label className="label">Spanish</label>
+                            <input
+                              className="input"
+                              value={selectedQuestion.label_es || ''}
+                              onChange={(event) =>
+                                updateQuestionField(selectedQuestion.id, 'label_es', event.target.value)
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="dashboard-v2-empty">
+                        <div className="dashboard-v2-empty-icon">
+                          <ListChecks size={18} />
+                        </div>
+                        <h3 className="dashboard-v2-empty-title">Nothing selected</h3>
+                        <p className="dashboard-v2-empty-copy">
+                          Select a question from the list to edit its labels and order.
+                        </p>
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="dashboard-v2-card">
+                    <div className="dashboard-v2-card-head">
+                      <div>
                         <div className="dashboard-v2-card-title">Add a new question</div>
                         <p className="dashboard-v2-card-copy">
-                          Keep it short, clear, and easy to answer on mobile.
+                          Keep it short, clear, and easy to answer before customers leave the page.
                         </p>
                       </div>
                     </div>
@@ -1128,30 +1284,6 @@ export default function DashboardClient({
                         Add question
                         <Plus size={16} />
                       </button>
-                    </div>
-                  </section>
-
-                  <section className="dashboard-v2-card">
-                    <div className="dashboard-v2-card-head">
-                      <div>
-                        <div className="dashboard-v2-card-title">Question writing tips</div>
-                        <p className="dashboard-v2-card-copy">
-                          A sharper question list usually leads to faster answers and cleaner trends.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="dashboard-v2-hint-list">
-                      {[
-                        'Focus each question on one topic like welcome, speed, or quality.',
-                        'Keep the most important questions near the top of the list.',
-                        'Publish after edits so the public form uses the new structure immediately.',
-                      ].map((item) => (
-                        <div key={item} className="dashboard-v2-hint-row">
-                          <span className="dashboard-v2-hint-dot" />
-                          <span>{item}</span>
-                        </div>
-                      ))}
                     </div>
                   </section>
 
@@ -1213,27 +1345,42 @@ export default function DashboardClient({
                   <article className="dashboard-v2-card">
                     <div className="dashboard-v2-card-head">
                       <div>
-                        <div className="dashboard-v2-card-title">Public form link</div>
+                        <div className="dashboard-v2-card-title">Share kit</div>
                         <p className="dashboard-v2-card-copy">
-                          This is the live page customers open after scanning the QR code.
+                          The live public form customers open after scanning the QR code.
                         </p>
                       </div>
                     </div>
 
-                    <div className="dashboard-v2-link-box">
-                      <Link2 size={16} />
-                      <span>{formUrl}</span>
-                    </div>
+                    <div className="dashboard-v2-share-stack">
+                      <div className="dashboard-v2-link-box">
+                        <Link2 size={16} />
+                        <span>{formUrl}</span>
+                      </div>
 
-                    <div className="dashboard-v2-action-row" style={{ marginTop: 18 }}>
-                      <button type="button" className="button button-secondary" onClick={copyFormLink}>
-                        {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Copy failed' : 'Copy link'}
-                        <Copy size={16} />
-                      </button>
-                      <a href={formUrl} target="_blank" rel="noopener noreferrer" className="button button-primary">
-                        Open form
-                        <ExternalLink size={16} />
-                      </a>
+                      <div className="dashboard-v2-action-row">
+                        <button type="button" className="button button-secondary" onClick={copyFormLink}>
+                          {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Copy failed' : 'Copy link'}
+                          <Copy size={16} />
+                        </button>
+                        <a href={formUrl} target="_blank" rel="noopener noreferrer" className="button button-primary">
+                          Open form
+                          <ExternalLink size={16} />
+                        </a>
+                      </div>
+
+                      <div className="dashboard-v2-share-mini-grid">
+                        {[
+                          ['Questions live', String(publishedQuestions.length)],
+                          ['Google link', googleUrl.trim() ? 'Added' : 'Missing'],
+                          ['QR status', qrGenerated ? 'Ready' : 'Not generated'],
+                        ].map(([label, value]) => (
+                          <div key={label} className="dashboard-v2-share-mini-card">
+                            <span>{label}</span>
+                            <strong>{value}</strong>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </article>
 
@@ -1272,6 +1419,19 @@ export default function DashboardClient({
                       <div className="dashboard-v2-qr-stack">
                         <div className="qr-box">
                           <img src={qrUrl} alt="QR code" width={220} height={220} />
+                        </div>
+
+                        <div className="dashboard-v2-share-mini-grid">
+                          {[
+                            ['Type', 'Printable PNG'],
+                            ['Link state', 'Stable URL'],
+                            ['Use', 'Tables and counters'],
+                          ].map(([label, value]) => (
+                            <div key={label} className="dashboard-v2-share-mini-card">
+                              <span>{label}</span>
+                              <strong>{value}</strong>
+                            </div>
+                          ))}
                         </div>
 
                         <div className="dashboard-v2-action-row">
@@ -1360,6 +1520,17 @@ export default function DashboardClient({
                       <p className="dashboard-v2-card-copy">
                         Update the business basics without leaving the dashboard.
                       </p>
+                    </div>
+                  </div>
+
+                  <div className="dashboard-v2-settings-banner">
+                    <div className="dashboard-v2-settings-banner-copy">
+                      <strong>{businessName || businessState.name}</strong>
+                      <span>{businessState.city} - {businessState.sector}</span>
+                    </div>
+                    <div className="dashboard-v2-chip-row">
+                      <span className="pill accent-pill">{currentPlan.label}</span>
+                      <span className="pill">{humanizeStatus(businessState.plan_status)}</span>
                     </div>
                   </div>
 
