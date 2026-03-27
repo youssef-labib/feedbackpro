@@ -1,15 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { Check, ChevronDown } from 'lucide-react'
 import type { Lang } from './useStoredLanguage'
 
-const FLAGS: Record<Lang, { flag: string; short: string; label: string; subtitle: string }> = {
-  fr: { flag: '🇫🇷', short: 'FR', label: 'Francais', subtitle: 'French' },
-  ar: { flag: '🇲🇦', short: 'AR', label: 'العربية', subtitle: 'Arabic' },
-  en: { flag: '🇬🇧', short: 'EN', label: 'English', subtitle: 'English' },
-  es: { flag: '🇪🇸', short: 'ES', label: 'Espanol', subtitle: 'Spanish' },
-}
+const LANG_OPTIONS: { code: Lang; flag: string; label: string }[] = [
+  { code: 'fr', flag: '🇫🇷', label: 'Français' },
+  { code: 'ar', flag: '🇲🇦', label: 'العربية' },
+  { code: 'en', flag: '🇬🇧', label: 'English' },
+  { code: 'es', flag: '🇪🇸', label: 'Español' },
+]
 
 export default function FlagLangSelector({
   lang,
@@ -20,78 +18,69 @@ export default function FlagLangSelector({
   setLang: (lang: Lang) => void
   options?: Lang[]
 }) {
-  const [open, setOpen] = useState(false)
-  const rootRef = useRef<HTMLDivElement>(null)
+  const available = options && options.length > 0
+    ? LANG_OPTIONS.filter((o) => options.includes(o.code))
+    : LANG_OPTIONS
 
-  useEffect(() => {
-    function closeOnOutside(event: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setOpen(false)
-      }
-    }
-
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpen(false)
-    }
-
-    document.addEventListener('mousedown', closeOnOutside)
-    document.addEventListener('keydown', closeOnEscape)
-    return () => {
-      document.removeEventListener('mousedown', closeOnOutside)
-      document.removeEventListener('keydown', closeOnEscape)
-    }
-  }, [])
-
-  const available = (options && options.length > 0 ? options : (Object.keys(FLAGS) as Lang[])).map((code) => ({
-    code,
-    ...FLAGS[code],
-  }))
-  const current = FLAGS[lang]
+  const current = available.find((o) => o.code === lang) || available[0]
 
   return (
-    <div className="lang-select" ref={rootRef}>
-      <button
-        type="button"
-        className="lang-trigger"
-        data-open={open}
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-        aria-haspopup="menu"
+    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+      {/* Flag shown to the left of the select */}
+      <span
+        style={{
+          position: 'absolute',
+          left: 10,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          fontSize: 16,
+          lineHeight: 1,
+          pointerEvents: 'none',
+          zIndex: 1,
+        }}
       >
-        <span className="lang-trigger-current">
-          <span>{current.flag}</span>
-          <span className="lang-trigger-label">{current.short}</span>
-        </span>
-        <ChevronDown size={16} className="lang-trigger-chevron" />
-      </button>
-
-      {open ? (
-        <div className="lang-menu" role="menu">
-          {available.map((option) => (
-            <button
-              key={option.code}
-              type="button"
-              className={`lang-option${option.code === lang ? ' active' : ''}`}
-              onClick={() => {
-                setLang(option.code)
-                setOpen(false)
-              }}
-              role="menuitemradio"
-              aria-checked={option.code === lang}
-            >
-              <span>{option.flag}</span>
-              <span className="lang-option-copy">
-                <span className="lang-option-title">{option.short}</span>
-                <span className="lang-option-subtitle">{option.label}</span>
-              </span>
-              {option.code === lang ? <Check size={15} style={{ marginLeft: 'auto' }} /> : null}
-            </button>
-          ))}
-        </div>
-      ) : null}
+        {current.flag}
+      </span>
+      <select
+        value={lang}
+        onChange={(e) => setLang(e.target.value as Lang)}
+        style={{
+          paddingLeft: 34,
+          paddingRight: 28,
+          paddingTop: 7,
+          paddingBottom: 7,
+          appearance: 'none',
+          WebkitAppearance: 'none',
+          background: 'var(--panel)',
+          border: '1px solid var(--border)',
+          borderRadius: 999,
+          color: 'var(--text)',
+          fontSize: 13,
+          fontWeight: 700,
+          fontFamily: 'inherit',
+          cursor: 'pointer',
+          outline: 'none',
+          transition: 'border-color 0.18s ease',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'right 8px center',
+          minHeight: 38,
+        }}
+        onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--accent)' }}
+        onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
+      >
+        {available.map((option) => (
+          <option
+            key={option.code}
+            value={option.code}
+            style={{ background: 'var(--panel)', color: 'var(--text)' }}
+          >
+            {option.flag} {option.label}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }
 
 export type { Lang }
-export { FLAGS }

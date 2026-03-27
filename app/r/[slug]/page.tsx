@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
@@ -20,6 +21,7 @@ export default async function FeedbackPage({ params }: { params: Promise<{ slug:
     .single()
 
   if (bizError || !business) {
+    console.error('Business fetch error for slug:', slug, bizError)
     notFound()
   }
 
@@ -30,11 +32,13 @@ export default async function FeedbackPage({ params }: { params: Promise<{ slug:
     .single()
 
   if (formError || !form) {
+    console.error('Form fetch error for business:', business.id, formError)
     notFound()
   }
 
-  // Ensure categories is always an array
-  const categories = Array.isArray(form.categories) ? form.categories : []
+  const categories = Array.isArray(form.categories) && form.categories.length > 0
+    ? form.categories
+    : []
 
   return (
     <FeedbackFormClient

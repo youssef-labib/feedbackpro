@@ -21,46 +21,50 @@ export async function POST(req: Request) {
 
     const normalized = categories.map((category, index) => ({
       id: String(index + 1),
-      label_fr: category.label_fr?.trim(),
-      label_ar: category.label_ar?.trim() || category.label_fr?.trim(),
-      label_en: category.label_en?.trim() || category.label_fr?.trim(),
-      label_es: category.label_es?.trim() || category.label_en?.trim() || category.label_fr?.trim(),
+      label_fr: (category.label_fr || '').trim(),
+      label_ar: (category.label_ar || category.label_fr || '').trim(),
+      label_en: (category.label_en || category.label_fr || '').trim(),
+      label_es: (category.label_es || category.label_en || category.label_fr || '').trim(),
     }))
 
-    const hasInvalidCategory = normalized.some((category) => !category.label_fr)
+    const hasInvalidCategory = normalized.some((c) => !c.label_fr)
     if (hasInvalidCategory) {
-      return NextResponse.json({ error: 'French label is required' }, { status: 400 })
+      return NextResponse.json({ error: 'French label is required for every question' }, { status: 400 })
     }
 
+    // Auth check
     const supabase = await createSupabaseServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const admin = createSupabaseAdminClient()
+
+    // Simplified ownership check - NO complex join that was failing silently
     const { data: form, error: formError } = await admin
       .from('feedback_forms')
-      .select('id, business_id, businesses!inner(owner_id, slug)')
+      .select('id, business_id')
       .eq('id', formId)
       .single()
 
     if (formError || !form) {
+      console.error('Form fetch error:', formError)
       return NextResponse.json({ error: 'Form not found' }, { status: 404 })
     }
 
-    const businessRow = Array.isArray(form.businesses) ? form.businesses[0] : form.businesses
-    const ownerId = businessRow?.owner_id
-    const slug = businessRow?.slug
+    const { data: business, error: businessError } = await admin
+      .from('businesses')
+      .select('owner_id, slug')
+      .eq('id', form.business_id)
+      .single()
 
-    if (!ownerId || !slug) {
+    if (businessError || !business) {
+      console.error('Business fetch error:', businessError)
       return NextResponse.json({ error: 'Business not found' }, { status: 404 })
     }
 
-    if (ownerId !== user.id) {
+    if (business.owner_id !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -70,15 +74,17 @@ export async function POST(req: Request) {
       .eq('id', formId)
 
     if (updateError) {
+      console.error('Update error:', updateError)
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
     revalidatePath('/dashboard')
     revalidatePath('/setup')
-    revalidatePath(`/r/${slug}`)
+    revalidatePath(`/r/${business.slug}`)
 
     return NextResponse.json({ success: true, categories: normalized })
-  } catch {
+  } catch (err) {
+    console.error('forms/save crash:', err)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }

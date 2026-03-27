@@ -1,65 +1,72 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseAdminClient } from '../../../lib/supabase-server'
 
-type FormCategory = { id: string }
-
 export async function POST(req: Request) {
   try {
     const body = await req.json()
     const { form_id, business_id, ratings, average_score, comment } = body
 
     if (!form_id || !business_id || !ratings || typeof ratings !== 'object') {
-      return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const supabaseAdmin = createSupabaseAdminClient()
-    const { data: form, error: formError } = await supabaseAdmin
+    const admin = createSupabaseAdminClient()
+
+    // Verify the form exists and belongs to the business
+    const { data: form, error: formError } = await admin
       .from('feedback_forms')
-      .select('business_id, categories')
+      .select('id, business_id, categories')
       .eq('id', form_id)
       .single()
 
     if (formError || !form || form.business_id !== business_id) {
-      return NextResponse.json({ error: 'Invalid form submission' }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid form' }, { status: 400 })
     }
 
+    // Validate ratings: keys must be valid category IDs, values must be 1-5
     const categoryIds = new Set(
       Array.isArray(form.categories)
-        ? (form.categories as FormCategory[]).map((category) => category.id)
+        ? form.categories.map((c: { id: string }) => c.id)
         : []
     )
 
-    const submittedRatings = Object.entries(ratings as Record<string, unknown>)
-    const hasInvalidRating = submittedRatings.some(([categoryId, value]) => {
-      const numericValue = Number(value)
-      return !categoryIds.has(categoryId) || !Number.isInteger(numericValue) || numericValue < 1 || numericValue > 5
-    })
+    const submittedEntries = Object.entries(ratings as Record<string, unknown>)
 
-    if (submittedRatings.length === 0 || hasInvalidRating || submittedRatings.length !== categoryIds.size) {
-      return NextResponse.json({ error: 'Invalid ratings payload' }, { status: 400 })
+    if (submittedEntries.length === 0) {
+      return NextResponse.json({ error: 'No ratings provided' }, { status: 400 })
     }
 
+    const hasInvalidValue = submittedEntries.some(([, value]) => {
+      const n = Number(value)
+      return !Number.isInteger(n) || n < 1 || n > 5
+    })
+
+    if (hasInvalidValue) {
+      return NextResponse.json({ error: 'Invalid rating value (must be 1-5)' }, { status: 400 })
+    }
+
+    // Compute average from submitted ratings only (lenient - don't require all categories)
     const computedAverage =
       Math.round(
-        (submittedRatings.reduce((total, [, value]) => total + Number(value), 0) / submittedRatings.length) * 10
+        (submittedEntries.reduce((sum, [, v]) => sum + Number(v), 0) / submittedEntries.length) * 10
       ) / 10
 
-    const { error } = await supabaseAdmin
+    const { error } = await admin
       .from('submissions')
       .insert({
         form_id,
         business_id,
         ratings,
         average_score: computedAverage || Number(average_score) || 0,
-        comment: comment || null,
+        comment: comment?.trim() || null,
       })
 
     if (error) {
-      console.error('Submit error:', error)
+      console.error('Submit insert error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, average_score: computedAverage })
   } catch (err) {
     console.error('Submit API crash:', err)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })

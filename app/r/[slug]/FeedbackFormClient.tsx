@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight, Check, ExternalLink, LoaderCircle, MessageSquare
 import AppNavbar, { getPublicNavItems } from '../../../components/AppNavbar'
 import { useStoredLanguage } from '../../../components/useStoredLanguage'
 
-type Screen = 'form' | 'loading' | 'good' | 'bad'
+type Screen = 'form' | 'loading' | 'good' | 'bad' | 'error'
 type Business = {
   id: string
   name: string
@@ -49,6 +49,10 @@ const COPY = {
     badText: 'Votre retour a bien ete transmis a l equipe. Il restera prive et utile pour ameliorer le service.',
     google: 'Laisser un avis Google',
     close: 'Terminer',
+    errorTitle: 'Une erreur est survenue',
+    errorText: 'Impossible d\'envoyer votre avis. Veuillez reessayer.',
+    retry: 'Reessayer',
+    noQuestions: 'Ce formulaire n\'a pas encore de questions configurees.',
     scale: ['', 'Tres mauvais', 'Mauvais', 'Moyen', 'Bien', 'Excellent'],
   },
   ar: {
@@ -69,6 +73,10 @@ const COPY = {
     badText: 'وصل رايك الى الفريق وسيبقى خاصا ليستفاد منه في تحسين الخدمة.',
     google: 'اترك تقييما في Google',
     close: 'انهاء',
+    errorTitle: 'حدث خطأ',
+    errorText: 'تعذر ارسال رايك. يرجى المحاولة مرة اخرى.',
+    retry: 'حاول مرة اخرى',
+    noQuestions: 'لم يتم اعداد اسئلة لهذا النموذج بعد.',
     scale: ['', 'سيء جدا', 'سيء', 'متوسط', 'جيد', 'ممتاز'],
   },
   en: {
@@ -89,6 +97,10 @@ const COPY = {
     badText: 'Your feedback was sent privately to the team so they can improve the experience.',
     google: 'Leave a Google review',
     close: 'Finish',
+    errorTitle: 'Something went wrong',
+    errorText: 'Could not submit your feedback. Please try again.',
+    retry: 'Try again',
+    noQuestions: 'This form has no questions configured yet.',
     scale: ['', 'Very bad', 'Bad', 'Average', 'Good', 'Excellent'],
   },
 } as const
@@ -122,7 +134,9 @@ export default function FeedbackFormClient({
   const [comment, setComment] = useState('')
   const [screen, setScreen] = useState<Screen>('form')
   const [page, setPage] = useState(0)
+  const [submitError, setSubmitError] = useState('')
 
+  const hasCategories = form.categories.length > 0
   const totalPages = Math.ceil(form.categories.length / PAGE_SIZE)
   const currentCategories = form.categories.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
   const isLastPage = page === totalPages - 1
@@ -141,32 +155,56 @@ export default function FeedbackFormClient({
   )
 
   function getLabel(category: Category) {
-    if (lang === 'ar') return category.label_ar
+    if (lang === 'ar') return category.label_ar || category.label_fr
     if (lang === 'en') return category.label_en || category.label_fr
-    if (lang === 'es') return category.label_es || category.label_en || category.label_fr
+    if (lang === 'es') return (category as { label_es?: string }).label_es || category.label_en || category.label_fr
     return category.label_fr
   }
 
   async function submitFeedback() {
-    if (!formComplete) return
+    if (!formComplete || !hasCategories) return
 
     setScreen('loading')
+    setSubmitError('')
+
     const scores = Object.values(ratings)
     const nextAverage = Math.round((scores.reduce((sum, score) => sum + score, 0) / scores.length) * 10) / 10
 
-    await fetch('/api/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        form_id: form.id,
-        business_id: business.id,
-        ratings,
-        average_score: nextAverage,
-        comment: comment.trim() || null,
-      }),
-    })
+    try {
+      const response = await fetch('/api/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          form_id: form.id,
+          business_id: business.id,
+          ratings,
+          average_score: nextAverage,
+          comment: comment.trim() || null,
+        }),
+      })
 
-    setScreen(nextAverage >= 4 ? 'good' : 'bad')
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error('Submit failed:', data.error)
+        setSubmitError(data.error || copy.errorText)
+        setScreen('error')
+        return
+      }
+
+      // Use server-computed average if available
+      const finalAverage = data.average_score ?? nextAverage
+      setScreen(finalAverage >= 4 ? 'good' : 'bad')
+    } catch (err) {
+      console.error('Submit network error:', err)
+      setSubmitError(copy.errorText)
+      setScreen('error')
+    }
+  }
+
+  function retrySubmit() {
+    setScreen('form')
+    setSubmitError('')
   }
 
   return (
@@ -203,21 +241,30 @@ export default function FeedbackFormClient({
             </div>
           </header>
 
-          {screen === 'form' ? (
+          {/* No questions state */}
+          {!hasCategories && screen === 'form' && (
+            <section className="surface-card empty-state">
+              <div className="feature-icon" style={{ margin: '0 auto' }}>
+                <MessageSquareText size={20} />
+              </div>
+              <h2 className="empty-title">{copy.noQuestions}</h2>
+            </section>
+          )}
+
+          {screen === 'form' && hasCategories ? (
             <section className="surface-card" style={{ padding: 24 }}>
               {totalPages > 1 ? (
                 <div className="field-row" style={{ marginBottom: 18 }}>
                   <div className="pill">
                     {copy.page} {page + 1} {copy.of} {totalPages}
                   </div>
-                  <div className="pill">{Object.values(ratings).filter((value) => value > 0).length}/{form.categories.length}</div>
+                  <div className="pill">{Object.values(ratings).filter((v) => v > 0).length}/{form.categories.length}</div>
                 </div>
               ) : null}
 
               <div className="stack">
                 {currentCategories.map((category) => {
                   const selected = ratings[category.id] || 0
-
                   return (
                     <article key={category.id} className="review-card">
                       <div className="field-row" style={{ marginBottom: 16 }}>
@@ -230,17 +277,14 @@ export default function FeedbackFormClient({
                         {selected > 0 ? (
                           <div
                             className="score-pill"
-                            style={{
-                              color: SCORE_STYLE[selected].color,
-                              background: SCORE_STYLE[selected].bg,
-                            }}
+                            style={{ color: SCORE_STYLE[selected].color, background: SCORE_STYLE[selected].bg }}
                           >
                             {selected}/5
                           </div>
                         ) : null}
                       </div>
 
-                      <div className="five-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10 }}>
                         {[1, 2, 3, 4, 5].map((value) => {
                           const active = value === selected
                           return (
@@ -274,7 +318,7 @@ export default function FeedbackFormClient({
                   <textarea
                     className="textarea"
                     value={comment}
-                    onChange={(event) => setComment(event.target.value)}
+                    onChange={(e) => setComment(e.target.value)}
                     placeholder={copy.commentPlaceholder}
                   />
                 </div>
@@ -282,7 +326,7 @@ export default function FeedbackFormClient({
 
               <div className="inline-actions" style={{ marginTop: 20 }}>
                 {page > 0 ? (
-                  <button type="button" className="button button-secondary" onClick={() => setPage((value) => value - 1)}>
+                  <button type="button" className="button button-secondary" onClick={() => setPage((v) => v - 1)}>
                     <ArrowLeft size={16} />
                     {copy.prev}
                   </button>
@@ -292,7 +336,7 @@ export default function FeedbackFormClient({
                   <button
                     type="button"
                     className="button button-primary"
-                    onClick={() => setPage((value) => value + 1)}
+                    onClick={() => setPage((v) => v + 1)}
                     disabled={!pageComplete}
                     style={{ flex: 1 }}
                   >
@@ -351,6 +395,22 @@ export default function FeedbackFormClient({
               <h2 className="empty-title">{copy.thankBad}</h2>
               <p className="empty-copy">{copy.badText}</p>
               <div className="inline-actions" style={{ justifyContent: 'center', marginTop: 18 }}>
+                <Link href="/" className="button button-secondary">{copy.close}</Link>
+              </div>
+            </section>
+          ) : null}
+
+          {screen === 'error' ? (
+            <section className="surface-card empty-state">
+              <div className="feature-icon" style={{ margin: '0 auto', background: 'var(--danger-soft)', color: 'var(--danger)' }}>
+                <MessageSquareText size={20} />
+              </div>
+              <h2 className="empty-title">{copy.errorTitle}</h2>
+              <p className="empty-copy">{submitError || copy.errorText}</p>
+              <div className="inline-actions" style={{ justifyContent: 'center', marginTop: 18 }}>
+                <button type="button" className="button button-primary" onClick={retrySubmit}>
+                  {copy.retry}
+                </button>
                 <Link href="/" className="button button-secondary">{copy.close}</Link>
               </div>
             </section>
