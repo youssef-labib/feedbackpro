@@ -202,13 +202,13 @@ export default function DashboardClient({
   }, [businessState.slug])
 
   useEffect(() => {
-    if (!sidebarOpen) return
+    if (!sidebarOpen && !questionModalOpen) return
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = previousOverflow
     }
-  }, [sidebarOpen])
+  }, [questionModalOpen, sidebarOpen])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -816,7 +816,7 @@ export default function DashboardClient({
                   })}
                 </section>
 
-                <section className="dashboard-v2-grid dashboard-v2-grid-overview">
+                <section className="dashboard-v2-stack">
                   <article className="dashboard-v2-card">
                     <div className="dashboard-v2-card-head">
                       <div>
@@ -861,7 +861,7 @@ export default function DashboardClient({
                       <div className="dashboard-v2-activity-summary">
                         {[
                           ['Weekly total', String(weeklyTotal)],
-                          ['Best day', bestDay.count ? `${bestDay.label} • ${bestDay.count}` : 'No activity'],
+                          ['Best day', bestDay.count ? `${bestDay.label} - ${bestDay.count}` : 'No activity'],
                           ['Quiet days', String(quietDays)],
                         ].map(([label, value]) => (
                           <div key={label} className="dashboard-v2-activity-stat">
@@ -1103,14 +1103,14 @@ export default function DashboardClient({
                         Keep the public form sharp: choose a question, edit it, then publish the full set.
                       </p>
                     </div>
-                    <div className="dashboard-v2-action-row">
-                      <span className="pill">{questions.length}/10</span>
+                    <div className="dashboard-v2-question-flow-actions">
+                      <span className="pill">{questions.length} / 10 live</span>
                       <button
                         type="button"
                         className="button button-primary"
                         onClick={() => setQuestionModalOpen(true)}
                       >
-                        New question
+                        Open composer
                         <Plus size={16} />
                       </button>
                     </div>

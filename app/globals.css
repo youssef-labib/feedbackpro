@@ -2184,6 +2184,7 @@ img {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  overflow-y: auto;
 }
 
 .modal-card {
@@ -3602,6 +3603,18 @@ img {
   gap: 12px;
 }
 
+.dashboard-v2-question-flow-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-soft);
+}
+
 .dashboard-v2-question-tile {
   width: 100%;
   padding: 16px;
@@ -3766,6 +3779,10 @@ img {
   border-radius: 20px;
   background: var(--panel-soft);
   color: var(--muted-strong);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
 }
 
 .dashboard-v2-share-stack {
@@ -3794,6 +3811,8 @@ img {
 
 .dashboard-v2-link-box span {
   overflow-wrap: anywhere;
+  white-space: normal;
+  line-height: 1.55;
 }
 
 .dashboard-v2-check-icon {
@@ -3952,6 +3971,8 @@ img {
   width: min(760px, 100%);
   display: grid;
   gap: 20px;
+  max-height: calc(100vh - 40px);
+  overflow: auto;
 }
 
 .dashboard-v2-question-modal-head,
@@ -4009,6 +4030,13 @@ img {
   .dashboard-v2-page.sidebar-collapsed .dashboard-v2-sidebar-label,
   .dashboard-v2-page.sidebar-collapsed .dashboard-v2-nav-copy {
     display: none;
+  }
+
+  .dashboard-v2-page.sidebar-collapsed .brand {
+    width: 42px;
+    gap: 0;
+    overflow: hidden;
+    justify-content: center;
   }
 
   .dashboard-v2-page.sidebar-collapsed .dashboard-v2-nav-wrap {
@@ -4240,6 +4268,18 @@ img {
   .dashboard-v2-meta-chip,
   .dashboard-v2-action-row .button,
   .dashboard-v2-hero-actions .button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .dashboard-v2-question-flow-actions {
+    width: 100%;
+    justify-content: stretch;
+    border-radius: 22px;
+  }
+
+  .dashboard-v2-question-flow-actions .pill,
+  .dashboard-v2-question-flow-actions .button {
     width: 100%;
     justify-content: center;
   }
