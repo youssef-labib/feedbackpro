@@ -608,7 +608,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="features" className="section">
+        <section className="section">
           <div className="container lp-proof-layout">
             <div className="lp-section-copy">
               <div className="section-eyebrow">{copy.sections.proof}</div>
@@ -677,12 +677,14 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="section">
-          <div className="container lp-feature-layout">
-            <article className="surface-card lp-feature-lead">
+        <section id="features" className="section">
+          <div className="container">
+            <div className="section-head lp-feature-head">
               <div className="section-eyebrow">{copy.sections.features}</div>
-              <h2 className="card-title landing-section-title">{copy.featuresTitle}</h2>
-              <p className="card-copy">{copy.featuresSubtitle}</p>
+              <h2 className="section-title" style={{ fontSize: 'clamp(28px, 4vw, 44px)' }}>
+                {copy.featuresTitle}
+              </h2>
+              <p className="section-subtitle">{copy.featuresSubtitle}</p>
 
               <div className="lp-chip-row">
                 {copy.chips.map((chip) => (
@@ -691,7 +693,7 @@ export default function HomePage() {
                   </span>
                 ))}
               </div>
-            </article>
+            </div>
 
             <div className="lp-feature-grid">
               {copy.features.map((feature, index) => {
@@ -757,7 +759,7 @@ export default function HomePage() {
                 ))}
               </div>
 
-              <aside className="surface-card lp-price-note">
+              <div className="surface-card lp-price-note">
                 <div className="section-eyebrow">{copy.sections.summary}</div>
                 <h3 className="card-title landing-section-title">{PRICING_BAND_TITLE[copyLang]}</h3>
                 <p className="card-copy">{PRICING_BAND_BODY[copyLang]}</p>
@@ -770,7 +772,7 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
-              </aside>
+              </div>
             </div>
           </div>
         </section>
