@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import PageMotion from '../components/PageMotion'
 
 export const metadata: Metadata = {
   title: 'FeedbackPro',
@@ -30,7 +29,6 @@ export default function RootLayout({
             `,
           }}
         />
-        <PageMotion />
         {children}
       </body>
     </html>
