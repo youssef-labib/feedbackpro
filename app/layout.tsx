@@ -23,7 +23,10 @@ export default function RootLayout({
                   var theme = stored === 'light' || stored === 'dark'
                     ? stored
                     : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                  var accent = localStorage.getItem('feedbackpro-accent');
                   document.documentElement.dataset.theme = theme;
+                  document.documentElement.dataset.accent =
+                    accent === 'blue' || accent === 'amber' || accent === 'green' ? accent : 'green';
                 } catch (e) {}
               })();
             `,

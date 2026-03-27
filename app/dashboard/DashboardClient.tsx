@@ -4,9 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   ArrowDown,
   ArrowUp,
-  BadgeCheck,
   BarChart3,
-  Building2,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -14,13 +12,11 @@ import {
   Copy,
   Download,
   ExternalLink,
-  Globe2,
   ImageUp,
   LayoutDashboard,
   Link2,
   ListChecks,
   LogOut,
-  MapPin,
   Menu,
   MessageSquare,
   Plus,
@@ -70,6 +66,14 @@ type Submission = {
 }
 type DashboardTab = 'overview' | 'reviews' | 'questions' | 'share' | 'settings'
 type MessageState = { type: 'success' | 'error'; text: string } | null
+type AccentTheme = 'green' | 'blue' | 'amber'
+
+const ACCENT_STORAGE_KEY = 'feedbackpro-accent'
+const ACCENT_OPTIONS: Array<{ id: AccentTheme; label: string; swatch: string }> = [
+  { id: 'green', label: 'Emerald', swatch: '#22c55e' },
+  { id: 'blue', label: 'Sky', swatch: '#3b82f6' },
+  { id: 'amber', label: 'Amber', swatch: '#f59e0b' },
+]
 
 const DASHBOARD_NAV: Array<{
   id: DashboardTab
@@ -175,6 +179,8 @@ export default function DashboardClient({
   const [questionMessage, setQuestionMessage] = useState<MessageState>(null)
   const [newQuestion, setNewQuestion] = useState({ fr: '', ar: '', en: '', es: '' })
   const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(form?.categories?.[0]?.id || null)
+  const [questionModalOpen, setQuestionModalOpen] = useState(false)
+  const [accentTheme, setAccentTheme] = useState<AccentTheme>('green')
   const [logoPreview, setLogoPreview] = useState(business.logo_url || '')
   const [logoUploading, setLogoUploading] = useState(false)
   const [logoMessage, setLogoMessage] = useState<MessageState>(null)
@@ -212,11 +218,27 @@ export default function DashboardClient({
 
   useEffect(() => {
     if (typeof window === 'undefined') return
+    const stored = window.localStorage.getItem(ACCENT_STORAGE_KEY)
+    if (stored === 'green' || stored === 'blue' || stored === 'amber') {
+      setAccentTheme(stored)
+      return
+    }
+    document.documentElement.dataset.accent = 'green'
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
     window.localStorage.setItem(
       'feedbackpro-dashboard-sidebar',
       sidebarCollapsed ? 'collapsed' : 'expanded'
     )
   }, [sidebarCollapsed])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    document.documentElement.dataset.accent = accentTheme
+    window.localStorage.setItem(ACCENT_STORAGE_KEY, accentTheme)
+  }, [accentTheme])
 
   useEffect(() => {
     if (questions.length === 0) {
@@ -275,6 +297,7 @@ export default function DashboardClient({
     { label: 'Logo uploaded', ready: Boolean(logoPreview) },
   ]
   const readinessCount = readinessItems.filter((item) => item.ready).length
+  const readinessPercentage = (readinessCount / readinessItems.length) * 100
   const currentPlan = planMeta(selectedPlan)
   const currentTab = DASHBOARD_NAV.find((item) => item.id === activeTab) || DASHBOARD_NAV[0]
   const selectedQuestion =
@@ -283,6 +306,8 @@ export default function DashboardClient({
     ? questions.findIndex((question) => question.id === selectedQuestion.id)
     : -1
   const qrUrl = `/api/qr?url=${encodeURIComponent(formUrl)}`
+  const topConcern = categoryAverages[0]?.label || 'No weak area yet'
+  const latestComment = submissions.find((submission) => submission.comment?.trim())
 
   function flashMessage(
     setter: React.Dispatch<React.SetStateAction<MessageState>>,
@@ -301,6 +326,10 @@ export default function DashboardClient({
 
   function toggleSidebarCollapsed() {
     setSidebarCollapsed((current) => !current)
+  }
+
+  function closeQuestionModal() {
+    setQuestionModalOpen(false)
   }
 
   async function logout() {
@@ -474,6 +503,7 @@ export default function DashboardClient({
     ])
     setSelectedQuestionId(nextId)
     setNewQuestion({ fr: '', ar: '', en: '', es: '' })
+    setQuestionModalOpen(false)
     flashMessage(setQuestionMessage, { type: 'success', text: 'New question added. Publish when you are ready.' })
   }
 
@@ -580,49 +610,12 @@ export default function DashboardClient({
             </nav>
           </div>
 
-          <section className="dashboard-v2-sidebar-profile">
-            <div className="dashboard-v2-sidebar-label">Workspace</div>
-            <div className="dashboard-v2-business-row">
-              <div className="dashboard-v2-avatar">
-                {logoPreview ? (
-                  <img
-                    src={logoPreview}
-                    alt={businessName || businessState.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  (businessName || businessState.name).slice(0, 2).toUpperCase()
-                )}
-              </div>
-              <div className="dashboard-v2-business-copy">
-                <div className="dashboard-v2-business-name">{businessName || businessState.name}</div>
-                <div className="dashboard-v2-business-meta">
-                  {businessState.city} - {businessState.sector}
-                </div>
-              </div>
-            </div>
-
-            <div className="dashboard-v2-chip-row">
-              <span className="pill accent-pill">{currentPlan.label}</span>
-              <span className="pill">{humanizeStatus(businessState.plan_status)}</span>
-            </div>
-
-            <div className="dashboard-v2-readiness">
-              <div className="dashboard-v2-readiness-head">
-                <span>Workspace readiness</span>
-                <strong>{readinessCount}/4</strong>
-              </div>
-              <div className="dashboard-v2-progress">
-                <span style={{ width: `${(readinessCount / readinessItems.length) * 100}%` }} />
-              </div>
-              <p className="dashboard-v2-readiness-copy">
-                Keep the essentials ready before you print your QR and share the form.
-              </p>
-            </div>
-          </section>
-
           <div className="dashboard-v2-sidebar-tools">
             <div className="dashboard-v2-sidebar-label">Tools</div>
+            <div className="dashboard-v2-sidebar-mini-note">
+              <strong>{businessName || businessState.name}</strong>
+              <span>{businessState.city} • {businessState.sector}</span>
+            </div>
             <div className="dashboard-v2-sidebar-toolset">
               <ThemeToggle />
               <FlagLangSelector lang={lang} setLang={setLang} />
@@ -630,14 +623,6 @@ export default function DashboardClient({
           </div>
 
           <section className="dashboard-v2-sidebar-foot">
-            <div className="dashboard-v2-sidebar-foot-note">
-              <span className="dashboard-v2-sidebar-foot-dot" />
-              <span>Public form linked to this workspace</span>
-            </div>
-            <a href={formUrl} target="_blank" rel="noopener noreferrer" className="button button-secondary">
-              Open public form
-              <ExternalLink size={16} />
-            </a>
             <button type="button" className="button button-primary" onClick={logout}>
               Sign out
               <LogOut size={16} />
@@ -690,58 +675,86 @@ export default function DashboardClient({
           </section>
 
           <header className="dashboard-v2-hero">
-            <div className="dashboard-v2-hero-copy">
+            <div className="dashboard-v2-hero-main">
               <div className="section-eyebrow">Dashboard</div>
-              <h1 className="dashboard-v2-title">{businessName || businessState.name}</h1>
-              <p className="dashboard-v2-subtitle">
-                Clear workspace for live feedback, quick fixes, and a public form that stays ready
-                for staff and customers.
-              </p>
+              <div className="dashboard-v2-hero-title-row">
+                <div>
+                  <h1 className="dashboard-v2-title">{businessName || businessState.name}</h1>
+                  <p className="dashboard-v2-subtitle">
+                    One clear workspace for the live form, reviews, QR assets, and the updates your
+                    team needs to act on fast.
+                  </p>
+                </div>
+                <div className="dashboard-v2-chip-row">
+                  <span className="pill accent-pill">{currentPlan.label}</span>
+                  <span className="pill">{humanizeStatus(businessState.plan_status)}</span>
+                </div>
+              </div>
 
-              <div className="dashboard-v2-meta-row">
-                <span className="dashboard-v2-meta-chip">
-                  <Building2 size={14} />
-                  {userEmail}
-                </span>
-                <span className="dashboard-v2-meta-chip">
-                  <MapPin size={14} />
-                  {businessState.city}
-                </span>
-                <span className="dashboard-v2-meta-chip">
-                  <BadgeCheck size={14} />
-                  {currentPlan.label}
-                </span>
-                <span className="dashboard-v2-meta-chip">
-                  <Globe2 size={14} />
-                  {humanizeStatus(businessState.plan_status)}
-                </span>
+              <div className="dashboard-v2-hero-summary-grid">
+                <div className="dashboard-v2-hero-summary-card">
+                  <span>Owner</span>
+                  <strong>{userEmail}</strong>
+                </div>
+                <div className="dashboard-v2-hero-summary-card">
+                  <span>City</span>
+                  <strong>{businessState.city}</strong>
+                </div>
+                <div className="dashboard-v2-hero-summary-card">
+                  <span>Questions live</span>
+                  <strong>{publishedQuestions.length}</strong>
+                </div>
+                <div className="dashboard-v2-hero-summary-card">
+                  <span>Reviews collected</span>
+                  <strong>{submissions.length}</strong>
+                </div>
               </div>
             </div>
 
             <div className="dashboard-v2-hero-side">
-              <div className="dashboard-v2-hero-status">
-                <div className="dashboard-v2-hero-status-head">
-                  <span className="dashboard-v2-hero-status-label">Workspace status</span>
-                  <strong>{readinessCount}/4 ready</strong>
+              <div className="dashboard-v2-hero-action-card">
+                <div className="dashboard-v2-hero-action-head">
+                  <div>
+                    <div className="dashboard-v2-hero-status-label">Public form</div>
+                    <strong>Ready to share</strong>
+                  </div>
+                  <span className="pill">{qrGenerated ? 'QR ready' : 'QR pending'}</span>
                 </div>
-                <div className="dashboard-v2-progress">
-                  <span style={{ width: `${(readinessCount / readinessItems.length) * 100}%` }} />
+
+                <div className="dashboard-v2-link-box">
+                  <Link2 size={16} />
+                  <span>{formUrl}</span>
                 </div>
-                <div className="dashboard-v2-hero-status-copy">
-                  <div>{categoryAverages[0] ? `Watch ${categoryAverages[0].label} first.` : 'Start by sharing your form.'}</div>
-                  <div>{submissions.length ? `${submissions.length} reviews collected so far.` : 'No reviews collected yet.'}</div>
+
+                <div className="dashboard-v2-hero-actions">
+                  <button type="button" className="button button-secondary" onClick={copyFormLink}>
+                    {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Copy failed' : 'Copy link'}
+                    <Copy size={16} />
+                  </button>
+                  <a href={formUrl} target="_blank" rel="noopener noreferrer" className="button button-primary">
+                    Open form
+                    <ExternalLink size={16} />
+                  </a>
                 </div>
               </div>
 
-              <div className="dashboard-v2-hero-actions">
-                <button type="button" className="button button-secondary" onClick={copyFormLink}>
-                  {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Copy failed' : 'Copy link'}
-                  <Copy size={16} />
-                </button>
-                <a href={formUrl} target="_blank" rel="noopener noreferrer" className="button button-primary">
-                  Open form
-                  <ExternalLink size={16} />
-                </a>
+              <div className="dashboard-v2-hero-focus-grid">
+                <div className="dashboard-v2-hero-focus-card">
+                  <span>Readiness</span>
+                  <strong>{readinessCount}/4 ready</strong>
+                  <div className="dashboard-v2-progress">
+                    <span style={{ width: `${readinessPercentage}%` }} />
+                  </div>
+                </div>
+                <div className="dashboard-v2-hero-focus-card">
+                  <span>Watch first</span>
+                  <strong>{topConcern}</strong>
+                  <small>
+                    {latestComment?.comment?.trim()
+                      ? 'Latest written review is already in the Reviews tab.'
+                      : 'Written comments will surface here once customers leave one.'}
+                  </small>
+                </div>
               </div>
             </div>
           </header>
@@ -809,26 +822,38 @@ export default function DashboardClient({
                       <div>
                         <div className="dashboard-v2-card-title">Weekly activity</div>
                         <p className="dashboard-v2-card-copy">
-                          A clearer weekly view of response volume and where the pace is strongest.
+                          Daily review volume without the heavy chart, so the team can spot quiet and busy days faster.
                         </p>
                       </div>
-                      <span className="pill">{weekSubmissions.length} this week</span>
+                      <div className="dashboard-v2-activity-head-stats">
+                        <strong>{weeklyTotal}</strong>
+                        <span>reviews in the last 7 days</span>
+                      </div>
                     </div>
 
                     <div className="dashboard-v2-activity-layout">
-                      <div className="dashboard-v2-chart">
+                      <div className="dashboard-v2-activity-days">
                         {weeklySeries.map((item) => (
-                          <div key={item.label} className="dashboard-v2-chart-item">
-                            <div className="dashboard-v2-chart-value">{item.count}</div>
-                            <div className="dashboard-v2-chart-track">
+                          <div
+                            key={item.label}
+                            className={`dashboard-v2-activity-day${
+                              item.count > 0 && item.count === bestDay.count ? ' is-peak' : ''
+                            }${item.count === 0 ? ' is-quiet' : ''}`}
+                          >
+                            <div className="dashboard-v2-activity-day-top">
+                              <span>{item.label}</span>
+                              <strong>{item.count}</strong>
+                            </div>
+                            <div className="dashboard-v2-activity-day-copy">
+                              {item.count === 0 ? 'No reviews' : item.count === 1 ? '1 review' : `${item.count} reviews`}
+                            </div>
+                            <div className="dashboard-v2-activity-day-line">
                               <span
-                                className="dashboard-v2-chart-fill"
                                 style={{
-                                  height: `${Math.max((item.count / maxWeeklyCount) * 100, item.count ? 12 : 4)}%`,
+                                  width: `${Math.max((item.count / maxWeeklyCount) * 100, item.count ? 16 : 6)}%`,
                                 }}
                               />
                             </div>
-                            <div className="dashboard-v2-chart-label">{item.label}</div>
                           </div>
                         ))}
                       </div>
@@ -836,7 +861,7 @@ export default function DashboardClient({
                       <div className="dashboard-v2-activity-summary">
                         {[
                           ['Weekly total', String(weeklyTotal)],
-                          ['Best day', bestDay.count ? `${bestDay.label} - ${bestDay.count}` : 'No activity'],
+                          ['Best day', bestDay.count ? `${bestDay.label} • ${bestDay.count}` : 'No activity'],
                           ['Quiet days', String(quietDays)],
                         ].map(([label, value]) => (
                           <div key={label} className="dashboard-v2-activity-stat">
@@ -1075,10 +1100,20 @@ export default function DashboardClient({
                     <div>
                       <div className="dashboard-v2-card-title">Question flow</div>
                       <p className="dashboard-v2-card-copy">
-                        Choose a question, edit it on the right, and publish when the full list is ready.
+                        Keep the public form sharp: choose a question, edit it, then publish the full set.
                       </p>
                     </div>
-                    <span className="pill">{questions.length}/10</span>
+                    <div className="dashboard-v2-action-row">
+                      <span className="pill">{questions.length}/10</span>
+                      <button
+                        type="button"
+                        className="button button-primary"
+                        onClick={() => setQuestionModalOpen(true)}
+                      >
+                        New question
+                        <Plus size={16} />
+                      </button>
+                    </div>
                   </div>
 
                   {questions.length === 0 ? (
@@ -1088,8 +1123,17 @@ export default function DashboardClient({
                       </div>
                       <h3 className="dashboard-v2-empty-title">No questions yet</h3>
                       <p className="dashboard-v2-empty-copy">
-                        Add your first question from the builder panel and publish it to the form.
+                        Open the composer, add the first question, then publish it to the live form.
                       </p>
+                      <button
+                        type="button"
+                        className="button button-primary"
+                        style={{ marginTop: 18 }}
+                        onClick={() => setQuestionModalOpen(true)}
+                      >
+                        Open composer
+                        <Plus size={16} />
+                      </button>
                     </div>
                   ) : (
                     <div className="dashboard-v2-question-browser">
@@ -1122,7 +1166,7 @@ export default function DashboardClient({
                       <div>
                         <div className="dashboard-v2-card-title">Question editor</div>
                         <p className="dashboard-v2-card-copy">
-                          Update the selected question and keep the public form clear on mobile.
+                          Edit the selected question and keep the wording simple on mobile.
                         </p>
                       </div>
                     </div>
@@ -1226,62 +1270,38 @@ export default function DashboardClient({
                     )}
                   </section>
 
-                  <section className="dashboard-v2-card">
+                  <section className="dashboard-v2-card dashboard-v2-question-launcher">
                     <div className="dashboard-v2-card-head">
                       <div>
-                        <div className="dashboard-v2-card-title">Add a new question</div>
+                        <div className="dashboard-v2-card-title">Question composer</div>
                         <p className="dashboard-v2-card-copy">
-                          Keep it short, clear, and easy to answer before customers leave the page.
+                          New questions now open in a larger composer so writing and translation work feels smoother.
                         </p>
                       </div>
                     </div>
 
-                    <div className="dashboard-v2-field-grid">
-                      <div className="field">
-                        <label className="label">French</label>
-                        <input
-                          className="input"
-                          value={newQuestion.fr}
-                          onChange={(event) =>
-                            setNewQuestion((current) => ({ ...current, fr: event.target.value }))
-                          }
-                        />
+                    <div className="dashboard-v2-share-mini-grid">
+                      <div className="dashboard-v2-share-mini-card">
+                        <span>Required</span>
+                        <strong>French and Arabic</strong>
                       </div>
-                      <div className="field">
-                        <label className="label">Arabic</label>
-                        <input
-                          className="input"
-                          value={newQuestion.ar}
-                          onChange={(event) =>
-                            setNewQuestion((current) => ({ ...current, ar: event.target.value }))
-                          }
-                        />
+                      <div className="dashboard-v2-share-mini-card">
+                        <span>Optional</span>
+                        <strong>English and Spanish</strong>
                       </div>
-                      <div className="field">
-                        <label className="label">English</label>
-                        <input
-                          className="input"
-                          value={newQuestion.en}
-                          onChange={(event) =>
-                            setNewQuestion((current) => ({ ...current, en: event.target.value }))
-                          }
-                        />
-                      </div>
-                      <div className="field">
-                        <label className="label">Spanish</label>
-                        <input
-                          className="input"
-                          value={newQuestion.es}
-                          onChange={(event) =>
-                            setNewQuestion((current) => ({ ...current, es: event.target.value }))
-                          }
-                        />
+                      <div className="dashboard-v2-share-mini-card">
+                        <span>Recommended</span>
+                        <strong>Keep it under one sentence</strong>
                       </div>
                     </div>
 
-                    <div className="dashboard-v2-action-row">
-                      <button type="button" className="button button-primary" onClick={addQuestion}>
-                        Add question
+                    <div className="dashboard-v2-action-row" style={{ marginTop: 20 }}>
+                      <button
+                        type="button"
+                        className="button button-primary"
+                        onClick={() => setQuestionModalOpen(true)}
+                      >
+                        Open composer
                         <Plus size={16} />
                       </button>
                     </div>
@@ -1341,17 +1361,18 @@ export default function DashboardClient({
           {activeTab === 'share' ? (
             <>
               <div className="dashboard-v2-stack">
-                <section className="dashboard-v2-grid dashboard-v2-grid-share">
-                  <article className="dashboard-v2-card">
-                    <div className="dashboard-v2-card-head">
-                      <div>
-                        <div className="dashboard-v2-card-title">Share kit</div>
-                        <p className="dashboard-v2-card-copy">
-                          The live public form customers open after scanning the QR code.
-                        </p>
-                      </div>
+                <section className="dashboard-v2-card dashboard-v2-share-hero">
+                  <div className="dashboard-v2-card-head">
+                    <div>
+                      <div className="dashboard-v2-card-title">Share center</div>
+                      <p className="dashboard-v2-card-copy">
+                        Everything you need to open the live page, copy the link, and prepare the QR for staff on site.
+                      </p>
                     </div>
+                    <span className="pill accent-pill">{qrGenerated ? 'Ready to print' : 'Needs QR'}</span>
+                  </div>
 
+                  <div className="dashboard-v2-share-hero-grid">
                     <div className="dashboard-v2-share-stack">
                       <div className="dashboard-v2-link-box">
                         <Link2 size={16} />
@@ -1368,31 +1389,32 @@ export default function DashboardClient({
                           <ExternalLink size={16} />
                         </a>
                       </div>
-
-                      <div className="dashboard-v2-share-mini-grid">
-                        {[
-                          ['Questions live', String(publishedQuestions.length)],
-                          ['Google link', googleUrl.trim() ? 'Added' : 'Missing'],
-                          ['QR status', qrGenerated ? 'Ready' : 'Not generated'],
-                        ].map(([label, value]) => (
-                          <div key={label} className="dashboard-v2-share-mini-card">
-                            <span>{label}</span>
-                            <strong>{value}</strong>
-                          </div>
-                        ))}
-                      </div>
                     </div>
-                  </article>
 
+                    <div className="dashboard-v2-share-mini-grid">
+                      {[
+                        ['Questions live', String(publishedQuestions.length)],
+                        ['Google reviews', googleUrl.trim() ? 'Connected' : 'Missing'],
+                        ['QR file', qrGenerated ? 'Generated' : 'Not generated'],
+                      ].map(([label, value]) => (
+                        <div key={label} className="dashboard-v2-share-mini-card">
+                          <span>{label}</span>
+                          <strong>{value}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+
+                <section className="dashboard-v2-grid dashboard-v2-grid-share">
                   <article className="dashboard-v2-card">
                     <div className="dashboard-v2-card-head">
                       <div>
-                        <div className="dashboard-v2-card-title">QR asset</div>
+                        <div className="dashboard-v2-card-title">QR studio</div>
                         <p className="dashboard-v2-card-copy">
-                          Generate, preview, and download the QR your team can place on site.
+                          Generate, preview, and download the asset your team can place on tables, counters, or reception.
                         </p>
                       </div>
-                      {qrGenerated ? <span className="pill accent-pill">Ready</span> : null}
                     </div>
 
                     {!qrGenerated ? (
@@ -1400,9 +1422,9 @@ export default function DashboardClient({
                         <div className="dashboard-v2-empty-icon">
                           <QrCode size={18} />
                         </div>
-                        <h3 className="dashboard-v2-empty-title">Generate your QR code</h3>
+                        <h3 className="dashboard-v2-empty-title">Generate the first QR code</h3>
                         <p className="dashboard-v2-empty-copy">
-                          Once generated, the same public link stays active even when you download a new file.
+                          The public form link already works. Creating the QR simply makes the on-site journey faster.
                         </p>
                         <button
                           type="button"
@@ -1416,16 +1438,16 @@ export default function DashboardClient({
                         </button>
                       </div>
                     ) : (
-                      <div className="dashboard-v2-qr-stack">
+                      <div className="dashboard-v2-qr-studio">
                         <div className="qr-box">
                           <img src={qrUrl} alt="QR code" width={220} height={220} />
                         </div>
 
                         <div className="dashboard-v2-share-mini-grid">
                           {[
-                            ['Type', 'Printable PNG'],
-                            ['Link state', 'Stable URL'],
-                            ['Use', 'Tables and counters'],
+                            ['File type', 'PNG ready'],
+                            ['Link mode', 'Stable live URL'],
+                            ['Best use', 'Tables and counters'],
                           ].map(([label, value]) => (
                             <div key={label} className="dashboard-v2-share-mini-card">
                               <span>{label}</span>
@@ -1445,58 +1467,29 @@ export default function DashboardClient({
                             onClick={generateQr}
                             disabled={qrLoading}
                           >
-                            {qrLoading ? 'Generating...' : 'Regenerate'}
+                            {qrLoading ? 'Generating...' : 'Refresh asset'}
                             <QrCode size={16} />
                           </button>
                         </div>
                       </div>
                     )}
                   </article>
-                </section>
-
-                <section className="dashboard-v2-grid dashboard-v2-grid-share">
-                  <article className="dashboard-v2-card">
-                    <div className="dashboard-v2-card-head">
-                      <div>
-                        <div className="dashboard-v2-card-title">Launch checklist</div>
-                        <p className="dashboard-v2-card-copy">
-                          Small setup items that make the customer journey feel complete.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="dashboard-v2-checklist">
-                      {readinessItems.map((item) => (
-                        <div key={item.label} className="dashboard-v2-checklist-row">
-                          <span className={`dashboard-v2-check-icon${item.ready ? ' ready' : ''}`}>
-                            {item.ready ? <CheckCircle2 size={16} /> : <CircleAlert size={16} />}
-                          </span>
-                          <div>
-                            <div className="dashboard-v2-check-title">{item.label}</div>
-                            <div className="dashboard-v2-check-copy">
-                              {item.ready ? 'Done and ready to use.' : 'Still missing from the workspace.'}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </article>
 
                   <article className="dashboard-v2-card">
                     <div className="dashboard-v2-card-head">
                       <div>
-                        <div className="dashboard-v2-card-title">On-site display tips</div>
+                        <div className="dashboard-v2-card-title">Placement playbook</div>
                         <p className="dashboard-v2-card-copy">
-                          Keep the public page easy to find and easy to complete.
+                          A better on-site setup usually comes from small placement decisions, not extra complexity.
                         </p>
                       </div>
                     </div>
 
                     <div className="dashboard-v2-hint-list">
                       {[
-                        'Place the QR where customers naturally pause: table, counter, or reception.',
-                        'Use a short message near the code so people know the form takes under a minute.',
-                        'Check the public link after every question update so the printed material stays accurate.',
+                        'Put the QR where customers naturally pause, not where they need to search for it.',
+                        'Keep the invitation short and clear so the form feels like it takes under a minute.',
+                        'After editing questions, open the live page once so staff know what customers now see.',
                       ].map((item) => (
                         <div key={item} className="dashboard-v2-hint-row">
                           <span className="dashboard-v2-hint-dot" />
@@ -1506,206 +1499,385 @@ export default function DashboardClient({
                     </div>
                   </article>
                 </section>
+
+                <section className="dashboard-v2-card">
+                  <div className="dashboard-v2-card-head">
+                    <div>
+                      <div className="dashboard-v2-card-title">Go-live board</div>
+                      <p className="dashboard-v2-card-copy">
+                        A clearer readiness view before the team prints the QR and starts collecting responses.
+                      </p>
+                    </div>
+                    <span className="pill">{readinessCount}/4 complete</span>
+                  </div>
+
+                  <div className="dashboard-v2-share-status-grid">
+                    {readinessItems.map((item) => (
+                      <div
+                        key={item.label}
+                        className={`dashboard-v2-share-status-card${item.ready ? ' is-ready' : ''}`}
+                      >
+                        <span className={`dashboard-v2-check-icon${item.ready ? ' ready' : ''}`}>
+                          {item.ready ? <CheckCircle2 size={16} /> : <CircleAlert size={16} />}
+                        </span>
+                        <strong>{item.label}</strong>
+                        <p>{item.ready ? 'Ready to use across the workspace.' : 'Still missing before launch.'}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
               </div>
             </>
           ) : null}
 
           {activeTab === 'settings' ? (
             <>
-              <div className="dashboard-v2-grid dashboard-v2-grid-settings">
-                <section className="dashboard-v2-card">
+              <div className="dashboard-v2-stack">
+                <section className="dashboard-v2-card dashboard-v2-settings-shell">
                   <div className="dashboard-v2-card-head">
                     <div>
-                      <div className="dashboard-v2-card-title">Business profile</div>
+                      <div className="dashboard-v2-card-title">Workspace customization</div>
                       <p className="dashboard-v2-card-copy">
-                        Update the business basics without leaving the dashboard.
+                        Update the workspace details, refresh branding, and choose the accent style used across the app.
                       </p>
                     </div>
                   </div>
 
-                  <div className="dashboard-v2-settings-banner">
-                    <div className="dashboard-v2-settings-banner-copy">
-                      <strong>{businessName || businessState.name}</strong>
-                      <span>{businessState.city} - {businessState.sector}</span>
-                    </div>
-                    <div className="dashboard-v2-chip-row">
-                      <span className="pill accent-pill">{currentPlan.label}</span>
-                      <span className="pill">{humanizeStatus(businessState.plan_status)}</span>
-                    </div>
-                  </div>
+                  <div className="dashboard-v2-settings-shell-grid">
+                    <div className="dashboard-v2-card dashboard-v2-settings-inner">
+                      <div className="dashboard-v2-card-head">
+                        <div>
+                          <div className="dashboard-v2-card-title">Theme accent</div>
+                          <p className="dashboard-v2-card-copy">
+                            The light and dark mode toggle still controls brightness. This chooses the accent color.
+                          </p>
+                        </div>
+                      </div>
 
-                  <div className="field">
-                    <label className="label">Business name</label>
-                    <input
-                      className="input"
-                      value={businessName}
-                      onChange={(event) => setBusinessName(event.target.value)}
-                    />
-                  </div>
-
-                  <div className="field">
-                    <label className="label">Google Reviews URL</label>
-                    <input
-                      className="input"
-                      value={googleUrl}
-                      onChange={(event) => setGoogleUrl(event.target.value)}
-                    />
-                  </div>
-
-                  <div className="field">
-                    <label className="label">Plan</label>
-                    <select
-                      className="select"
-                      value={selectedPlan}
-                      onChange={(event) => setSelectedPlan(event.target.value)}
-                    >
-                      <option value="trial">Trial</option>
-                      <option value="starter">Starter - 149 MAD</option>
-                      <option value="pro">Pro - 299 MAD</option>
-                      <option value="business">Business - 699 MAD</option>
-                    </select>
-                  </div>
-
-                  <p className="help-text">
-                    Payments can be connected later. For now the plan change stays manual from the
-                    dashboard.
-                  </p>
-
-                  {settingsMessage ? (
-                    <div className={`message ${settingsMessage.type === 'error' ? 'message-error' : 'message-success'}`}>
-                      {settingsMessage.text}
-                    </div>
-                  ) : null}
-
-                  <div className="dashboard-v2-action-row">
-                    <button
-                      type="button"
-                      className="button button-primary"
-                      onClick={saveBusinessSettings}
-                      disabled={saving}
-                    >
-                      {saving ? 'Saving...' : 'Save changes'}
-                      <Save size={16} />
-                    </button>
-                  </div>
-                </section>
-
-                <section className="dashboard-v2-card">
-                  <div className="dashboard-v2-card-head">
-                    <div>
-                      <div className="dashboard-v2-card-title">Branding</div>
-                      <p className="dashboard-v2-card-copy">
-                        Update the logo customers and staff will associate with this workspace.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="dashboard-v2-logo-panel">
-                    <div className="dashboard-v2-avatar dashboard-v2-avatar-large">
-                      {logoPreview ? (
-                        <img
-                          src={logoPreview}
-                          alt={businessName || businessState.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      ) : (
-                        (businessName || businessState.name).slice(0, 2).toUpperCase()
-                      )}
+                      <div className="dashboard-v2-theme-grid">
+                        {ACCENT_OPTIONS.map((option) => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            className={`dashboard-v2-theme-option${accentTheme === option.id ? ' active' : ''}`}
+                            onClick={() => setAccentTheme(option.id)}
+                          >
+                            <span
+                              className="dashboard-v2-theme-option-swatch"
+                              style={{ background: option.swatch }}
+                            />
+                            <span className="dashboard-v2-theme-option-copy">
+                              <strong>{option.label}</strong>
+                              <span>{option.id === 'green' ? 'Default workspace accent' : 'Apply across dashboard and site'}</span>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
-                    <div>
-                      <div className="dashboard-v2-business-name">{businessName || businessState.name}</div>
-                      <div className="dashboard-v2-business-meta">
-                        {logoPreview ? 'Custom logo active' : 'Using the default initials preview'}
+                    <div className="dashboard-v2-card dashboard-v2-settings-inner">
+                      <div className="dashboard-v2-card-head">
+                        <div>
+                          <div className="dashboard-v2-card-title">Workspace preview</div>
+                          <p className="dashboard-v2-card-copy">
+                            Quick snapshot of the current business identity and launch state.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="dashboard-v2-settings-preview">
+                        <div className="dashboard-v2-logo-panel">
+                          <div className="dashboard-v2-avatar dashboard-v2-avatar-large">
+                            {logoPreview ? (
+                              <img
+                                src={logoPreview}
+                                alt={businessName || businessState.name}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            ) : (
+                              (businessName || businessState.name).slice(0, 2).toUpperCase()
+                            )}
+                          </div>
+
+                          <div>
+                            <div className="dashboard-v2-business-name">{businessName || businessState.name}</div>
+                            <div className="dashboard-v2-business-meta">
+                              {businessState.city} • {businessState.sector}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="dashboard-v2-share-mini-grid">
+                          {[
+                            ['Plan', currentPlan.label],
+                            ['Status', humanizeStatus(businessState.plan_status)],
+                            ['Launch', `${readinessCount}/4 ready`],
+                          ].map(([label, value]) => (
+                            <div key={label} className="dashboard-v2-share-mini-card">
+                              <span>{label}</span>
+                              <strong>{value}</strong>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
+                </section>
 
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={handleLogoUpload}
-                  />
+                <div className="dashboard-v2-grid dashboard-v2-grid-settings">
+                  <section className="dashboard-v2-card">
+                    <div className="dashboard-v2-card-head">
+                      <div>
+                        <div className="dashboard-v2-card-title">Workspace details</div>
+                        <p className="dashboard-v2-card-copy">
+                          Update the key business information without leaving the dashboard.
+                        </p>
+                      </div>
+                    </div>
 
-                  <div className="dashboard-v2-action-row">
-                    <button
-                      type="button"
-                      className="button button-primary"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={logoUploading}
-                    >
-                      {logoUploading ? 'Uploading...' : 'Choose image'}
-                      <ImageUp size={16} />
-                    </button>
-                    {logoPreview ? (
-                      <button type="button" className="button button-secondary" onClick={removeLogo}>
-                        Remove logo
-                        <Trash2 size={16} />
-                      </button>
+                    <div className="field">
+                      <label className="label">Business name</label>
+                      <input
+                        className="input"
+                        value={businessName}
+                        onChange={(event) => setBusinessName(event.target.value)}
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label className="label">Google Reviews URL</label>
+                      <input
+                        className="input"
+                        value={googleUrl}
+                        onChange={(event) => setGoogleUrl(event.target.value)}
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label className="label">Plan</label>
+                      <select
+                        className="select"
+                        value={selectedPlan}
+                        onChange={(event) => setSelectedPlan(event.target.value)}
+                      >
+                        <option value="trial">Trial</option>
+                        <option value="starter">Starter - 149 MAD</option>
+                        <option value="pro">Pro - 299 MAD</option>
+                        <option value="business">Business - 699 MAD</option>
+                      </select>
+                    </div>
+
+                    <p className="help-text">
+                      Payments can be connected later. For now the plan change stays manual from the dashboard.
+                    </p>
+
+                    {settingsMessage ? (
+                      <div className={`message ${settingsMessage.type === 'error' ? 'message-error' : 'message-success'}`}>
+                        {settingsMessage.text}
+                      </div>
                     ) : null}
-                  </div>
 
-                  {logoMessage ? (
-                    <div className={`message ${logoMessage.type === 'error' ? 'message-error' : 'message-success'}`}>
-                      {logoMessage.text}
+                    <div className="dashboard-v2-action-row">
+                      <button
+                        type="button"
+                        className="button button-primary"
+                        onClick={saveBusinessSettings}
+                        disabled={saving}
+                      >
+                        {saving ? 'Saving...' : 'Save changes'}
+                        <Save size={16} />
+                      </button>
                     </div>
-                  ) : null}
-                </section>
+                  </section>
 
-                <section className="dashboard-v2-card">
-                  <div className="dashboard-v2-card-head">
-                    <div>
-                      <div className="dashboard-v2-card-title">Workspace summary</div>
-                      <p className="dashboard-v2-card-copy">
-                        Quick read-only view of the information this dashboard is using.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="dashboard-v2-info-list">
-                    {[
-                      ['Business name', businessName || businessState.name],
-                      ['City', businessState.city],
-                      ['Sector', businessState.sector],
-                      ['Current plan', `${currentPlan.label} - ${currentPlan.price}`],
-                      ['Plan status', humanizeStatus(businessState.plan_status)],
-                      ['Questions live', String(publishedQuestions.length)],
-                    ].map(([label, value]) => (
-                      <div key={label} className="dashboard-v2-info-row">
-                        <span>{label}</span>
-                        <strong>{value}</strong>
+                  <section className="dashboard-v2-card">
+                    <div className="dashboard-v2-card-head">
+                      <div>
+                        <div className="dashboard-v2-card-title">Brand assets</div>
+                        <p className="dashboard-v2-card-copy">
+                          Upload the logo customers and staff will connect with this workspace.
+                        </p>
                       </div>
-                    ))}
-                  </div>
-
-                  <div className="dashboard-v2-plan-note">
-                    <div className="dashboard-v2-plan-note-title">{currentPlan.label}</div>
-                    <p>{currentPlan.description}</p>
-                  </div>
-                </section>
-
-                <section className="dashboard-v2-card">
-                  <div className="dashboard-v2-card-head">
-                    <div>
-                      <div className="dashboard-v2-card-title">Session</div>
-                      <p className="dashboard-v2-card-copy">
-                        End the current session when the workspace is being used on a shared machine.
-                      </p>
                     </div>
-                  </div>
 
-                  <button type="button" className="button button-danger" onClick={logout}>
-                    Sign out
-                    <LogOut size={16} />
-                  </button>
-                </section>
+                    <div className="dashboard-v2-logo-stack">
+                      <div className="dashboard-v2-logo-showcase">
+                        <div className="dashboard-v2-avatar dashboard-v2-avatar-large">
+                          {logoPreview ? (
+                            <img
+                              src={logoPreview}
+                              alt={businessName || businessState.name}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                          ) : (
+                            (businessName || businessState.name).slice(0, 2).toUpperCase()
+                          )}
+                        </div>
+                        <div>
+                          <div className="dashboard-v2-business-name">{businessName || businessState.name}</div>
+                          <div className="dashboard-v2-business-meta">
+                            {logoPreview ? 'Custom logo active' : 'Using the initials placeholder'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={handleLogoUpload}
+                      />
+
+                      <div className="dashboard-v2-action-row">
+                        <button
+                          type="button"
+                          className="button button-primary"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={logoUploading}
+                        >
+                          {logoUploading ? 'Uploading...' : 'Choose image'}
+                          <ImageUp size={16} />
+                        </button>
+                        {logoPreview ? (
+                          <button type="button" className="button button-secondary" onClick={removeLogo}>
+                            Remove logo
+                            <Trash2 size={16} />
+                          </button>
+                        ) : null}
+                      </div>
+
+                      {logoMessage ? (
+                        <div className={`message ${logoMessage.type === 'error' ? 'message-error' : 'message-success'}`}>
+                          {logoMessage.text}
+                        </div>
+                      ) : null}
+                    </div>
+                  </section>
+
+                  <section className="dashboard-v2-card">
+                    <div className="dashboard-v2-card-head">
+                      <div>
+                        <div className="dashboard-v2-card-title">Workspace snapshot</div>
+                        <p className="dashboard-v2-card-copy">
+                          A cleaner read of the current setup instead of the older summary list.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="dashboard-v2-share-status-grid">
+                      {[
+                        ['Plan', currentPlan.label],
+                        ['Price', currentPlan.price],
+                        ['Questions', String(publishedQuestions.length)],
+                        ['Reviews', String(submissions.length)],
+                      ].map(([label, value]) => (
+                        <div key={label} className="dashboard-v2-share-status-card">
+                          <span>{label}</span>
+                          <strong>{value}</strong>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="dashboard-v2-plan-note">
+                      <div className="dashboard-v2-plan-note-title">{currentPlan.label}</div>
+                      <p>{currentPlan.description}</p>
+                    </div>
+                  </section>
+
+                  <section className="dashboard-v2-card">
+                    <div className="dashboard-v2-card-head">
+                      <div>
+                        <div className="dashboard-v2-card-title">Session</div>
+                        <p className="dashboard-v2-card-copy">
+                          Sign out when this workspace is being used on a shared machine.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button type="button" className="button button-danger" onClick={logout}>
+                      Sign out
+                      <LogOut size={16} />
+                    </button>
+                  </section>
+                </div>
               </div>
             </>
           ) : null}
         </main>
       </div>
+
+      {questionModalOpen ? (
+        <div className="modal-backdrop" onClick={closeQuestionModal}>
+          <div className="modal-card dashboard-v2-question-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="dashboard-v2-question-modal-head">
+              <div>
+                <div className="dashboard-v2-card-title">Add a new question</div>
+                <p className="dashboard-v2-card-copy">
+                  Write the French and Arabic versions first, then add English and Spanish if needed.
+                </p>
+              </div>
+
+              <button type="button" className="icon-button" onClick={closeQuestionModal} aria-label="Close composer">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="dashboard-v2-field-grid">
+              <div className="field">
+                <label className="label">French</label>
+                <input
+                  className="input"
+                  value={newQuestion.fr}
+                  onChange={(event) =>
+                    setNewQuestion((current) => ({ ...current, fr: event.target.value }))
+                  }
+                />
+              </div>
+              <div className="field">
+                <label className="label">Arabic</label>
+                <input
+                  className="input"
+                  value={newQuestion.ar}
+                  onChange={(event) =>
+                    setNewQuestion((current) => ({ ...current, ar: event.target.value }))
+                  }
+                />
+              </div>
+              <div className="field">
+                <label className="label">English</label>
+                <input
+                  className="input"
+                  value={newQuestion.en}
+                  onChange={(event) =>
+                    setNewQuestion((current) => ({ ...current, en: event.target.value }))
+                  }
+                />
+              </div>
+              <div className="field">
+                <label className="label">Spanish</label>
+                <input
+                  className="input"
+                  value={newQuestion.es}
+                  onChange={(event) =>
+                    setNewQuestion((current) => ({ ...current, es: event.target.value }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="dashboard-v2-question-modal-foot">
+              <button type="button" className="button button-secondary" onClick={closeQuestionModal}>
+                Cancel
+              </button>
+              <button type="button" className="button button-primary" onClick={addQuestion}>
+                Add question
+                <Plus size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
