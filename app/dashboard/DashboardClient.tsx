@@ -2283,25 +2283,6 @@ export default function DashboardClient({
           </div>
         </div>
 
-        <div className={styles.workspaceCard}>
-          <div
-            className={styles.workspaceLogo}
-            style={logoPreview ? { backgroundImage: `url("${logoPreview}")` } : undefined}
-          >
-            {!logoPreview ? businessState.name.slice(0, 2).toUpperCase() : null}
-          </div>
-
-          <div className={styles.workspaceCopy}>
-            <strong>{businessState.name}</strong>
-            <span>{businessState.city} - {sectorLabel(businessState.sector)}</span>
-          </div>
-
-          <div className={styles.workspaceMeta}>
-            <span>{planLabel(businessState.plan)}</span>
-            <span>{submissions.length} total feedback</span>
-          </div>
-        </div>
-
         <nav className={styles.nav}>
           {SECTION_META.map((section) => {
             const Icon = section.icon
@@ -2327,13 +2308,6 @@ export default function DashboardClient({
             )
           })}
         </nav>
-
-        <div className={styles.sidebarFoot}>
-          <div className={styles.sidebarHint}>
-            <strong>Data limitations</strong>
-            <p>Branch and staff analytics remain placeholder-first until the backend exposes those entities explicitly.</p>
-          </div>
-        </div>
       </aside>
 
       <div className={styles.canvas}>

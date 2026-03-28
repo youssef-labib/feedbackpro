@@ -59,7 +59,7 @@
   background: var(--dashboard-panel-overlay);
   backdrop-filter: blur(18px);
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 20px;
   overflow: hidden;
   z-index: 30;
@@ -151,8 +151,7 @@
 
 .brandCopy span,
 .workspaceCopy span,
-.workspaceMeta span,
-.sidebarHint p {
+.workspaceMeta span {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.55;
@@ -315,28 +314,9 @@
   color: var(--accent-strong);
 }
 
-.sidebarFoot {
-  align-self: end;
-}
-
-.sidebarHint {
-  padding: 16px;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 20px;
-  background: var(--dashboard-panel-soft);
-  display: grid;
-  gap: 8px;
-}
-
-.sidebarHint strong {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--muted-strong);
-}
-
 .shellCollapsed .sidebar {
   padding: 20px 0 18px;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   justify-items: center;
   gap: 18px;
 }
@@ -344,7 +324,6 @@
 .shellCollapsed .brandCopy,
 .shellCollapsed .sidebar .workspaceCopy,
 .shellCollapsed .sidebar .workspaceMeta,
-.shellCollapsed .sidebarFoot,
 .shellCollapsed .navCopy {
   display: none;
 }
@@ -1888,7 +1867,6 @@
 
   .shellCollapsed .brandCopy,
   .shellCollapsed .sidebar .workspaceCopy,
-  .shellCollapsed .sidebarFoot,
   .shellCollapsed .navCopy {
     display: grid;
   }
@@ -1911,7 +1889,7 @@
 
   .shellCollapsed .sidebar {
     padding-inline: 18px;
-    grid-template-rows: auto auto 1fr auto;
+    grid-template-rows: auto minmax(0, 1fr);
     justify-items: stretch;
     gap: 20px;
   }
@@ -2137,7 +2115,7 @@
     align-items: stretch;
   }
 
-  .headerActions > * {
+  .headerActions > :not(.segmented) {
     flex: 1 1 100%;
   }
 
@@ -2165,7 +2143,9 @@
   }
 
   .segmented {
-    width: 100%;
+    width: fit-content;
+    max-width: 100%;
+    align-self: flex-start;
     overflow-x: auto;
     flex-wrap: nowrap;
   }
