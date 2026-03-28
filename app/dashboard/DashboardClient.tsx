@@ -96,6 +96,8 @@ type DraftQuestion = {
   label_es: string
 }
 
+type QuestionLocaleField = 'label_fr' | 'label_ar' | 'label_en' | 'label_es'
+
 type SectionMeta = {
   id: DashboardSection
   label: string
@@ -154,6 +156,41 @@ const RESOLUTION_OPTIONS: TrendResolution[] = ['day', 'week', 'month']
 const FEEDBACK_FILTER_OPTIONS: FeedbackFilter[] = ['all', 'attention', 'positive', 'commented']
 const FEEDBACK_SORT_OPTIONS: FeedbackSort[] = ['newest', 'oldest', 'highest', 'lowest']
 const SIDEBAR_STORAGE_KEY = 'feedbackpro-dashboard-sidebar-collapsed'
+const QUESTION_LANGUAGE_FIELDS: Array<{
+  key: QuestionLocaleField
+  label: string
+  shortLabel: string
+  helper: string
+  dir?: 'rtl'
+  required?: boolean
+}> = [
+  {
+    key: 'label_fr',
+    label: 'French label',
+    shortLabel: 'FR',
+    helper: 'Primary live label and required source field.',
+    required: true,
+  },
+  {
+    key: 'label_ar',
+    label: 'Arabic label',
+    shortLabel: 'AR',
+    helper: 'Shown to Arabic-speaking guests and should read naturally in RTL.',
+    dir: 'rtl',
+  },
+  {
+    key: 'label_en',
+    label: 'English label',
+    shortLabel: 'EN',
+    helper: 'Optional localized wording for English-speaking guests.',
+  },
+  {
+    key: 'label_es',
+    label: 'Spanish label',
+    shortLabel: 'ES',
+    helper: 'Optional localized wording for Spanish-speaking guests.',
+  },
+]
 
 function cn(...tokens: Array<string | false | null | undefined>) {
   return tokens.filter(Boolean).join(' ')
@@ -1539,249 +1576,327 @@ export default function DashboardClient({
   }
 
   function renderCollectionSection() {
+    const remainingQuestionSlots = Math.max(0, 10 - draftQuestions.length)
+
     return (
       <div className={styles.sectionStack}>
-        <div className={styles.twoColumnGrid}>
-          <Panel
-            title="Collection channels"
-            description="Everything needed to distribute the feedback form and monitor collection readiness."
-          >
-            <div className={styles.collectionStatusGrid}>
-              <div className={styles.collectionStatusCard}>
-                <strong>Live form</strong>
-                <p>{form ? 'Configured and ready to collect feedback.' : 'No feedback form is currently attached to this workspace.'}</p>
+        <Panel
+          title="Distribution and QR"
+          description="Keep collection assets compact, accessible, and easy to distribute without crowding the editor."
+        >
+          <div className={styles.collectionUtilityRail}>
+            <article className={styles.collectionUtilityCard}>
+              <div className={styles.collectionUtilityHeader}>
+                <span className={styles.collectionUtilityEyebrow}>Collection status</span>
+                <span
+                  className={cn(
+                    styles.inlineBadge,
+                    form ? styles.inlineBadgePositive : styles.inlineBadgeNeutral
+                  )}
+                >
+                  {form ? 'Live form ready' : 'Setup needed'}
+                </span>
               </div>
-              <div className={styles.collectionStatusCard}>
-                <strong>QR asset</strong>
-                <p>{business.qr_generated ? 'QR generation is enabled for this workspace.' : 'QR has not yet been marked as generated in the current data model.'}</p>
+              <strong>Feedback form access</strong>
+              <p>
+                {form
+                  ? 'Guests can open the live form immediately through the public URL and QR access.'
+                  : 'No feedback form is currently attached to this workspace.'}
+              </p>
+              <div className={styles.collectionUtilityMeta}>
+                <span>{draftQuestions.length} drafted question{draftQuestions.length === 1 ? '' : 's'}</span>
+                <span>{questionChangesPending ? 'Changes waiting to publish' : 'Draft synced with live form'}</span>
               </div>
-              <div className={styles.collectionStatusCard}>
-                <strong>Google review link</strong>
-                <p>{businessState.google_review_url ? 'External review destination is configured.' : 'No Google review URL has been added yet.'}</p>
-              </div>
-              <div className={styles.collectionStatusCard}>
-                <strong>Branding</strong>
-                <p>{logoPreview ? 'Brand logo is present on the workspace.' : 'Add a logo to make collection assets feel production-ready.'}</p>
-              </div>
-            </div>
-          </Panel>
+            </article>
 
-          <Panel
-            title="Public form access"
-            description="Direct access to the live customer-facing feedback flow."
-          >
-            <div className={styles.collectionHero}>
-              <div className={styles.linkCard}>
-                <div className={styles.linkCardHead}>
-                  <strong>Live form URL</strong>
-                  <Link href={livePath} className={styles.secondaryButton} target="_blank" rel="noreferrer">
-                    Open
-                    <ExternalLink size={16} />
-                  </Link>
-                </div>
-                <span>{liveUrl}</span>
+            <article className={styles.collectionUtilityCard}>
+              <div className={styles.collectionUtilityHeader}>
+                <span className={styles.collectionUtilityEyebrow}>Live form URL</span>
+                <Link
+                  href={livePath}
+                  className={cn(styles.secondaryButton, styles.compactButton)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open
+                  <ExternalLink size={16} />
+                </Link>
               </div>
-
-              <div className={styles.actionRow}>
-                <button type="button" className={styles.primaryButton} onClick={copyLiveFormLink}>
+              <strong>Share the public feedback flow</strong>
+              <p className={styles.collectionUtilityLink}>{liveUrl}</p>
+              <div className={styles.compactActionRow}>
+                <button
+                  type="button"
+                  className={cn(styles.primaryButton, styles.compactButton)}
+                  onClick={copyLiveFormLink}
+                >
                   {copyState === 'copied' ? 'Copied link' : copyState === 'error' ? 'Copy failed' : 'Copy form link'}
                   <Copy size={16} />
                 </button>
+              </div>
+            </article>
 
+            <article className={styles.collectionUtilityCard}>
+              <div className={styles.collectionUtilityHeader}>
+                <span className={styles.collectionUtilityEyebrow}>Review channel</span>
+                <span
+                  className={cn(
+                    styles.inlineBadge,
+                    businessState.google_review_url ? styles.inlineBadgePositive : styles.inlineBadgeNeutral
+                  )}
+                >
+                  {businessState.google_review_url ? 'Connected' : 'Optional'}
+                </span>
+              </div>
+              <strong>Google review destination</strong>
+              <p>
+                {businessState.google_review_url
+                  ? 'Send guests to an external review page after they complete the feedback flow.'
+                  : 'Add a Google review link when you want to pair private feedback collection with public reviews.'}
+              </p>
+              <div className={styles.compactActionRow}>
                 {businessState.google_review_url ? (
-                  <Link href={businessState.google_review_url} className={styles.secondaryButton} target="_blank" rel="noreferrer">
-                    Google reviews
+                  <Link
+                    href={businessState.google_review_url}
+                    className={cn(styles.secondaryButton, styles.compactButton)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Open Google reviews
                     <ExternalLink size={16} />
                   </Link>
-                ) : null}
+                ) : (
+                  <span className={styles.feedbackCount}>
+                    Configure in Settings
+                  </span>
+                )}
+              </div>
+            </article>
+
+            <article className={cn(styles.collectionUtilityCard, styles.collectionUtilityQr)}>
+              <div className={styles.collectionUtilityQrPreview} style={{ backgroundImage: `url("${qrUrl}")` }} />
+              <div className={styles.collectionUtilityQrBody}>
+                <div className={styles.collectionUtilityHeader}>
+                  <span className={styles.collectionUtilityEyebrow}>QR utility</span>
+                  <span
+                    className={cn(
+                      styles.inlineBadge,
+                      business.qr_generated ? styles.inlineBadgePositive : styles.inlineBadgeNeutral
+                    )}
+                  >
+                    {business.qr_generated ? 'Generated' : 'Preview available'}
+                  </span>
+                </div>
+                <strong>Printable QR access</strong>
+                <p>Refresh the preview or download a PNG without leaving the builder.</p>
+                <div className={styles.compactActionRow}>
+                  <button
+                    type="button"
+                    className={cn(styles.secondaryButton, styles.compactButton)}
+                    onClick={refreshQrAsset}
+                  >
+                    {isRefreshingQr ? <LoaderCircle size={16} className={styles.spin} /> : <QrCode size={16} />}
+                    Refresh
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(styles.primaryButton, styles.compactButton)}
+                    onClick={downloadQrAsset}
+                  >
+                    Download PNG
+                    <Download size={16} />
+                  </button>
+                </div>
+              </div>
+            </article>
+          </div>
+        </Panel>
+
+        <Panel
+          title="Question builder"
+          description="Build and localize the live feedback form with a cleaner editor designed for fast scanning and confident publishing."
+          action={
+            <button
+              type="button"
+              className={styles.primaryButton}
+              onClick={publishQuestions}
+              disabled={!form || isPublishingQuestions || !questionChangesPending}
+            >
+              {isPublishingQuestions ? <LoaderCircle size={16} className={styles.spin} /> : <Save size={16} />}
+              Publish changes
+            </button>
+          }
+        >
+          {questionNotice ? (
+            <div className={cn(styles.notice, questionNotice.tone === 'success' ? styles.noticeSuccess : styles.noticeError)}>
+              {questionNotice.text}
+            </div>
+          ) : null}
+
+          <div className={styles.questionBuilder}>
+            <div className={styles.questionBuilderHeader}>
+              <div className={styles.questionBuilderLead}>
+                <span className={styles.collectionUtilityEyebrow}>Form builder</span>
+                <strong>Design the question flow guests will rate</strong>
+                <p>
+                  French stays the required source label. Arabic, English, and Spanish can be refined before publishing without leaving this workspace.
+                </p>
+              </div>
+
+              <div className={styles.questionBuilderMeta}>
+                <span className={styles.feedbackCount}>{publishedQuestions.length} live question{publishedQuestions.length === 1 ? '' : 's'}</span>
+                <span className={styles.feedbackCount}>{remainingQuestionSlots} slot{remainingQuestionSlots === 1 ? '' : 's'} remaining</span>
+                <span
+                  className={cn(
+                    styles.inlineBadge,
+                    questionChangesPending ? styles.inlineBadgeNeutral : styles.inlineBadgePositive
+                  )}
+                >
+                  {questionChangesPending ? 'Unpublished changes' : 'Live form synced'}
+                </span>
               </div>
             </div>
-          </Panel>
-        </div>
 
-        <div className={styles.twoColumnGrid}>
-          <Panel
-            title="QR asset"
-            description="Download or refresh a high-resolution QR code that points directly to the live feedback form."
-          >
-            <div className={styles.qrStudio}>
-              <div className={styles.qrPreview} style={{ backgroundImage: `url("${qrUrl}")` }} />
+            <section className={styles.questionComposerCard}>
+              <div className={styles.questionComposerHeader}>
+                <div className={styles.questionComposerLead}>
+                  <span className={styles.collectionUtilityEyebrow}>New question</span>
+                  <strong>Compose the next prompt before adding it to the draft</strong>
+                  <p>Draft the main wording once, then tighten the localized versions so guests see a polished form in every language.</p>
+                </div>
 
-              <div className={styles.actionRow}>
-                <button type="button" className={styles.secondaryButton} onClick={refreshQrAsset}>
-                  {isRefreshingQr ? <LoaderCircle size={16} className={styles.spin} /> : <QrCode size={16} />}
-                  Refresh preview
-                </button>
-                <button type="button" className={styles.primaryButton} onClick={downloadQrAsset}>
-                  Download PNG
-                  <Download size={16} />
-                </button>
+                <div className={styles.questionComposerActions}>
+                  <span className={styles.feedbackCount}>Up to 10 total questions</span>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={addQuestion}
+                    disabled={remainingQuestionSlots === 0 || !newQuestion.label_fr.trim()}
+                  >
+                    Add question
+                    <Plus size={16} />
+                  </button>
+                </div>
               </div>
-            </div>
-          </Panel>
 
-          <Panel
-            title="Live question set"
-            description="Edit the customer feedback form without leaving the dashboard."
-            action={
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={publishQuestions}
-                disabled={!form || isPublishingQuestions || !questionChangesPending}
-              >
-                {isPublishingQuestions ? <LoaderCircle size={16} className={styles.spin} /> : <Save size={16} />}
-                Publish changes
-              </button>
-            }
-          >
-            {questionNotice ? (
-              <div className={cn(styles.notice, questionNotice.tone === 'success' ? styles.noticeSuccess : styles.noticeError)}>
-                {questionNotice.text}
+              <div className={styles.localeEditorGrid}>
+                {QUESTION_LANGUAGE_FIELDS.map((locale) => (
+                  <label key={locale.key} className={styles.localeEditorCard}>
+                    <div className={styles.localeEditorHead}>
+                      <div>
+                        <span className={styles.localeTag}>{locale.shortLabel}</span>
+                        <strong>{locale.label}</strong>
+                      </div>
+                      {locale.required ? <span className={styles.requiredTag}>Required</span> : null}
+                    </div>
+                    <span className={styles.localeHelper}>{locale.helper}</span>
+                    <textarea
+                      className={cn(styles.input, styles.textarea)}
+                      dir={locale.dir}
+                      rows={3}
+                      value={newQuestion[locale.key]}
+                      onChange={(event) =>
+                        setNewQuestion((current) => ({
+                          ...current,
+                          [locale.key]: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                ))}
               </div>
-            ) : null}
+            </section>
 
             {draftQuestions.length ? (
-              <div className={styles.questionList}>
-                {draftQuestions.map((question, index) => (
-                  <article key={`${question.id}-${index}`} className={styles.questionCard}>
-                    <div className={styles.questionCardHead}>
-                      <div>
-                        <span className={styles.questionIndex}>Question {String(index + 1).padStart(2, '0')}</span>
-                        <strong>{questionLabel(question)}</strong>
+              <div className={styles.questionBuilderList}>
+                {draftQuestions.map((question, index) => {
+                  const localizedCount = QUESTION_LANGUAGE_FIELDS.filter((locale) => question[locale.key]?.trim()).length
+
+                  return (
+                    <article key={`${question.id}-${index}`} className={styles.builderQuestionCard}>
+                      <div className={styles.builderQuestionRail}>
+                        <span className={styles.builderQuestionOrder}>{String(index + 1).padStart(2, '0')}</span>
+                        <div className={styles.builderQuestionMoves}>
+                          <button
+                            type="button"
+                            className={cn(styles.iconButton, styles.questionMoveButton)}
+                            onClick={() => moveQuestion(index, 'up')}
+                            disabled={index === 0}
+                            aria-label={`Move question ${index + 1} up`}
+                          >
+                            <ArrowUp size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className={cn(styles.iconButton, styles.questionMoveButton)}
+                            onClick={() => moveQuestion(index, 'down')}
+                            disabled={index === draftQuestions.length - 1}
+                            aria-label={`Move question ${index + 1} down`}
+                          >
+                            <ArrowDown size={16} />
+                          </button>
+                        </div>
                       </div>
 
-                      <div className={styles.iconButtonRow}>
-                        <button
-                          type="button"
-                          className={styles.iconButton}
-                          onClick={() => moveQuestion(index, 'up')}
-                          disabled={index === 0}
-                          aria-label={`Move question ${index + 1} up`}
-                        >
-                          <ArrowUp size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.iconButton}
-                          onClick={() => moveQuestion(index, 'down')}
-                          disabled={index === draftQuestions.length - 1}
-                          aria-label={`Move question ${index + 1} down`}
-                        >
-                          <ArrowDown size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.iconButton}
-                          onClick={() => removeQuestion(index)}
-                          aria-label={`Remove question ${index + 1}`}
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                      <div className={styles.builderQuestionBody}>
+                        <div className={styles.builderQuestionHeader}>
+                          <div className={styles.builderQuestionTitle}>
+                            <span className={styles.questionIndex}>Question {String(index + 1).padStart(2, '0')}</span>
+                            <strong>{questionLabel(question)}</strong>
+                            <div className={styles.builderQuestionMeta}>
+                              <span>{localizedCount}/4 language labels filled</span>
+                              <span>{index === 0 ? 'First question in the live form' : `Position ${index + 1} in the live order`}</span>
+                            </div>
+                          </div>
+
+                          <div className={styles.builderQuestionActions}>
+                            <button
+                              type="button"
+                              className={cn(styles.ghostButton, styles.questionDeleteButton)}
+                              onClick={() => removeQuestion(index)}
+                              aria-label={`Remove question ${index + 1}`}
+                            >
+                              <Trash2 size={16} />
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className={styles.localeEditorGrid}>
+                          {QUESTION_LANGUAGE_FIELDS.map((locale) => (
+                            <label key={`${question.id}-${locale.key}`} className={styles.localeEditorCard}>
+                              <div className={styles.localeEditorHead}>
+                                <div>
+                                  <span className={styles.localeTag}>{locale.shortLabel}</span>
+                                  <strong>{locale.label}</strong>
+                                </div>
+                                {locale.required ? <span className={styles.requiredTag}>Required</span> : null}
+                              </div>
+                              <span className={styles.localeHelper}>{locale.helper}</span>
+                              <textarea
+                                className={cn(styles.input, styles.textarea)}
+                                dir={locale.dir}
+                                rows={3}
+                                value={question[locale.key] || ''}
+                                onChange={(event) => updateQuestionField(index, locale.key, event.target.value)}
+                              />
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-
-                    <div className={styles.questionFieldGrid}>
-                      <label className={styles.field}>
-                        <span>French label</span>
-                        <input
-                          className={styles.input}
-                          value={question.label_fr}
-                          onChange={(event) => updateQuestionField(index, 'label_fr', event.target.value)}
-                        />
-                      </label>
-
-                      <label className={styles.field}>
-                        <span>Arabic label</span>
-                        <input
-                          className={styles.input}
-                          value={question.label_ar}
-                          onChange={(event) => updateQuestionField(index, 'label_ar', event.target.value)}
-                        />
-                      </label>
-
-                      <label className={styles.field}>
-                        <span>English label</span>
-                        <input
-                          className={styles.input}
-                          value={question.label_en || ''}
-                          onChange={(event) => updateQuestionField(index, 'label_en', event.target.value)}
-                        />
-                      </label>
-
-                      <label className={styles.field}>
-                        <span>Spanish label</span>
-                        <input
-                          className={styles.input}
-                          value={question.label_es || ''}
-                          onChange={(event) => updateQuestionField(index, 'label_es', event.target.value)}
-                        />
-                      </label>
-                    </div>
-                  </article>
-                ))}
+                    </article>
+                  )
+                })}
               </div>
             ) : (
               <EmptyState
                 icon={ListChecks}
                 title="No questions configured"
-                copy="Create the first question below to start collecting structured customer feedback."
+                copy="Start with the composer above to create the first multilingual question for the live feedback form."
               />
             )}
-
-            <div className={styles.questionComposer}>
-              <div className={styles.questionCardHead}>
-                <div>
-                  <span className={styles.questionIndex}>New question</span>
-                  <strong>Add a new question to the draft form</strong>
-                </div>
-
-                <button type="button" className={styles.secondaryButton} onClick={addQuestion}>
-                  Add question
-                  <Plus size={16} />
-                </button>
-              </div>
-
-              <div className={styles.questionFieldGrid}>
-                <label className={styles.field}>
-                  <span>French label</span>
-                  <input
-                    className={styles.input}
-                    value={newQuestion.label_fr}
-                    onChange={(event) => setNewQuestion((current) => ({ ...current, label_fr: event.target.value }))}
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Arabic label</span>
-                  <input
-                    className={styles.input}
-                    value={newQuestion.label_ar}
-                    onChange={(event) => setNewQuestion((current) => ({ ...current, label_ar: event.target.value }))}
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>English label</span>
-                  <input
-                    className={styles.input}
-                    value={newQuestion.label_en}
-                    onChange={(event) => setNewQuestion((current) => ({ ...current, label_en: event.target.value }))}
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Spanish label</span>
-                  <input
-                    className={styles.input}
-                    value={newQuestion.label_es}
-                    onChange={(event) => setNewQuestion((current) => ({ ...current, label_es: event.target.value }))}
-                  />
-                </label>
-              </div>
-            </div>
-          </Panel>
-        </div>
+          </div>
+        </Panel>
       </div>
     )
   }

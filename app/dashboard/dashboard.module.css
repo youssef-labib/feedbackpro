@@ -518,9 +518,7 @@
 
 .metricHead,
 .latestRowHead,
-.scoreRowHead,
-.questionCardHead,
-.linkCardHead {
+.scoreRowHead {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -681,7 +679,6 @@
 
 .statusGrid,
 .drawerSummaryGrid,
-.collectionStatusGrid,
 .formGrid {
   display: grid;
   gap: 14px;
@@ -689,7 +686,6 @@
 }
 
 .summaryCell,
-.collectionStatusCard,
 .readOnlyBlock {
   padding: 16px;
   border: 1px solid var(--dashboard-border);
@@ -701,7 +697,6 @@
 
 .summaryCell span,
 .summaryCell p,
-.collectionStatusCard p,
 .readOnlyBlock span,
 .readOnlyBlock p,
 .latestRow p,
@@ -741,10 +736,6 @@
 .alertRow,
 .latestRow,
 .categoryRow,
-.collectionStatusCard,
-.questionCard,
-.questionComposer,
-.linkCard,
 .commentCard,
 .feedbackRow {
   padding: 16px;
@@ -766,8 +757,7 @@
 }
 
 .latestRow:hover,
-.feedbackRow:hover,
-.questionCard:hover {
+.feedbackRow:hover {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--accent) 18%, var(--dashboard-border));
 }
@@ -870,8 +860,6 @@
 .feedbackCell strong,
 .drawerTitle,
 .drawerSectionTitle,
-.questionCardHead strong,
-.linkCardHead strong,
 .sessionMeta strong {
   color: var(--text);
   font-weight: 700;
@@ -1074,23 +1062,311 @@
   align-content: start;
 }
 
-.collectionHero,
-.qrStudio,
 .brandingCard,
 .sessionCard {
   display: grid;
   gap: 16px;
 }
 
-.linkCard {
+.collectionUtilityRail {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.4fr) minmax(0, 1.08fr) minmax(0, 1.45fr);
+  align-items: stretch;
+}
+
+.collectionUtilityCard {
+  padding: 18px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 22px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--dashboard-panel) 76%, var(--dashboard-panel-soft) 24%) 0%, var(--dashboard-panel-soft) 100%);
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.collectionUtilityHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.collectionUtilityEyebrow {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.collectionUtilityCard strong,
+.questionBuilderLead strong,
+.questionComposerLead strong,
+.builderQuestionTitle strong,
+.localeEditorHead strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.collectionUtilityCard strong {
+  font-size: 16px;
+}
+
+.collectionUtilityCard p,
+.questionBuilderLead p,
+.questionComposerLead p,
+.localeHelper {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.collectionUtilityMeta,
+.compactActionRow,
+.questionBuilderMeta,
+.questionComposerActions,
+.builderQuestionMeta,
+.builderQuestionActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.collectionUtilityMeta span,
+.builderQuestionMeta span,
+.localeTag,
+.requiredTag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--dashboard-border);
+  background: var(--dashboard-panel);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.collectionUtilityMeta span,
+.builderQuestionMeta span,
+.localeTag {
+  color: var(--muted-strong);
+}
+
+.requiredTag {
+  border-color: color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent-soft) 72%, var(--dashboard-panel));
+  color: var(--accent-strong);
+}
+
+.collectionUtilityLink {
+  overflow-wrap: anywhere;
+  color: var(--muted-strong) !important;
+}
+
+.compactButton {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+}
+
+.collectionUtilityQr {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.collectionUtilityQrPreview {
+  width: 108px;
+  aspect-ratio: 1;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.92) 100%);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 78px 78px;
+  flex-shrink: 0;
+}
+
+[data-theme='dark'] .collectionUtilityQrPreview {
+  background-color: #f8fafc;
+}
+
+.collectionUtilityQrBody,
+.questionBuilder,
+.questionBuilderLead,
+.questionComposerLead,
+.builderQuestionBody,
+.builderQuestionTitle {
   display: grid;
   gap: 10px;
 }
 
-.linkCard span {
-  overflow-wrap: anywhere;
-  color: var(--muted-strong);
+.questionBuilder {
+  gap: 22px;
+}
+
+.questionBuilderHeader,
+.questionComposerHeader,
+.builderQuestionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.questionBuilderLead strong {
+  font-size: 22px;
+  letter-spacing: -0.04em;
+}
+
+.questionComposerCard {
+  padding: 22px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 24px;
+  background: linear-gradient(180deg, var(--dashboard-panel) 0%, var(--dashboard-panel-soft) 100%);
+  box-shadow: var(--dashboard-shadow);
+  display: grid;
+  gap: 18px;
+}
+
+.questionComposerLead strong {
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+
+.localeEditorGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.localeEditorCard {
+  padding: 16px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 18px;
+  background: var(--dashboard-panel-soft);
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.localeEditorHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.localeEditorHead > div {
+  display: grid;
+  gap: 6px;
+}
+
+.localeEditorHead strong {
+  font-size: 15px;
+}
+
+.localeHelper {
+  font-size: 13px;
+}
+
+.textarea {
+  min-height: 108px;
+  padding: 12px 14px;
+  resize: vertical;
   line-height: 1.6;
+}
+
+.textarea[dir='rtl'] {
+  text-align: right;
+}
+
+.questionBuilderList {
+  display: grid;
+  gap: 16px;
+}
+
+.builderQuestionCard {
+  padding: 18px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 24px;
+  background: linear-gradient(180deg, var(--dashboard-panel-soft) 0%, color-mix(in srgb, var(--dashboard-panel-soft) 84%, var(--dashboard-panel) 16%) 100%);
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.builderQuestionCard:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--dashboard-border));
+}
+
+.builderQuestionRail {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 12px;
+}
+
+.builderQuestionOrder {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent-soft) 58%, var(--dashboard-panel));
+  color: var(--accent-strong);
+  font-family: 'Sora', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.builderQuestionMoves {
+  display: grid;
+  gap: 8px;
+}
+
+.questionMoveButton {
+  width: 40px;
+  height: 40px;
+}
+
+.builderQuestionBody {
+  min-width: 0;
+  gap: 16px;
+}
+
+.builderQuestionTitle strong {
+  font-size: 20px;
+  letter-spacing: -0.03em;
+  line-height: 1.3;
+}
+
+.questionDeleteButton {
+  border-color: rgba(239, 68, 68, 0.18);
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--danger);
+}
+
+.questionDeleteButton:hover {
+  border-color: rgba(239, 68, 68, 0.28);
+  background: rgba(239, 68, 68, 0.12);
 }
 
 .drawerBackdrop,
@@ -1165,11 +1441,6 @@
   gap: 10px;
 }
 
-.questionFieldGrid,
-.collectionStatusGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 .field {
   display: grid;
   gap: 8px;
@@ -1195,17 +1466,12 @@
   appearance: none;
 }
 
-.questionCardHead,
 .sessionCard {
   align-items: center;
 }
 
 .questionIndex {
   display: block;
-}
-
-.questionComposer {
-  border-style: dashed;
 }
 
 .notice {
@@ -1230,21 +1496,6 @@
 
 .feedbackCount {
   padding-inline: 14px;
-}
-
-.qrPreview {
-  min-height: 270px;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 22px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.92) 100%);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 190px 190px;
-}
-
-[data-theme='dark'] .qrPreview {
-  background-color: #f8fafc;
 }
 
 .spin {
@@ -1293,6 +1544,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .collectionUtilityRail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .twoColumnGrid {
     grid-template-columns: 1fr;
   }
@@ -1310,6 +1565,28 @@
 
   .shellCollapsed {
     --dashboard-sidebar-width: 0px;
+  }
+
+  .questionBuilderHeader,
+  .questionComposerHeader,
+  .builderQuestionHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .builderQuestionCard {
+    grid-template-columns: 1fr;
+  }
+
+  .builderQuestionRail {
+    grid-template-columns: auto 1fr;
+    justify-items: stretch;
+    align-items: center;
+  }
+
+  .builderQuestionMoves {
+    display: flex;
+    justify-content: flex-end;
   }
 
   .shellCollapsed .brandCopy,
@@ -1493,14 +1770,21 @@
   .kpiGrid,
   .statusGrid,
   .drawerSummaryGrid,
-  .collectionStatusGrid,
-  .formGrid,
-  .questionFieldGrid {
+  .formGrid {
     grid-template-columns: 1fr;
   }
 
   .headerTitle {
     font-size: 34px;
+  }
+
+  .collectionUtilityRail,
+  .localeEditorGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .collectionUtilityQr {
+    grid-template-columns: 1fr;
   }
 
   .panel,
@@ -1515,6 +1799,13 @@
 
   .headerActions > * {
     flex: 1;
+  }
+
+  .questionBuilderMeta,
+  .questionComposerActions,
+  .compactActionRow,
+  .builderQuestionActions {
+    width: 100%;
   }
 
   .actionRow,
@@ -1542,6 +1833,10 @@
   .mobileBarControls :global(.theme-toggle) {
     width: 100%;
     justify-content: center;
+  }
+
+  .collectionUtilityQrPreview {
+    width: 96px;
   }
 
   .trendLabels {
