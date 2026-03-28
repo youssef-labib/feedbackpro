@@ -1,21 +1,48 @@
 .shell {
-  --dashboard-bg: color-mix(in srgb, var(--bg) 70%, #f7faf9 30%);
-  --dashboard-panel: color-mix(in srgb, var(--panel) 94%, #f8fbfa 6%);
-  --dashboard-panel-soft: color-mix(in srgb, var(--panel-soft) 88%, var(--panel) 12%);
-  --dashboard-border: color-mix(in srgb, var(--border) 84%, transparent);
-  --dashboard-border-strong: color-mix(in srgb, var(--border) 55%, var(--accent) 14%);
-  --dashboard-shadow: 0 24px 64px rgba(15, 23, 42, 0.08);
-  --dashboard-shadow-strong: 0 30px 80px rgba(15, 23, 42, 0.12);
+  --dashboard-bg: #f5f8fc;
+  --dashboard-bg-elevated: #fbfdff;
+  --dashboard-panel: #ffffff;
+  --dashboard-panel-soft: #f6f9fc;
+  --dashboard-panel-strong: #eef4fb;
+  --dashboard-panel-overlay: rgba(251, 253, 255, 0.82);
+  --dashboard-border: rgba(148, 163, 184, 0.22);
+  --dashboard-border-strong: rgba(34, 197, 94, 0.28);
+  --dashboard-grid-line: rgba(148, 163, 184, 0.22);
+  --dashboard-shadow: 0 22px 54px rgba(15, 23, 42, 0.08);
+  --dashboard-shadow-strong: 0 30px 86px rgba(15, 23, 42, 0.14);
   --dashboard-sidebar-width: 320px;
+  --dashboard-sidebar-collapsed-width: 96px;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--accent-soft) 55%, transparent) 0%, transparent 28%),
-    linear-gradient(180deg, color-mix(in srgb, var(--bg) 80%, #f8fbfa 20%) 0%, var(--bg) 100%);
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent-soft) 42%, transparent) 0%, transparent 30%),
+    linear-gradient(180deg, var(--dashboard-bg-elevated) 0%, var(--dashboard-bg) 100%);
+}
+
+[data-theme='dark'] .shell {
+  --dashboard-bg: #081019;
+  --dashboard-bg-elevated: #0b131e;
+  --dashboard-panel: #0f1825;
+  --dashboard-panel-soft: #0b1521;
+  --dashboard-panel-strong: #142031;
+  --dashboard-panel-overlay: rgba(11, 19, 30, 0.84);
+  --dashboard-border: rgba(86, 108, 136, 0.34);
+  --dashboard-border-strong: rgba(108, 143, 186, 0.58);
+  --dashboard-grid-line: rgba(148, 163, 184, 0.16);
+  --dashboard-shadow: 0 22px 56px rgba(1, 6, 15, 0.54);
+  --dashboard-shadow-strong: 0 32px 94px rgba(1, 6, 15, 0.7);
+  background:
+    radial-gradient(circle at top left, rgba(34, 197, 94, 0.09) 0%, transparent 32%),
+    linear-gradient(180deg, var(--dashboard-bg-elevated) 0%, var(--dashboard-bg) 100%);
+}
+
+.shellCollapsed {
+  --dashboard-sidebar-width: var(--dashboard-sidebar-collapsed-width);
 }
 
 .canvas {
   margin-left: var(--dashboard-sidebar-width);
   min-height: 100vh;
+  transition: margin-left 0.24s ease, margin-right 0.24s ease;
 }
 
 .sidebar {
@@ -24,16 +51,14 @@
   width: var(--dashboard-sidebar-width);
   padding: 24px 18px 20px;
   border-right: 1px solid var(--dashboard-border);
-  background: color-mix(in srgb, var(--panel) 88%, rgba(255, 255, 255, 0.06) 12%);
+  background: var(--dashboard-panel-overlay);
   backdrop-filter: blur(18px);
   display: grid;
   grid-template-rows: auto auto 1fr auto;
   gap: 20px;
   z-index: 30;
-}
-
-[data-theme='dark'] .sidebar {
-  background: color-mix(in srgb, var(--panel) 92%, rgba(15, 23, 42, 0.18) 8%);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.02);
+  transition: width 0.24s ease, transform 0.24s ease, padding 0.24s ease;
 }
 
 .sidebarHeader {
@@ -41,6 +66,16 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.sidebarHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebarCloseButton {
+  display: none;
 }
 
 .brand {
@@ -57,7 +92,7 @@
   height: 48px;
   border-radius: 16px;
   background:
-    linear-gradient(145deg, color-mix(in srgb, var(--accent) 90%, #ffffff 10%), color-mix(in srgb, var(--accent-strong) 88%, #0b1b10 12%));
+    linear-gradient(145deg, color-mix(in srgb, var(--accent) 88%, #effcf4 12%), color-mix(in srgb, var(--accent-strong) 84%, #0b1b10 16%));
   color: #062112;
   display: inline-flex;
   align-items: center;
@@ -66,7 +101,7 @@
   font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.05em;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 12px 28px rgba(34, 197, 94, 0.18);
 }
 
 .brandCopy,
@@ -161,6 +196,7 @@
   text-align: left;
   color: inherit;
   cursor: pointer;
+  position: relative;
   transition:
     transform 0.18s ease,
     border-color 0.18s ease,
@@ -169,13 +205,14 @@
 
 .navButton:hover {
   transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--accent) 18%, var(--dashboard-border));
-  background: color-mix(in srgb, var(--accent-soft) 38%, var(--dashboard-panel));
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--dashboard-border));
+  background: var(--dashboard-panel-strong);
 }
 
 .navButtonActive {
   border-color: var(--dashboard-border-strong);
-  background: color-mix(in srgb, var(--accent-soft) 64%, var(--dashboard-panel));
+  background: var(--dashboard-panel-strong);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .navIcon,
@@ -211,15 +248,20 @@
   line-height: 1.55;
 }
 
+.navButtonActive .navIcon {
+  background: color-mix(in srgb, var(--accent-soft) 70%, var(--dashboard-panel-soft));
+  color: var(--accent-strong);
+}
+
 .sidebarFoot {
   align-self: end;
 }
 
 .sidebarHint {
   padding: 16px;
-  border: 1px dashed color-mix(in srgb, var(--border) 84%, var(--accent) 14%);
+  border: 1px solid var(--dashboard-border);
   border-radius: 20px;
-  background: color-mix(in srgb, var(--accent-soft) 36%, var(--dashboard-panel));
+  background: var(--dashboard-panel-soft);
   display: grid;
   gap: 8px;
 }
@@ -230,13 +272,71 @@
   color: var(--muted-strong);
 }
 
+.shellCollapsed .sidebar {
+  padding-inline: 12px;
+}
+
+.shellCollapsed .brandCopy,
+.shellCollapsed .workspaceCopy,
+.shellCollapsed .workspaceMeta,
+.shellCollapsed .sidebarFoot,
+.shellCollapsed .navCopy {
+  display: none;
+}
+
+.shellCollapsed .brand {
+  width: 100%;
+  justify-content: center;
+}
+
+.shellCollapsed .workspaceCard {
+  justify-items: center;
+  padding: 14px 10px;
+}
+
+.shellCollapsed .nav {
+  justify-items: center;
+}
+
+.shellCollapsed .navButton {
+  width: 56px;
+  padding: 10px;
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+
+.shellCollapsed .navButton::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 8px 10px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 12px;
+  background: var(--dashboard-panel-overlay);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: var(--dashboard-shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease;
+}
+
+.shellCollapsed .navButton:hover::after,
+.shellCollapsed .navButton:focus-visible::after {
+  opacity: 1;
+}
+
 .header {
   position: sticky;
   top: 0;
   z-index: 20;
   padding: 24px 32px 22px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-  background: color-mix(in srgb, var(--dashboard-bg) 86%, rgba(255, 255, 255, 0.32) 14%);
+  border-bottom: 1px solid var(--dashboard-border);
+  background: var(--dashboard-panel-overlay);
   backdrop-filter: blur(14px);
   display: flex;
   align-items: flex-start;
@@ -278,7 +378,8 @@
 .actionRow,
 .iconButtonRow,
 .inlineControls,
-.inlineMeta {
+.inlineMeta,
+.utilityControls {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -287,6 +388,34 @@
 
 .headerActions {
   justify-content: flex-end;
+}
+
+.mobileBarControls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerActions :global(.lang-select) {
+  flex-shrink: 0;
+}
+
+.headerActions :global(.lang-trigger),
+.mobileBarControls :global(.lang-trigger),
+.headerActions :global(.theme-toggle),
+.mobileBarControls :global(.theme-toggle) {
+  min-height: 44px;
+  border-radius: 14px;
+  border-color: var(--dashboard-border);
+  background: var(--dashboard-panel);
+  box-shadow: var(--dashboard-shadow);
+}
+
+.headerActions :global(.lang-menu),
+.mobileBarControls :global(.lang-menu) {
+  border-color: var(--dashboard-border);
+  background: var(--dashboard-panel-overlay);
+  box-shadow: var(--dashboard-shadow-strong);
 }
 
 .main {
@@ -323,6 +452,9 @@
 .panel,
 .metricCard {
   padding: 22px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    var(--dashboard-shadow);
 }
 
 .panelHeader {
@@ -401,6 +533,7 @@
   display: inline-flex;
   flex-wrap: wrap;
   gap: 4px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .segmentedButton,
@@ -427,7 +560,7 @@
 }
 
 .segmentedButtonActive {
-  background: color-mix(in srgb, var(--accent-soft) 62%, var(--dashboard-panel));
+  background: color-mix(in srgb, var(--accent-soft) 62%, var(--dashboard-panel-strong));
   color: var(--accent-strong);
 }
 
@@ -437,6 +570,7 @@
   border-radius: 12px;
   background: var(--dashboard-panel-soft);
   color: var(--muted-strong);
+  border-color: var(--dashboard-border);
 }
 
 .primaryButton,
@@ -457,16 +591,18 @@
 .primaryButton {
   background: var(--accent);
   color: #08170d;
+  box-shadow: 0 14px 28px rgba(34, 197, 94, 0.18);
 }
 
 .secondaryButton {
   background: var(--dashboard-panel);
   border-color: var(--dashboard-border);
   color: var(--text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .ghostButton {
-  background: transparent;
+  background: var(--dashboard-panel-soft);
   border-color: var(--dashboard-border);
   color: var(--muted-strong);
 }
@@ -585,6 +721,7 @@
   border: 1px solid var(--dashboard-border);
   border-radius: 18px;
   background: var(--dashboard-panel-soft);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .latestRow,
@@ -632,8 +769,7 @@
   padding: 18px 10px 10px;
   border: 1px solid var(--dashboard-border);
   border-radius: 22px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--dashboard-panel-soft) 70%, var(--dashboard-panel) 30%) 0%, var(--dashboard-panel-soft) 100%);
+  background: linear-gradient(180deg, var(--dashboard-panel-soft) 0%, var(--dashboard-panel-strong) 100%);
   overflow: hidden;
 }
 
@@ -656,7 +792,7 @@
   width: 100%;
   height: 100%;
   border-radius: 999px 999px 14px 14px;
-  background: color-mix(in srgb, var(--dashboard-border) 30%, transparent);
+  background: var(--dashboard-grid-line);
   display: flex;
   align-items: end;
   overflow: hidden;
@@ -677,7 +813,7 @@
 
 .trendLinePath {
   fill: none;
-  stroke: color-mix(in srgb, var(--text) 86%, var(--accent) 14%);
+  stroke: color-mix(in srgb, var(--text) 72%, var(--accent) 28%);
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -726,7 +862,7 @@
   flex: 1;
   height: 10px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--border) 45%, transparent);
+  background: var(--dashboard-grid-line);
   overflow: hidden;
 }
 
@@ -845,6 +981,7 @@
   align-items: center;
   gap: 10px;
   color: var(--muted);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .searchField input,
@@ -872,7 +1009,7 @@
 
 .feedbackHead {
   padding: 14px 16px;
-  background: color-mix(in srgb, var(--dashboard-panel-soft) 65%, var(--dashboard-panel) 35%);
+  background: var(--dashboard-panel-strong);
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
@@ -897,8 +1034,8 @@
 }
 
 .feedbackRowActive {
-  background: color-mix(in srgb, var(--accent-soft) 52%, var(--dashboard-panel));
-  border-color: color-mix(in srgb, var(--accent) 18%, var(--dashboard-border));
+  background: var(--dashboard-panel-strong);
+  border-color: var(--dashboard-border-strong);
 }
 
 .feedbackCell {
@@ -958,7 +1095,7 @@
   height: 100vh;
   padding: 22px;
   border-left: 1px solid var(--dashboard-border);
-  background: color-mix(in srgb, var(--panel) 94%, rgba(255, 255, 255, 0.08) 6%);
+  background: var(--dashboard-panel-overlay);
   backdrop-filter: blur(18px);
   box-shadow: var(--dashboard-shadow-strong);
   overflow-y: auto;
@@ -1020,7 +1157,8 @@
   padding: 0 14px;
   border: 1px solid var(--dashboard-border);
   border-radius: 14px;
-  background: color-mix(in srgb, var(--dashboard-panel) 92%, var(--dashboard-panel-soft) 8%);
+  background: var(--dashboard-panel-soft);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .select {
@@ -1115,6 +1253,11 @@
   border-right: 1px solid var(--dashboard-border);
 }
 
+[dir='rtl'] .shellCollapsed .navButton::after {
+  left: auto;
+  right: calc(100% + 14px);
+}
+
 @media (max-width: 1240px) {
   .kpiGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1133,6 +1276,50 @@
 @media (max-width: 980px) {
   .shell {
     --dashboard-sidebar-width: 0px;
+  }
+
+  .shellCollapsed {
+    --dashboard-sidebar-width: 0px;
+  }
+
+  .shellCollapsed .brandCopy,
+  .shellCollapsed .workspaceCopy,
+  .shellCollapsed .sidebarFoot,
+  .shellCollapsed .navCopy {
+    display: grid;
+  }
+
+  .shellCollapsed .workspaceMeta {
+    display: flex;
+  }
+
+  .shellCollapsed .brand {
+    width: auto;
+    justify-content: flex-start;
+  }
+
+  .shellCollapsed .workspaceCard {
+    justify-items: stretch;
+    padding: 18px;
+  }
+
+  .shellCollapsed .sidebar {
+    padding-inline: 18px;
+  }
+
+  .shellCollapsed .nav {
+    justify-items: stretch;
+  }
+
+  .shellCollapsed .navButton {
+    width: 100%;
+    padding: 14px 14px 14px 12px;
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: stretch;
+  }
+
+  .shellCollapsed .navButton::after {
+    display: none;
   }
 
   .canvas,
@@ -1166,13 +1353,25 @@
     pointer-events: auto;
   }
 
+  .sidebarCollapseButton {
+    display: none;
+  }
+
+  .sidebarCloseButton {
+    display: inline-flex;
+  }
+
+  .utilityControls {
+    display: none;
+  }
+
   .mobileBar {
     position: sticky;
     top: 0;
     z-index: 22;
     padding: 16px 18px;
-    border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-    background: color-mix(in srgb, var(--dashboard-bg) 90%, rgba(255, 255, 255, 0.32) 10%);
+    border-bottom: 1px solid var(--dashboard-border);
+    background: var(--dashboard-panel-overlay);
     backdrop-filter: blur(12px);
     display: flex;
     align-items: center;
@@ -1265,14 +1464,29 @@
 
   .actionRow,
   .inlineControls,
-  .iconButtonRow {
+  .iconButtonRow,
+  .mobileBarControls {
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .primaryButton,
   .secondaryButton,
   .ghostButton {
     width: 100%;
+  }
+
+  .headerActions :global(.lang-select),
+  .mobileBarControls :global(.lang-select) {
+    width: 100%;
+  }
+
+  .headerActions :global(.lang-trigger),
+  .mobileBarControls :global(.lang-trigger),
+  .headerActions :global(.theme-toggle),
+  .mobileBarControls :global(.theme-toggle) {
+    width: 100%;
+    justify-content: center;
   }
 
   .trendLabels {
