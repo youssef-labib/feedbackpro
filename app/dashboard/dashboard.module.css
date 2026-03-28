@@ -273,7 +273,10 @@
 }
 
 .shellCollapsed .sidebar {
-  padding-inline: 12px;
+  padding: 20px 0 18px;
+  grid-template-rows: auto 1fr;
+  justify-items: center;
+  gap: 18px;
 }
 
 .shellCollapsed .brandCopy,
@@ -284,25 +287,52 @@
   display: none;
 }
 
-.shellCollapsed .brand {
+.shellCollapsed .brand,
+.shellCollapsed .workspaceCard {
+  display: none;
+}
+
+.shellCollapsed .sidebarHeader {
   width: 100%;
   justify-content: center;
 }
 
-.shellCollapsed .workspaceCard {
-  justify-items: center;
-  padding: 14px 10px;
+.shellCollapsed .sidebarHeaderActions {
+  width: 100%;
+  justify-content: center;
+}
+
+.shellCollapsed .brand {
+  width: auto;
 }
 
 .shellCollapsed .nav {
+  width: 100%;
   justify-items: center;
+  align-content: start;
+  gap: 10px;
 }
 
 .shellCollapsed .navButton {
-  width: 56px;
-  padding: 10px;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border-radius: 18px;
   grid-template-columns: 1fr;
+  place-items: center;
   justify-items: center;
+}
+
+.shellCollapsed .navIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+}
+
+.shellCollapsed .sidebarCollapseButton {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
 }
 
 .shellCollapsed .navButton::after {
@@ -1294,28 +1324,53 @@
   }
 
   .shellCollapsed .brand {
+    display: inline-flex;
     width: auto;
     justify-content: flex-start;
   }
 
   .shellCollapsed .workspaceCard {
+    display: grid;
     justify-items: stretch;
     padding: 18px;
   }
 
   .shellCollapsed .sidebar {
     padding-inline: 18px;
+    grid-template-rows: auto auto 1fr auto;
+    justify-items: stretch;
+    gap: 20px;
+  }
+
+  .shellCollapsed .sidebarHeader {
+    width: auto;
+    justify-content: space-between;
+  }
+
+  .shellCollapsed .sidebarHeaderActions {
+    width: auto;
+    justify-content: flex-start;
   }
 
   .shellCollapsed .nav {
     justify-items: stretch;
+    width: auto;
+    gap: 8px;
   }
 
   .shellCollapsed .navButton {
     width: 100%;
+    height: auto;
     padding: 14px 14px 14px 12px;
+    border-radius: 20px;
     grid-template-columns: auto minmax(0, 1fr);
     justify-items: stretch;
+  }
+
+  .shellCollapsed .navIcon {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
   }
 
   .shellCollapsed .navButton::after {
