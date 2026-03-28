@@ -49,29 +49,32 @@
   position: fixed;
   inset: 0 auto 0 0;
   width: var(--dashboard-sidebar-width);
-  padding: 24px 18px 20px;
+  padding: 18px;
   border-right: 1px solid var(--dashboard-border);
   background: var(--dashboard-panel-overlay);
   backdrop-filter: blur(18px);
-  display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
   z-index: 30;
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.02);
   transition: width 0.24s ease, transform 0.24s ease, padding 0.24s ease;
 }
 
 .sidebarHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  gap: 16px;
+  flex: 0 0 auto;
 }
 
 .sidebarHeaderActions {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
+  width: 100%;
+  padding-top: 2px;
 }
 
 .sidebarCloseButton {
@@ -83,6 +86,7 @@
   align-items: center;
   gap: 14px;
   text-decoration: none;
+  width: 100%;
 }
 
 .brandMark,
@@ -286,7 +290,8 @@
 }
 
 .sidebarFoot {
-  align-self: end;
+  margin-top: auto;
+  padding-top: 10px;
 }
 
 .sidebarHint {
@@ -305,10 +310,9 @@
 }
 
 .shellCollapsed .sidebar {
-  padding: 20px 0 18px;
-  grid-template-rows: auto 1fr;
-  justify-items: center;
-  gap: 18px;
+  padding: 18px 12px;
+  align-items: center;
+  gap: 16px;
 }
 
 .shellCollapsed .brandCopy,
@@ -326,16 +330,16 @@
 
 .shellCollapsed .sidebarHeader {
   width: 100%;
-  justify-content: center;
+  gap: 0;
 }
 
 .shellCollapsed .sidebarHeaderActions {
-  width: 100%;
-  justify-content: center;
+  padding-top: 4px;
 }
 
-.shellCollapsed .brand {
-  width: auto;
+.shellCollapsed .sidebarScroll {
+  width: 100%;
+  align-items: center;
 }
 
 .shellCollapsed .nav {
@@ -390,6 +394,37 @@
 .shellCollapsed .navButton:hover::after,
 .shellCollapsed .navButton:focus-visible::after {
   opacity: 1;
+}
+
+.sidebarScroll {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-bottom: 4px;
+  padding-right: 4px;
+  margin-right: -6px;
+}
+
+.sidebarScroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebarScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebarScroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 32%, transparent);
+}
+
+.sidebarScroll:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted-strong) 38%, transparent);
 }
 
 .header {
@@ -1814,24 +1849,27 @@
 
   .shellCollapsed .sidebar {
     padding-inline: 18px;
-    grid-template-rows: auto auto 1fr auto;
-    justify-items: stretch;
+    align-items: stretch;
     gap: 20px;
   }
 
   .shellCollapsed .sidebarHeader {
-    width: auto;
-    justify-content: space-between;
+    width: 100%;
+    gap: 16px;
   }
 
   .shellCollapsed .sidebarHeaderActions {
-    width: auto;
-    justify-content: flex-start;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .shellCollapsed .sidebarScroll {
+    align-items: stretch;
   }
 
   .shellCollapsed .nav {
     justify-items: stretch;
-    width: auto;
+    width: 100%;
     gap: 8px;
   }
 
