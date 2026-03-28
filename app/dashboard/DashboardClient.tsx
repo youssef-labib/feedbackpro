@@ -22,6 +22,8 @@ import {
   Menu,
   MessageSquare,
   Plus,
+  PanelLeftClose,
+  PanelLeftOpen,
   QrCode,
   Save,
   Search,
@@ -42,7 +44,9 @@ import {
   type ReactNode,
   type SetStateAction,
 } from 'react'
+import FlagLangSelector from '../../components/FlagLangSelector'
 import ThemeToggle from '../../components/ThemeToggle'
+import { useStoredLanguage } from '../../components/useStoredLanguage'
 import styles from './dashboard.module.css'
 import {
   buildCategoryInsights,
@@ -149,6 +153,7 @@ const RANGE_OPTIONS: DashboardRange[] = [7, 30, 90]
 const RESOLUTION_OPTIONS: TrendResolution[] = ['day', 'week', 'month']
 const FEEDBACK_FILTER_OPTIONS: FeedbackFilter[] = ['all', 'attention', 'positive', 'commented']
 const FEEDBACK_SORT_OPTIONS: FeedbackSort[] = ['newest', 'oldest', 'highest', 'lowest']
+const SIDEBAR_STORAGE_KEY = 'feedbackpro-dashboard-sidebar-collapsed'
 
 function cn(...tokens: Array<string | false | null | undefined>) {
   return tokens.filter(Boolean).join(' ')
@@ -505,6 +510,7 @@ export default function DashboardClient({
   userEmail,
 }: DashboardClientProps) {
   const router = useRouter()
+  const { lang, setLang } = useStoredLanguage('fr')
   const [supabase] = useState(() =>
     createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -512,6 +518,8 @@ export default function DashboardClient({
     )
   )
   const [activeSection, setActiveSection] = useState<DashboardSection>('overview')
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarReady, setSidebarReady] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [selectedRange, setSelectedRange] = useState<DashboardRange>(30)
   const [trendResolution, setTrendResolution] = useState<TrendResolution>('day')
@@ -549,6 +557,22 @@ export default function DashboardClient({
   useEffect(() => {
     setOrigin(window.location.origin)
   }, [])
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(SIDEBAR_STORAGE_KEY)
+    if (stored === 'true') {
+      setSidebarCollapsed(true)
+    }
+    setSidebarReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (!sidebarReady) {
+      return
+    }
+
+    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(sidebarCollapsed))
+  }, [sidebarCollapsed, sidebarReady])
 
   useEffect(() => {
     function handleKeydown(event: KeyboardEvent) {
@@ -623,6 +647,10 @@ export default function DashboardClient({
   function navigateToSection(section: DashboardSection) {
     setMobileNavOpen(false)
     startViewTransition(() => setActiveSection(section))
+  }
+
+  function toggleSidebarCollapsed() {
+    setSidebarCollapsed((current) => !current)
   }
 
   async function copyLiveFormLink() {
@@ -1914,7 +1942,7 @@ export default function DashboardClient({
   }
 
   return (
-    <div className={styles.shell}>
+    <div className={cn(styles.shell, sidebarCollapsed && styles.shellCollapsed)}>
       <button
         type="button"
         className={cn(styles.sidebarBackdrop, mobileNavOpen && styles.sidebarBackdropOpen)}
@@ -1932,14 +1960,25 @@ export default function DashboardClient({
             </span>
           </Link>
 
-          <button
-            type="button"
-            className={styles.iconButton}
-            onClick={() => setMobileNavOpen(false)}
-            aria-label="Close navigation"
-          >
-            <X size={16} />
-          </button>
+          <div className={styles.sidebarHeaderActions}>
+            <button
+              type="button"
+              className={cn(styles.iconButton, styles.sidebarCollapseButton)}
+              onClick={toggleSidebarCollapsed}
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+            </button>
+
+            <button
+              type="button"
+              className={cn(styles.iconButton, styles.sidebarCloseButton)}
+              onClick={() => setMobileNavOpen(false)}
+              aria-label="Close navigation"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
         <div className={styles.workspaceCard}>
@@ -1971,6 +2010,9 @@ export default function DashboardClient({
                 type="button"
                 className={cn(styles.navButton, activeSection === section.id && styles.navButtonActive)}
                 onClick={() => navigateToSection(section.id)}
+                data-tooltip={section.label}
+                title={sidebarCollapsed ? section.label : undefined}
+                aria-label={section.label}
               >
                 <span className={styles.navIcon}>
                   <Icon size={18} />
@@ -2003,7 +2045,10 @@ export default function DashboardClient({
             <span>{businessState.name}</span>
           </div>
 
-          <ThemeToggle />
+          <div className={styles.mobileBarControls}>
+            <FlagLangSelector lang={lang} setLang={setLang} />
+            <ThemeToggle />
+          </div>
         </div>
 
         <header className={styles.header}>
@@ -2026,7 +2071,10 @@ export default function DashboardClient({
               }))}
             />
 
-            <ThemeToggle />
+            <div className={styles.utilityControls}>
+              <FlagLangSelector lang={lang} setLang={setLang} />
+              <ThemeToggle />
+            </div>
 
             <Link href={livePath} className={styles.secondaryButton} target="_blank" rel="noreferrer">
               Open form
