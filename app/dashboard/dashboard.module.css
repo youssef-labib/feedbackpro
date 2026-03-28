@@ -280,15 +280,15 @@
 }
 
 .shellCollapsed .brandCopy,
-.shellCollapsed .workspaceCopy,
-.shellCollapsed .workspaceMeta,
+.shellCollapsed .sidebar .workspaceCopy,
+.shellCollapsed .sidebar .workspaceMeta,
 .shellCollapsed .sidebarFoot,
 .shellCollapsed .navCopy {
   display: none;
 }
 
 .shellCollapsed .brand,
-.shellCollapsed .workspaceCard {
+.shellCollapsed .sidebar .workspaceCard {
   display: none;
 }
 
@@ -1745,13 +1745,13 @@
   }
 
   .shellCollapsed .brandCopy,
-  .shellCollapsed .workspaceCopy,
+  .shellCollapsed .sidebar .workspaceCopy,
   .shellCollapsed .sidebarFoot,
   .shellCollapsed .navCopy {
     display: grid;
   }
 
-  .shellCollapsed .workspaceMeta {
+  .shellCollapsed .sidebar .workspaceMeta {
     display: flex;
   }
 
@@ -1761,7 +1761,7 @@
     justify-content: flex-start;
   }
 
-  .shellCollapsed .workspaceCard {
+  .shellCollapsed .sidebar .workspaceCard {
     display: grid;
     justify-items: stretch;
     padding: 18px;
