@@ -32,48 +32,47 @@ const PAGE_SIZE = 5
 
 const COPY = {
   fr: {
-    intro: 'Anonyme, rapide, directement depuis votre telephone.',
-    rateHint: 'Choisissez une note pour continuer.',
+    intro: 'Anonyme, rapide, directement depuis votre téléphone.',
     comment: 'Commentaire optionnel',
-    commentPlaceholder: 'Ajoutez un detail si vous le souhaitez...',
+    commentPlaceholder: 'Ajoutez un détail si vous le souhaitez...',
     next: 'Suivant',
-    prev: 'Precedent',
+    prev: 'Précédent',
     submit: 'Envoyer mon avis',
-    sending: 'Envoi...',
+    sending: 'Envoi en cours...',
     rateAll: 'Notez toutes les questions pour continuer.',
     page: 'Page',
     of: 'sur',
     thankGood: 'Merci pour votre retour.',
     thankBad: 'Merci pour votre franchise.',
-    goodText: 'Votre avis a bien ete enregistre. Si vous avez passe un bon moment, vous pouvez aussi laisser un avis Google.',
-    badText: 'Votre retour a bien ete transmis a l equipe. Il restera prive et utile pour ameliorer le service.',
+    goodText: 'Votre avis a bien été enregistré. Si vous avez passé un bon moment, vous pouvez aussi laisser un avis Google.',
+    badText: 'Votre retour a bien été transmis à l\'équipe. Il restera privé et utile pour améliorer le service.',
     google: 'Laisser un avis Google',
     close: 'Terminer',
-    scale: ['', 'Tres mauvais', 'Mauvais', 'Moyen', 'Bien', 'Excellent'],
+    tap: 'Appuyez sur une étoile pour noter',
+    labels: ['', 'Très mauvais', 'Mauvais', 'Moyen', 'Bien', 'Excellent'],
   },
   ar: {
     intro: 'سريع ومجهول ومن الهاتف مباشرة.',
-    rateHint: 'اختر نقطة للمتابعة.',
     comment: 'تعليق اختياري',
-    commentPlaceholder: 'اضف ملاحظة اذا كنت تريد...',
+    commentPlaceholder: 'أضف ملاحظة إذا كنت تريد...',
     next: 'التالي',
     prev: 'السابق',
-    submit: 'ارسال الراي',
-    sending: 'جاري الارسال...',
-    rateAll: 'قم بتقييم كل الاسئلة للمتابعة.',
+    submit: 'إرسال الرأي',
+    sending: 'جاري الإرسال...',
+    rateAll: 'قم بتقييم كل الأسئلة للمتابعة.',
     page: 'الصفحة',
     of: 'من',
-    thankGood: 'شكرا على رايك.',
-    thankBad: 'شكرا على صراحتك.',
-    goodText: 'تم تسجيل رايك بنجاح. اذا كانت تجربتك جيدة يمكنك اضافة تقييم في Google.',
-    badText: 'وصل رايك الى الفريق وسيبقى خاصا ليستفاد منه في تحسين الخدمة.',
-    google: 'اترك تقييما في Google',
-    close: 'انهاء',
-    scale: ['', 'سيء جدا', 'سيء', 'متوسط', 'جيد', 'ممتاز'],
+    thankGood: 'شكراً على رأيك.',
+    thankBad: 'شكراً على صراحتك.',
+    goodText: 'تم تسجيل رأيك بنجاح. إذا كانت تجربتك جيدة يمكنك إضافة تقييم في Google.',
+    badText: 'وصل رأيك إلى الفريق وسيبقى خاصاً ليستفاد منه في تحسين الخدمة.',
+    google: 'اترك تقييماً في Google',
+    close: 'إنهاء',
+    tap: 'اضغط على نجمة للتقييم',
+    labels: ['', 'سيء جداً', 'سيء', 'متوسط', 'جيد', 'ممتاز'],
   },
   en: {
     intro: 'Anonymous, fast, and designed for mobile.',
-    rateHint: 'Pick a score to continue.',
     comment: 'Optional comment',
     commentPlaceholder: 'Add more detail if you want...',
     next: 'Next',
@@ -89,24 +88,200 @@ const COPY = {
     badText: 'Your feedback was sent privately to the team so they can improve the experience.',
     google: 'Leave a Google review',
     close: 'Finish',
-    scale: ['', 'Very bad', 'Bad', 'Average', 'Good', 'Excellent'],
+    tap: 'Tap a star to rate',
+    labels: ['', 'Very bad', 'Bad', 'Average', 'Good', 'Excellent'],
   },
 } as const
 
-const SCORE_STYLE = [
-  { color: '#64748b', bg: 'rgba(148, 163, 184, 0.08)' },
-  { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' },
-  { color: '#f97316', bg: 'rgba(249, 115, 22, 0.12)' },
-  { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
-  { color: '#84cc16', bg: 'rgba(132, 204, 22, 0.14)' },
-  { color: '#22c55e', bg: 'rgba(34, 197, 94, 0.14)' },
+// Color per star value: 1=red, 2=orange, 3=amber, 4=lime, 5=green
+const STAR_COLORS = [
+  '',
+  '#ef4444', // 1 — red
+  '#f97316', // 2 — orange
+  '#f59e0b', // 3 — amber
+  '#84cc16', // 4 — lime
+  '#22c55e', // 5 — green (matches --accent)
 ]
 
+const STAR_BG = [
+  '',
+  'rgba(239,68,68,0.10)',
+  'rgba(249,115,22,0.10)',
+  'rgba(245,158,11,0.10)',
+  'rgba(132,204,22,0.12)',
+  'rgba(34,197,94,0.12)',
+]
+
+// Emoji label per score (shows below the stars)
+const SCORE_EMOJI = ['', '😞', '😕', '😐', '🙂', '😄']
+
 const NAV_ACTIONS = {
-  fr: { login: 'Connexion', register: 'Creer mon espace' },
+  fr: { login: 'Connexion', register: 'Créer mon espace' },
   ar: { login: 'تسجيل الدخول', register: 'إنشاء حساب' },
   en: { login: 'Login', register: 'Create workspace' },
 } as const
+
+// Inline style for the star animation CSS (we can't use globals.css new classes here)
+const starCSS = `
+  @keyframes starPop {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.42) rotate(-8deg); }
+    65%  { transform: scale(1.22) rotate(4deg); }
+    100% { transform: scale(1.1); }
+  }
+  @keyframes starShake {
+    0%,100% { transform: scale(1); }
+    20%     { transform: scale(0.88); }
+    50%     { transform: scale(1.08); }
+    80%     { transform: scale(0.96); }
+  }
+  @keyframes fadeSlideUp {
+    from { opacity:0; transform: translateY(8px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+  @keyframes scaleIn {
+    from { opacity:0; transform: scale(0.88); }
+    to   { opacity:1; transform: scale(1); }
+  }
+  .star-btn {
+    background: none;
+    border: none;
+    padding: 2px;
+    cursor: pointer;
+    line-height: 0;
+    transition: filter 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .star-btn:active { filter: brightness(1.15); }
+  .star-selected { animation: starPop 0.32s cubic-bezier(.36,.07,.19,.97) forwards; }
+  .star-unselect { animation: starShake 0.28s ease; }
+  .score-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px 4px 6px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 800;
+    animation: fadeSlideUp 0.22s ease both;
+  }
+  .card-enter {
+    animation: scaleIn 0.24s cubic-bezier(.22,1,.36,1) both;
+  }
+  .progress-bar {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--border);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+    transition: width 0.35s cubic-bezier(.22,1,.36,1);
+  }
+  .submit-pulse {
+    animation: starPop 0.3s ease both;
+  }
+`
+
+function StarRating({
+  categoryId,
+  selected,
+  onChange,
+  disabled,
+}: {
+  categoryId: string
+  selected: number
+  onChange: (id: string, value: number) => void
+  disabled?: boolean
+}) {
+  const [hovered, setHovered] = useState(0)
+  const [animKey, setAnimKey] = useState(0)
+
+  const active = hovered || selected
+  const color = STAR_COLORS[active] || '#d1d5db'
+
+  function handleClick(value: number) {
+    if (disabled) return
+    setAnimKey((k) => k + 1)
+    onChange(categoryId, value)
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+      {/* Stars row */}
+      <div
+        style={{ display: 'flex', gap: 6 }}
+        onMouseLeave={() => setHovered(0)}
+      >
+        {[1, 2, 3, 4, 5].map((value) => {
+          const isFilled = value <= active
+          const isSelected = value === selected
+          return (
+            <button
+              key={value}
+              className={`star-btn ${isSelected && animKey ? 'star-selected' : ''}`}
+              style={{ outline: 'none' }}
+              onClick={() => handleClick(value)}
+              onMouseEnter={() => !disabled && setHovered(value)}
+              aria-label={`Rate ${value} out of 5`}
+              disabled={disabled}
+            >
+              <svg
+                width="44"
+                height="44"
+                viewBox="0 0 44 44"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{ display: 'block', transition: 'transform 0.12s ease' }}
+              >
+                {/* Drop shadow behind for "glow" when active */}
+                {isFilled && (
+                  <ellipse
+                    cx="22"
+                    cy="38"
+                    rx="10"
+                    ry="3"
+                    fill={STAR_COLORS[active] || 'transparent'}
+                    opacity="0.18"
+                  />
+                )}
+                <path
+                  d="M22 6L25.708 15.584H36L27.788 21.416L31.236 31L22 25.168L12.764 31L16.212 21.416L8 15.584H18.292L22 6Z"
+                  fill={isFilled ? STAR_COLORS[active] : 'none'}
+                  stroke={isFilled ? STAR_COLORS[active] : 'var(--border-strong, #bac7d6)'}
+                  strokeWidth={isFilled ? '0' : '1.8'}
+                  strokeLinejoin="round"
+                  style={{ transition: 'fill 0.18s ease, stroke 0.18s ease' }}
+                />
+              </svg>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Score label */}
+      {active > 0 ? (
+        <div
+          key={`${categoryId}-${active}`}
+          className="score-badge"
+          style={{
+            background: STAR_BG[active],
+            color: STAR_COLORS[active],
+            border: `1px solid ${STAR_COLORS[active]}33`,
+          }}
+        >
+          <span style={{ fontSize: 18, lineHeight: 1 }}>{SCORE_EMOJI[active]}</span>
+          <span>{active}/5</span>
+        </div>
+      ) : (
+        <div style={{ height: 28 }} /> // placeholder to avoid layout shift
+      )}
+    </div>
+  )
+}
 
 export default function FeedbackFormClient({
   business,
@@ -118,6 +293,7 @@ export default function FeedbackFormClient({
   const { lang, setLang, copyLang, isRTL } = useStoredLanguage('fr')
   const copy = COPY[copyLang]
   const navActions = NAV_ACTIONS[copyLang]
+
   const [ratings, setRatings] = useState<Record<string, number>>({})
   const [comment, setComment] = useState('')
   const [screen, setScreen] = useState<Screen>('form')
@@ -126,14 +302,15 @@ export default function FeedbackFormClient({
   const totalPages = Math.ceil(form.categories.length / PAGE_SIZE)
   const currentCategories = form.categories.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
   const isLastPage = page === totalPages - 1
-  const pageComplete = currentCategories.every((category) => ratings[category.id] > 0)
-  const formComplete = form.categories.every((category) => ratings[category.id] > 0)
+  const pageComplete = currentCategories.every((c) => ratings[c.id] > 0)
+  const formComplete = form.categories.every((c) => ratings[c.id] > 0)
+  const ratedCount = Object.values(ratings).filter((v) => v > 0).length
 
   const initials = useMemo(
     () =>
       business.name
         .split(' ')
-        .map((chunk) => chunk[0])
+        .map((w) => w[0])
         .join('')
         .slice(0, 2)
         .toUpperCase(),
@@ -147,12 +324,16 @@ export default function FeedbackFormClient({
     return category.label_fr
   }
 
+  function handleRating(id: string, value: number) {
+    setRatings((prev) => ({ ...prev, [id]: value }))
+  }
+
   async function submitFeedback() {
     if (!formComplete) return
-
     setScreen('loading')
+
     const scores = Object.values(ratings)
-    const nextAverage = Math.round((scores.reduce((sum, score) => sum + score, 0) / scores.length) * 10) / 10
+    const avg = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
 
     await fetch('/api/submit', {
       method: 'POST',
@@ -161,16 +342,18 @@ export default function FeedbackFormClient({
         form_id: form.id,
         business_id: business.id,
         ratings,
-        average_score: nextAverage,
+        average_score: avg,
         comment: comment.trim() || null,
       }),
     })
 
-    setScreen(nextAverage >= 4 ? 'good' : 'bad')
+    setScreen(avg >= 4 ? 'good' : 'bad')
   }
 
   return (
     <div className="page-shell" dir={isRTL ? 'rtl' : 'ltr'}>
+      <style>{starCSS}</style>
+
       <AppNavbar
         lang={lang}
         setLang={setLang}
@@ -184,115 +367,163 @@ export default function FeedbackFormClient({
       />
 
       <main className="feedback-shell">
-        <div className="container" style={{ maxWidth: 760 }}>
+        <div className="container" style={{ maxWidth: 680 }}>
+          {/* Business header */}
           <header className="feedback-header">
             <div className="topbar-actions" style={{ gap: 14 }}>
               {business.logo_url ? (
                 <span className="logo-preview">
-                  <img src={business.logo_url} alt={business.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img
+                    src={business.logo_url}
+                    alt={business.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
                 </span>
               ) : (
-                <span className="logo-preview">{initials}</span>
+                <span
+                  className="logo-preview"
+                  style={{
+                    background: 'var(--accent-soft)',
+                    color: 'var(--accent-strong)',
+                    fontFamily: "'Sora', sans-serif",
+                    fontWeight: 700,
+                    fontSize: 24,
+                  }}
+                >
+                  {initials}
+                </span>
               )}
               <div>
-                <h1 className="page-title" style={{ fontSize: 'clamp(28px, 5vw, 40px)' }}>{business.name}</h1>
-                <p className="page-subtitle" style={{ marginTop: 6 }}>
+                <h1 className="page-title" style={{ fontSize: 'clamp(24px, 5vw, 36px)' }}>
+                  {business.name}
+                </h1>
+                <p className="page-subtitle" style={{ marginTop: 4 }}>
                   {business.city} · {copy.intro}
                 </p>
               </div>
             </div>
           </header>
 
-          {screen === 'form' ? (
-            <section className="surface-card" style={{ padding: 24 }}>
-              {totalPages > 1 ? (
-                <div className="field-row" style={{ marginBottom: 18 }}>
+          {/* ── FORM SCREEN ────────────────────────────────────── */}
+          {screen === 'form' && (
+            <section className="surface-card card-enter" style={{ padding: '28px 24px' }}>
+              {/* Progress bar */}
+              <div className="progress-bar">
+                <div
+                  className="progress-fill"
+                  style={{
+                    width: `${form.categories.length > 0
+                      ? (ratedCount / form.categories.length) * 100
+                      : 0}%`,
+                  }}
+                />
+              </div>
+
+              {totalPages > 1 && (
+                <div className="field-row" style={{ marginBottom: 20 }}>
                   <div className="pill">
                     {copy.page} {page + 1} {copy.of} {totalPages}
                   </div>
-                  <div className="pill">{Object.values(ratings).filter((value) => value > 0).length}/{form.categories.length}</div>
+                  <div className="pill">
+                    {ratedCount}/{form.categories.length}
+                  </div>
                 </div>
-              ) : null}
+              )}
 
+              {/* Category cards */}
               <div className="stack">
                 {currentCategories.map((category) => {
                   const selected = ratings[category.id] || 0
+                  const isRated = selected > 0
 
                   return (
-                    <article key={category.id} className="review-card">
-                      <div className="field-row" style={{ marginBottom: 16 }}>
-                        <div>
-                          <div style={{ fontWeight: 800, fontSize: 18 }}>{getLabel(category)}</div>
-                          <div className="help-text">
-                            {selected > 0 ? copy.scale[selected] : copy.rateHint}
-                          </div>
+                    <article
+                      key={category.id}
+                      className="review-card card-enter"
+                      style={{
+                        padding: '20px 20px 16px',
+                        border: isRated
+                          ? `1px solid ${STAR_COLORS[selected]}44`
+                          : '1px solid var(--border)',
+                        background: isRated ? STAR_BG[selected] : 'var(--panel)',
+                        transition: 'border-color 0.22s ease, background 0.22s ease',
+                      }}
+                    >
+                      {/* Category label + "tap to rate" hint */}
+                      <div style={{ marginBottom: 14, textAlign: 'center' }}>
+                        <div
+                          style={{
+                            fontWeight: 800,
+                            fontSize: 18,
+                            color: 'var(--text)',
+                            lineHeight: 1.3,
+                            marginBottom: 4,
+                          }}
+                        >
+                          {getLabel(category)}
                         </div>
-                        {selected > 0 ? (
+                        {!isRated && (
+                          <div className="help-text" style={{ fontSize: 13 }}>
+                            {copy.tap}
+                          </div>
+                        )}
+                        {isRated && (
                           <div
-                            className="score-pill"
                             style={{
-                              color: SCORE_STYLE[selected].color,
-                              background: SCORE_STYLE[selected].bg,
+                              fontSize: 13,
+                              color: STAR_COLORS[selected],
+                              fontWeight: 700,
+                              animation: 'fadeSlideUp 0.2s ease both',
                             }}
                           >
-                            {selected}/5
+                            {copy.labels[selected]}
                           </div>
-                        ) : null}
+                        )}
                       </div>
 
-                      <div className="five-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10 }}>
-                        {[1, 2, 3, 4, 5].map((value) => {
-                          const active = value === selected
-                          return (
-                            <button
-                              key={value}
-                              type="button"
-                              className="mini-button"
-                              onClick={() => setRatings((current) => ({ ...current, [category.id]: value }))}
-                              style={{
-                                minHeight: 56,
-                                borderRadius: 18,
-                                borderColor: active ? SCORE_STYLE[value].color : 'var(--border)',
-                                background: active ? SCORE_STYLE[value].bg : 'rgba(255,255,255,0.02)',
-                                color: active ? SCORE_STYLE[value].color : 'var(--muted)',
-                                fontWeight: 800,
-                              }}
-                            >
-                              {value}
-                            </button>
-                          )
-                        })}
-                      </div>
+                      {/* Stars */}
+                      <StarRating
+                        categoryId={category.id}
+                        selected={selected}
+                        onChange={handleRating}
+                      />
                     </article>
                   )
                 })}
               </div>
 
-              {isLastPage ? (
-                <div className="field" style={{ marginTop: 18 }}>
+              {/* Comment (last page only) */}
+              {isLastPage && (
+                <div className="field" style={{ marginTop: 22 }}>
                   <label className="label">{copy.comment}</label>
                   <textarea
                     className="textarea"
                     value={comment}
-                    onChange={(event) => setComment(event.target.value)}
+                    onChange={(e) => setComment(e.target.value)}
                     placeholder={copy.commentPlaceholder}
+                    rows={3}
                   />
                 </div>
-              ) : null}
+              )}
 
-              <div className="inline-actions" style={{ marginTop: 20 }}>
-                {page > 0 ? (
-                  <button type="button" className="button button-secondary" onClick={() => setPage((value) => value - 1)}>
+              {/* Nav buttons */}
+              <div className="inline-actions" style={{ marginTop: 22 }}>
+                {page > 0 && (
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={() => setPage((p) => p - 1)}
+                  >
                     <ArrowLeft size={16} />
                     {copy.prev}
                   </button>
-                ) : null}
+                )}
 
                 {!isLastPage ? (
                   <button
                     type="button"
                     className="button button-primary"
-                    onClick={() => setPage((value) => value + 1)}
+                    onClick={() => setPage((p) => p + 1)}
                     disabled={!pageComplete}
                     style={{ flex: 1 }}
                   >
@@ -302,7 +533,7 @@ export default function FeedbackFormClient({
                 ) : (
                   <button
                     type="button"
-                    className="button button-primary"
+                    className={`button button-primary${formComplete ? ' submit-pulse' : ''}`}
                     onClick={submitFeedback}
                     disabled={!formComplete}
                     style={{ flex: 1 }}
@@ -313,48 +544,93 @@ export default function FeedbackFormClient({
                 )}
               </div>
 
-              {!pageComplete ? <p className="help-text" style={{ marginTop: 14 }}>{copy.rateAll}</p> : null}
+              {!pageComplete && (
+                <p className="help-text" style={{ marginTop: 12, textAlign: 'center' }}>
+                  {copy.rateAll}
+                </p>
+              )}
             </section>
-          ) : null}
+          )}
 
-          {screen === 'loading' ? (
-            <section className="surface-card empty-state">
-              <LoaderCircle size={28} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent)' }} />
+          {/* ── LOADING SCREEN ─────────────────────────────────── */}
+          {screen === 'loading' && (
+            <section className="surface-card empty-state card-enter">
+              <LoaderCircle
+                size={32}
+                style={{ animation: 'spin 1s linear infinite', color: 'var(--accent)' }}
+              />
               <h2 className="empty-title">{copy.sending}</h2>
             </section>
-          ) : null}
+          )}
 
-          {screen === 'good' ? (
-            <section className="surface-card empty-state">
-              <div className="feature-icon" style={{ margin: '0 auto' }}>
-                <Check size={20} />
+          {/* ── GOOD SCREEN ────────────────────────────────────── */}
+          {screen === 'good' && (
+            <section className="surface-card empty-state card-enter" style={{ gap: 18 }}>
+              {/* Big animated star burst */}
+              <div style={{ position: 'relative', width: 80, height: 80, margin: '0 auto' }}>
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: '50%',
+                    background: 'var(--accent-soft)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <svg width="40" height="40" viewBox="0 0 44 44" fill="none">
+                    <path
+                      d="M22 6L25.708 15.584H36L27.788 21.416L31.236 31L22 25.168L12.764 31L16.212 21.416L8 15.584H18.292L22 6Z"
+                      fill="#22c55e"
+                    />
+                  </svg>
+                </div>
               </div>
-              <h2 className="empty-title">{copy.thankGood}</h2>
-              <p className="empty-copy">{copy.goodText}</p>
-              <div className="inline-actions" style={{ justifyContent: 'center', marginTop: 18 }}>
-                {business.google_review_url ? (
-                  <a href={business.google_review_url} target="_blank" rel="noopener noreferrer" className="button button-primary">
+              <div>
+                <h2 className="empty-title" style={{ marginBottom: 8 }}>
+                  {copy.thankGood}
+                </h2>
+                <p className="empty-copy">{copy.goodText}</p>
+              </div>
+              <div className="inline-actions" style={{ justifyContent: 'center' }}>
+                {business.google_review_url && (
+                  <a
+                    href={business.google_review_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="button button-primary"
+                  >
                     {copy.google}
                     <ExternalLink size={16} />
                   </a>
-                ) : null}
-                <Link href="/" className="button button-secondary">{copy.close}</Link>
+                )}
+                <Link href="/" className="button button-secondary">
+                  {copy.close}
+                </Link>
               </div>
             </section>
-          ) : null}
+          )}
 
-          {screen === 'bad' ? (
-            <section className="surface-card empty-state">
-              <div className="feature-icon" style={{ margin: '0 auto' }}>
-                <MessageSquareText size={20} />
+          {/* ── BAD SCREEN ─────────────────────────────────────── */}
+          {screen === 'bad' && (
+            <section className="surface-card empty-state card-enter" style={{ gap: 18 }}>
+              <div className="feature-icon" style={{ margin: '0 auto', width: 80, height: 80 }}>
+                <MessageSquareText size={28} />
               </div>
-              <h2 className="empty-title">{copy.thankBad}</h2>
-              <p className="empty-copy">{copy.badText}</p>
-              <div className="inline-actions" style={{ justifyContent: 'center', marginTop: 18 }}>
-                <Link href="/" className="button button-secondary">{copy.close}</Link>
+              <div>
+                <h2 className="empty-title" style={{ marginBottom: 8 }}>
+                  {copy.thankBad}
+                </h2>
+                <p className="empty-copy">{copy.badText}</p>
+              </div>
+              <div className="inline-actions" style={{ justifyContent: 'center' }}>
+                <Link href="/" className="button button-secondary">
+                  {copy.close}
+                </Link>
               </div>
             </section>
-          ) : null}
+          )}
         </div>
       </main>
     </div>
