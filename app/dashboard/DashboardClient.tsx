@@ -363,9 +363,50 @@ function EmptyState({
   )
 }
 
-function TrendChart({ points }: { points: TrendPoint[] }) {
+function formatResponseLabel(count: number) {
+  return `${count} response${count === 1 ? '' : 's'}`
+}
+
+function sampleTrendPoints(points: TrendPoint[], maxMarks: number) {
+  if (points.length <= maxMarks) {
+    return points
+  }
+
+  const lastIndex = points.length - 1
+  const indexes = new Set<number>([0, lastIndex])
+
+  for (let step = 1; step < maxMarks - 1; step += 1) {
+    indexes.add(Math.round((step * lastIndex) / (maxMarks - 1)))
+  }
+
+  return Array.from(indexes)
+    .sort((left, right) => left - right)
+    .map((index) => points[index])
+}
+
+function TrendChart({
+  points,
+  compact = false,
+}: {
+  points: TrendPoint[]
+  compact?: boolean
+}) {
   const maxCount = Math.max(...points.map((point) => point.count), 1)
   const maxScore = 5
+  const activePoints = points.filter((point) => point.count > 0)
+  const latestPoint = activePoints.length ? activePoints[activePoints.length - 1] : points[points.length - 1]
+  const peakPoint = [...points].sort((left, right) => right.count - left.count)[0] || points[0]
+  const bestRatedPoint =
+    [...activePoints].sort((left, right) => {
+      if (right.averageScore !== left.averageScore) return right.averageScore - left.averageScore
+      return right.count - left.count
+    })[0] || latestPoint
+  const averageResponses =
+    activePoints.length > 0
+      ? Math.round((activePoints.reduce((sum, point) => sum + point.count, 0) / activePoints.length) * 10) / 10
+      : 0
+  const recentPoints = points.slice(-(compact ? Math.min(points.length, 4) : Math.min(points.length, 6)))
+  const axisPoints = sampleTrendPoints(points, compact ? 4 : 5)
 
   const linePath = points
     .map((point, index) => {
@@ -376,38 +417,103 @@ function TrendChart({ points }: { points: TrendPoint[] }) {
     .join(' ')
 
   return (
-    <div className={styles.trendChart}>
-      <div className={styles.trendPlot}>
-        <div className={styles.trendBars} aria-hidden="true">
-          {points.map((point) => (
-            <div key={point.id} className={styles.trendBarWrap}>
-              <span className={styles.trendBarTrack}>
-                <span
-                  className={styles.trendBarFill}
-                  style={{ height: `${(point.count / maxCount) * 100}%` }}
-                />
-              </span>
-            </div>
-          ))}
+    <div className={cn(styles.trendChart, compact && styles.trendChartCompact)}>
+      <div className={styles.trendSummaryGrid}>
+        <div className={styles.trendSummaryCard}>
+          <span>Latest period</span>
+          <strong>{latestPoint ? latestPoint.label : 'No data'}</strong>
+          <p>
+            {latestPoint?.count
+              ? `${formatResponseLabel(latestPoint.count)} - ${latestPoint.averageScore}/5 average`
+              : 'No responses recorded in the latest period.'}
+          </p>
         </div>
 
-        <svg viewBox="0 0 100 100" className={styles.trendLine} preserveAspectRatio="none" aria-hidden="true">
-          <path d={linePath} className={styles.trendLinePath} />
-          {points.map((point, index) => {
-            const x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100
-            const y = 100 - (point.averageScore / maxScore) * 100
+        <div className={styles.trendSummaryCard}>
+          <span>Peak volume</span>
+          <strong>{peakPoint ? peakPoint.label : 'No data'}</strong>
+          <p>
+            {peakPoint?.count
+              ? `${formatResponseLabel(peakPoint.count)} in the busiest period`
+              : 'Volume will appear here once responses start arriving.'}
+          </p>
+        </div>
 
-            return <circle key={point.id} cx={x} cy={y} r="2.2" className={styles.trendLinePoint} />
-          })}
-        </svg>
+        <div className={styles.trendSummaryCard}>
+          <span>{compact ? 'Average volume' : 'Best-rated period'}</span>
+          <strong>
+            {compact
+              ? String(averageResponses || 0)
+              : bestRatedPoint
+                ? bestRatedPoint.label
+                : 'No data'}
+          </strong>
+          <p>
+            {compact
+              ? 'Average responses across active periods in the selected window.'
+              : bestRatedPoint?.count
+                ? `${bestRatedPoint.averageScore}/5 average from ${formatResponseLabel(bestRatedPoint.count)}`
+                : 'No scored period is available yet.'}
+          </p>
+        </div>
       </div>
 
-      <div className={styles.trendLabels}>
-        {points.map((point) => (
-          <div key={point.id} className={styles.trendLabel}>
-            <strong>{point.label}</strong>
-            <span>{point.count} responses</span>
-            <span>{point.count ? `${point.averageScore}/5 average` : 'No data'}</span>
+      <div className={styles.trendFrame}>
+        <div className={styles.trendLegend}>
+          <div className={styles.trendLegendItems}>
+            <span className={styles.trendLegendItem}>
+              <span className={styles.trendLegendBar} />
+              Responses
+            </span>
+            <span className={styles.trendLegendItem}>
+              <span className={styles.trendLegendLine} />
+              Average rating
+            </span>
+          </div>
+          <span className={styles.trendLegendMeta}>{points.length} periods in view</span>
+        </div>
+
+        <div className={styles.trendPlot}>
+          <div className={styles.trendBars} aria-hidden="true">
+            {points.map((point) => (
+              <div key={point.id} className={styles.trendBarWrap}>
+                <span className={styles.trendBarTrack}>
+                  <span
+                    className={styles.trendBarFill}
+                    style={{ height: `${(point.count / maxCount) * 100}%` }}
+                  />
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <svg viewBox="0 0 100 100" className={styles.trendLine} preserveAspectRatio="none" aria-hidden="true">
+            <path d={linePath} className={styles.trendLinePath} />
+            {points.map((point, index) => {
+              const x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100
+              const y = 100 - (point.averageScore / maxScore) * 100
+
+              return <circle key={point.id} cx={x} cy={y} r="2.2" className={styles.trendLinePoint} />
+            })}
+          </svg>
+        </div>
+
+        <div className={styles.trendAxis}>
+          {axisPoints.map((point) => (
+            <span key={point.id}>{point.label}</span>
+          ))}
+        </div>
+      </div>
+
+      <div className={styles.trendPeriodRail}>
+        {recentPoints.map((point) => (
+          <div
+            key={point.id}
+            className={cn(styles.trendPeriodCard, latestPoint?.id === point.id && styles.trendPeriodCardActive)}
+          >
+            <span>{point.label}</span>
+            <strong>{compactNumber(point.count)}</strong>
+            <small>{point.count ? `${point.averageScore}/5 average` : 'No responses'}</small>
           </div>
         ))}
       </div>
@@ -744,6 +850,8 @@ export default function DashboardClient({
   const distribution = buildRatingDistribution(visibleSubmissions)
   const categoryInsights = buildCategoryInsights(visibleSubmissions, publishedQuestions)
   const recurringIssues = recurringIssueSummary(categoryInsights)
+  const overviewTrendResolution: TrendResolution = selectedRange === 90 ? 'week' : 'day'
+  const overviewTrendPoints = buildTrendSeries(visibleSubmissions, overviewTrendResolution, selectedRange)
   const trendPoints = buildTrendSeries(visibleSubmissions, trendResolution, selectedRange)
   const allFeedbackRows = buildFeedbackRows(visibleSubmissions, publishedQuestions, {
     query: '',
@@ -770,6 +878,14 @@ export default function DashboardClient({
   const positiveCount = visibleSubmissions.filter((item) => scoreTone(item.average_score) === 'positive').length
   const neutralCount = visibleSubmissions.filter((item) => scoreTone(item.average_score) === 'neutral').length
   const negativeCount = visibleSubmissions.filter((item) => scoreTone(item.average_score) === 'negative').length
+  const activeTrendPeriods = trendPoints.filter((point) => point.count > 0)
+  const quietTrendPeriods = trendPoints.length - activeTrendPeriods.length
+  const peakTrendPoint = [...trendPoints].sort((left, right) => right.count - left.count)[0] || null
+  const bestTrendPoint =
+    [...activeTrendPeriods].sort((left, right) => {
+      if (right.averageScore !== left.averageScore) return right.averageScore - left.averageScore
+      return right.count - left.count
+    })[0] || null
   const questionChangesPending = questionsDirty(draftQuestions, publishedQuestions)
   const planCopy = planDescription(businessState.plan)
 
@@ -1185,22 +1301,11 @@ export default function DashboardClient({
 
         <div className={styles.twoColumnGrid}>
           <Panel
-            title="Response trend"
-            description="Submission volume and average rating over the selected reporting window."
-            action={
-              <SegmentedControl
-                ariaLabel="Trend resolution"
-                value={trendResolution}
-                onChange={(value) => setTrendResolution(value as TrendResolution)}
-                options={RESOLUTION_OPTIONS.map((option) => ({
-                  label: option.charAt(0).toUpperCase() + option.slice(1),
-                  value: option,
-                }))}
-              />
-            }
+            title="Reporting pulse"
+            description={`A lighter read on response momentum across the selected window, grouped by ${overviewTrendResolution}.`}
           >
             {visibleSubmissions.length ? (
-              <TrendChart points={trendPoints} />
+              <TrendChart points={overviewTrendPoints} compact />
             ) : (
               <EmptyState
                 icon={BarChart3}
@@ -1456,21 +1561,37 @@ export default function DashboardClient({
           </Panel>
 
           <Panel
-            title="Executive summary"
-            description="A compact view for weekly reporting and stakeholder check-ins."
+            title="Trend takeaways"
+            description="Context around how much signal exists in this analytics window."
           >
             <div className={styles.summaryList}>
               <div className={styles.summaryCell}>
-                <span>Average rating</span>
-                <strong>{summary.averageScore || 0}/5</strong>
+                <span>Active periods</span>
+                <strong>{activeTrendPeriods.length} of {trendPoints.length}</strong>
               </div>
               <div className={styles.summaryCell}>
-                <span>Feedback count</span>
-                <strong>{summary.totalFeedback}</strong>
+                <span>Quiet periods</span>
+                <strong>{quietTrendPeriods}</strong>
               </div>
               <div className={styles.summaryCell}>
-                <span>Satisfaction rate</span>
-                <strong>{percent(summary.satisfactionRate)}</strong>
+                <span>Peak volume</span>
+                <strong>
+                  {peakTrendPoint?.count
+                    ? `${peakTrendPoint.label} (${peakTrendPoint.count})`
+                    : 'No volume data yet'}
+                </strong>
+              </div>
+              <div className={styles.summaryCell}>
+                <span>Best-rated period</span>
+                <strong>
+                  {bestTrendPoint?.count
+                    ? `${bestTrendPoint.label} (${bestTrendPoint.averageScore}/5)`
+                    : 'No scored periods yet'}
+                </strong>
+              </div>
+              <div className={styles.summaryCell}>
+                <span>Comment coverage</span>
+                <strong>{percent(summary.commentCoverage)}</strong>
               </div>
               <div className={styles.summaryCell}>
                 <span>Current window</span>

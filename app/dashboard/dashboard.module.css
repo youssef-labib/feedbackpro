@@ -849,13 +849,130 @@
   gap: 18px;
 }
 
+.trendChartCompact .trendPlot {
+  min-height: 196px;
+}
+
+.trendSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.trendSummaryCard,
+.trendPeriodCard {
+  padding: 16px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 18px;
+  background: var(--dashboard-panel-soft);
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.trendSummaryCard span,
+.trendPeriodCard span,
+.trendLegendMeta,
+.trendAxis span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.trendSummaryCard span,
+.trendLegendMeta {
+  font-weight: 700;
+}
+
+.trendSummaryCard strong,
+.trendPeriodCard strong {
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.trendSummaryCard strong {
+  font-size: 18px;
+}
+
+.trendSummaryCard p,
+.trendPeriodCard small {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.trendFrame {
+  padding: 18px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 22px;
+  background: linear-gradient(180deg, var(--dashboard-panel-soft) 0%, var(--dashboard-panel-strong) 100%);
+  display: grid;
+  gap: 16px;
+}
+
+.trendLegend,
+.trendLegendItems {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.trendLegend {
+  justify-content: space-between;
+}
+
+.trendLegendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trendLegendBar,
+.trendLegendLine {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.trendLegendBar {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px 999px 4px 4px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 74%, #ffffff 26%) 0%, var(--accent) 100%);
+}
+
+.trendLegendLine {
+  width: 16px;
+  height: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 72%, var(--accent) 28%);
+}
+
+.trendLegendLine::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  transform: translate(-50%, -50%);
+}
+
 .trendPlot {
   position: relative;
   min-height: 220px;
   padding: 18px 10px 10px;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 22px;
-  background: linear-gradient(180deg, var(--dashboard-panel-soft) 0%, var(--dashboard-panel-strong) 100%);
+  border: 1px solid color-mix(in srgb, var(--dashboard-border) 80%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--dashboard-panel) 46%, var(--dashboard-panel-soft) 54%);
   overflow: hidden;
 }
 
@@ -909,18 +1026,34 @@
   fill: var(--accent);
 }
 
-.trendLabels {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-  gap: 10px;
+.trendAxis {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  overflow: hidden;
 }
 
-.trendLabel {
-  display: grid;
-  gap: 4px;
+.trendAxis span {
+  min-width: 0;
+  text-align: center;
 }
 
-.trendLabel strong,
+.trendPeriodRail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 12px;
+}
+
+.trendPeriodCard {
+  background: var(--dashboard-panel);
+}
+
+.trendPeriodCardActive {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--dashboard-border));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.trendPeriodCard strong,
 .distributionLabel strong,
 .mixLegendRow strong,
 .feedbackCell strong,
@@ -2188,7 +2321,11 @@
     font-size: 24px;
   }
 
-  .trendLabels {
+  .trendSummaryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .trendPeriodRail {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -2238,7 +2375,7 @@
     white-space: nowrap;
   }
 
-  .trendLabels {
+  .trendPeriodRail {
     grid-template-columns: 1fr;
   }
 
