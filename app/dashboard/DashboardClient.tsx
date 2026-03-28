@@ -540,6 +540,54 @@ function FeedbackDrawer({
   )
 }
 
+function QrPreviewLightbox({
+  open,
+  onClose,
+  qrUrl,
+  liveUrl,
+}: {
+  open: boolean
+  onClose: () => void
+  qrUrl: string
+  liveUrl: string
+}) {
+  if (!open) {
+    return null
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className={cn(styles.drawerBackdrop, styles.sidebarBackdropOpen, styles.qrLightboxBackdrop)}
+        onClick={onClose}
+        aria-label="Close QR preview"
+      />
+
+      <div className={styles.qrLightbox} role="dialog" aria-modal="true" aria-label="QR code preview">
+        <div className={styles.qrLightboxPanel}>
+          <div className={styles.qrLightboxHeader}>
+            <div>
+              <div className={styles.drawerEyebrow}>QR preview</div>
+              <h2 className={styles.qrLightboxTitle}>Scan the live feedback form comfortably</h2>
+            </div>
+
+            <button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close QR preview">
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className={styles.qrLightboxPreview} style={{ backgroundImage: `url("${qrUrl}")` }} />
+          <p className={styles.qrLightboxCopy}>
+            Use this larger preview from another phone or device when you need to scan the live feedback form quickly.
+          </p>
+          <div className={styles.qrLightboxUrl}>{liveUrl}</div>
+        </div>
+      </div>
+    </>
+  )
+}
+
 export default function DashboardClient({
   business,
   form,
@@ -565,6 +613,7 @@ export default function DashboardClient({
   const [feedbackFilter, setFeedbackFilter] = useState<FeedbackFilter>('all')
   const [feedbackSort, setFeedbackSort] = useState<FeedbackSort>('newest')
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(null)
+  const [isQrPreviewOpen, setIsQrPreviewOpen] = useState(false)
   const [businessState, setBusinessState] = useState<DashboardBusiness>({ ...business })
   const [logoPreview, setLogoPreview] = useState(business.logo_url || '')
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle')
@@ -616,6 +665,7 @@ export default function DashboardClient({
       if (event.key === 'Escape') {
         setMobileNavOpen(false)
         setSelectedFeedbackId(null)
+        setIsQrPreviewOpen(false)
       }
     }
 
@@ -624,7 +674,7 @@ export default function DashboardClient({
   }, [])
 
   useEffect(() => {
-    const shouldLock = mobileNavOpen || Boolean(selectedFeedbackId)
+    const shouldLock = mobileNavOpen || Boolean(selectedFeedbackId) || isQrPreviewOpen
     const previousOverflow = document.body.style.overflow
 
     if (shouldLock) {
@@ -634,7 +684,7 @@ export default function DashboardClient({
     return () => {
       document.body.style.overflow = previousOverflow
     }
-  }, [mobileNavOpen, selectedFeedbackId])
+  }, [isQrPreviewOpen, mobileNavOpen, selectedFeedbackId])
 
   const livePath = `/r/${business.slug}`
   const liveUrl = origin ? `${origin}${livePath}` : livePath
@@ -1684,7 +1734,14 @@ export default function DashboardClient({
             </article>
 
             <article className={cn(styles.collectionUtilityCard, styles.collectionUtilityQrCard)}>
-              <div className={styles.collectionUtilityQrPreview} style={{ backgroundImage: `url("${qrUrl}")` }} />
+              <button
+                type="button"
+                className={styles.collectionUtilityQrPreviewButton}
+                onClick={() => setIsQrPreviewOpen(true)}
+                aria-label="Open larger QR code preview"
+              >
+                <div className={styles.collectionUtilityQrPreview} style={{ backgroundImage: `url("${qrUrl}")` }} />
+              </button>
               <div className={styles.collectionUtilityQrBody}>
                 <div className={styles.collectionUtilityHeader}>
                   <span className={styles.collectionUtilityEyebrow}>QR utility</span>
@@ -1700,6 +1757,7 @@ export default function DashboardClient({
                 <div className={styles.collectionUtilityBody}>
                   <strong>Printable QR access</strong>
                   <p>Refresh the preview or download a PNG without leaving the builder.</p>
+                  <span className={styles.collectionUtilityHint}>Click the preview to open a larger scan view.</span>
                 </div>
                 <div className={cn(styles.collectionUtilityFooter, styles.compactActionRow)}>
                   <button
@@ -2217,6 +2275,13 @@ export default function DashboardClient({
 
         <main className={styles.main}>{renderSectionContent()}</main>
       </div>
+
+      <QrPreviewLightbox
+        open={isQrPreviewOpen}
+        onClose={() => setIsQrPreviewOpen(false)}
+        qrUrl={qrUrl}
+        liveUrl={liveUrl}
+      />
 
       <FeedbackDrawer
         feedback={selectedFeedback}
