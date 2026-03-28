@@ -2254,6 +2254,14 @@ export default function DashboardClient({
 
       <aside className={cn(styles.sidebar, mobileNavOpen && styles.sidebarOpen)}>
         <div className={styles.sidebarHeader}>
+          <Link href="/dashboard" className={styles.brand}>
+            <span className={styles.brandMark}>FP</span>
+            <span className={styles.brandCopy}>
+              <strong>FeedbackPro</strong>
+              <span>Customer feedback workspace</span>
+            </span>
+          </Link>
+
           <div className={styles.sidebarHeaderActions}>
             <button
               type="button"
@@ -2273,67 +2281,57 @@ export default function DashboardClient({
               <X size={16} />
             </button>
           </div>
-
-          <Link href="/dashboard" className={styles.brand}>
-            <span className={styles.brandMark}>FP</span>
-            <span className={styles.brandCopy}>
-              <strong>FeedbackPro</strong>
-              <span>Customer feedback workspace</span>
-            </span>
-          </Link>
         </div>
 
-        <div className={styles.sidebarScroll}>
-          <div className={styles.workspaceCard}>
-            <div
-              className={styles.workspaceLogo}
-              style={logoPreview ? { backgroundImage: `url("${logoPreview}")` } : undefined}
-            >
-              {!logoPreview ? businessState.name.slice(0, 2).toUpperCase() : null}
-            </div>
-
-            <div className={styles.workspaceCopy}>
-              <strong>{businessState.name}</strong>
-              <span>{businessState.city} - {sectorLabel(businessState.sector)}</span>
-            </div>
-
-            <div className={styles.workspaceMeta}>
-              <span>{planLabel(businessState.plan)}</span>
-              <span>{submissions.length} total feedback</span>
-            </div>
+        <div className={styles.workspaceCard}>
+          <div
+            className={styles.workspaceLogo}
+            style={logoPreview ? { backgroundImage: `url("${logoPreview}")` } : undefined}
+          >
+            {!logoPreview ? businessState.name.slice(0, 2).toUpperCase() : null}
           </div>
 
-          <nav className={styles.nav}>
-            {SECTION_META.map((section) => {
-              const Icon = section.icon
+          <div className={styles.workspaceCopy}>
+            <strong>{businessState.name}</strong>
+            <span>{businessState.city} - {sectorLabel(businessState.sector)}</span>
+          </div>
 
-              return (
-                <button
-                  key={section.id}
-                  type="button"
-                  className={cn(styles.navButton, activeSection === section.id && styles.navButtonActive)}
-                  onClick={() => navigateToSection(section.id)}
-                  data-tooltip={section.label}
-                  title={sidebarCollapsed ? section.label : undefined}
-                  aria-label={section.label}
-                >
-                  <span className={styles.navIcon}>
-                    <Icon size={18} />
-                  </span>
-                  <span className={styles.navCopy}>
-                    <strong>{section.label}</strong>
-                    <span>{section.description}</span>
-                  </span>
-                </button>
-              )
-            })}
-          </nav>
+          <div className={styles.workspaceMeta}>
+            <span>{planLabel(businessState.plan)}</span>
+            <span>{submissions.length} total feedback</span>
+          </div>
+        </div>
 
-          <div className={styles.sidebarFoot}>
-            <div className={styles.sidebarHint}>
-              <strong>Data limitations</strong>
-              <p>Branch and staff analytics remain placeholder-first until the backend exposes those entities explicitly.</p>
-            </div>
+        <nav className={styles.nav}>
+          {SECTION_META.map((section) => {
+            const Icon = section.icon
+
+            return (
+              <button
+                key={section.id}
+                type="button"
+                className={cn(styles.navButton, activeSection === section.id && styles.navButtonActive)}
+                onClick={() => navigateToSection(section.id)}
+                data-tooltip={section.label}
+                title={sidebarCollapsed ? section.label : undefined}
+                aria-label={section.label}
+              >
+                <span className={styles.navIcon}>
+                  <Icon size={18} />
+                </span>
+                <span className={styles.navCopy}>
+                  <strong>{section.label}</strong>
+                  <span>{section.description}</span>
+                </span>
+              </button>
+            )
+          })}
+        </nav>
+
+        <div className={styles.sidebarFoot}>
+          <div className={styles.sidebarHint}>
+            <strong>Data limitations</strong>
+            <p>Branch and staff analytics remain placeholder-first until the backend exposes those entities explicitly.</p>
           </div>
         </div>
       </aside>
