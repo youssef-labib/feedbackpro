@@ -12,10 +12,6 @@
   --dashboard-shadow-strong: 0 30px 86px rgba(15, 23, 42, 0.14);
   --dashboard-sidebar-width: 320px;
   --dashboard-sidebar-collapsed-width: 96px;
-  --dashboard-content-max: 1560px;
-  --dashboard-page-gutter: clamp(16px, 2.6vw, 32px);
-  --dashboard-page-gutter-compact: clamp(14px, 2vw, 24px);
-  --dashboard-section-gap: clamp(16px, 1.8vw, 22px);
   min-height: 100vh;
   background:
     radial-gradient(circle at top left, color-mix(in srgb, var(--accent-soft) 42%, transparent) 0%, transparent 30%),
@@ -46,7 +42,6 @@
 .canvas {
   margin-left: var(--dashboard-sidebar-width);
   min-height: 100vh;
-  min-width: 0;
   transition: margin-left 0.24s ease, margin-right 0.24s ease;
 }
 
@@ -401,24 +396,17 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  padding: 24px var(--dashboard-page-gutter) 22px;
+  padding: 24px 32px 22px;
   border-bottom: 1px solid var(--dashboard-border);
   background: var(--dashboard-panel-overlay);
   backdrop-filter: blur(14px);
-}
-
-.headerInner {
-  width: min(100%, var(--dashboard-content-max));
-  margin: 0 auto;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
+  gap: 20px;
 }
 
 .headerCopy {
-  flex: 1;
-  min-width: 0;
   max-width: 760px;
   display: grid;
   gap: 10px;
@@ -461,10 +449,7 @@
 }
 
 .headerActions {
-  flex: 1;
-  min-width: 0;
   justify-content: flex-end;
-  align-self: center;
 }
 
 .mobileBarControls {
@@ -496,16 +481,11 @@
 }
 
 .main {
-  padding: 28px var(--dashboard-page-gutter) 56px;
-}
-
-.mainInner {
-  width: min(100%, var(--dashboard-content-max));
-  margin: 0 auto;
-  min-width: 0;
+  padding: 28px 32px 48px;
 }
 
 .sectionStack,
+.questionList,
 .summaryList,
 .checklist,
 .issueList,
@@ -516,19 +496,19 @@
 .mixLegend,
 .distributionList {
   display: grid;
-  gap: var(--dashboard-section-gap);
+  gap: 16px;
 }
 
 .twoColumnGrid {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
-  gap: var(--dashboard-section-gap);
+  gap: 20px;
 }
 
 .kpiGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--dashboard-section-gap);
+  gap: 18px;
 }
 
 .panel,
@@ -1032,14 +1012,16 @@
 
 .feedbackControls {
   margin-bottom: 18px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 14px;
+  flex-wrap: wrap;
 }
 
 .searchField {
-  min-width: 0;
+  flex: 1;
+  min-width: 280px;
   min-height: 46px;
   padding: 0 14px;
   border: 1px solid var(--dashboard-border);
@@ -1050,14 +1032,6 @@
   gap: 10px;
   color: var(--muted);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
-}
-
-.feedbackControls .inlineControls {
-  justify-content: flex-end;
-}
-
-.feedbackControls .inlineControls .select {
-  min-width: 170px;
 }
 
 .searchField input,
@@ -1118,7 +1092,6 @@
   display: grid;
   gap: 4px;
   align-content: start;
-  min-width: 0;
 }
 
 .brandingCard,
@@ -1766,43 +1739,9 @@
   right: calc(100% + 14px);
 }
 
-@media (max-width: 1440px) {
-  .headerInner {
-    gap: 20px;
-  }
-
-  .headerActions {
-    max-width: 720px;
-  }
-
-  .kpiGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 1120px) {
+@media (max-width: 1240px) {
   .kpiGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 1240px) {
-  .headerInner {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .headerActions {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .feedbackControls {
-    grid-template-columns: 1fr;
-  }
-
-  .feedbackControls .inlineControls {
-    justify-content: flex-start;
   }
 
   .collectionUtilityRail {
@@ -1830,14 +1769,9 @@
 
   .questionBuilderHeader,
   .questionComposerHeader,
-  .builderQuestionHeader,
-  .panelHeader {
+  .builderQuestionHeader {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .panelAction {
-    width: 100%;
   }
 
   .builderQuestionCard {
@@ -1967,13 +1901,13 @@
     position: sticky;
     top: 0;
     z-index: 22;
-    padding: 14px var(--dashboard-page-gutter-compact);
+    padding: 16px 18px;
     border-bottom: 1px solid var(--dashboard-border);
     background: var(--dashboard-panel-overlay);
     backdrop-filter: blur(12px);
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 14px;
   }
 
@@ -1996,26 +1930,15 @@
 
   .header {
     position: static;
-    padding: 18px var(--dashboard-page-gutter-compact) 0;
+    padding: 18px 18px 0;
     border-bottom: 0;
     background: transparent;
     backdrop-filter: none;
+    flex-direction: column;
   }
 
   .main {
-    padding: 18px var(--dashboard-page-gutter-compact) 44px;
-  }
-
-  .headerInner {
-    gap: 18px;
-  }
-
-  .headerActions {
-    gap: 12px;
-  }
-
-  .feedbackControls .inlineControls {
-    width: 100%;
+    padding: 18px 18px 44px;
   }
 
   .feedbackHead {
@@ -2025,7 +1948,6 @@
   .feedbackRow {
     grid-template-columns: 1fr;
     gap: 10px;
-    padding: 16px;
   }
 
   .feedbackTable {
@@ -2041,37 +1963,6 @@
 
   .feedbackRow:last-child {
     margin-bottom: 0;
-  }
-
-  .feedbackCell {
-    gap: 6px;
-  }
-
-  .feedbackCell::before {
-    content: attr(data-label);
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .issueRow,
-  .checklistRow,
-  .categoryRow,
-  .distributionRow,
-  .alertRow {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .issueScore,
-  .distributionPercent {
-    align-self: flex-start;
-  }
-
-  .scoreTrack {
-    width: 100%;
   }
 }
 
@@ -2111,15 +2002,6 @@
     flex: 1;
   }
 
-  .feedbackControls .inlineControls {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .feedbackControls .inlineControls .select {
-    min-width: 0;
-  }
-
   .questionBuilderMeta,
   .questionComposerActions,
   .compactActionRow,
@@ -2129,7 +2011,8 @@
 
   .actionRow,
   .inlineControls,
-  .iconButtonRow {
+  .iconButtonRow,
+  .mobileBarControls {
     width: 100%;
     flex-wrap: wrap;
   }
@@ -2140,28 +2023,21 @@
     width: 100%;
   }
 
-  .segmented {
-    width: 100%;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-  }
-
-  .headerActions :global(.lang-select) {
+  .headerActions :global(.lang-select),
+  .mobileBarControls :global(.lang-select) {
     width: 100%;
   }
 
   .headerActions :global(.lang-trigger),
-  .headerActions :global(.theme-toggle) {
+  .mobileBarControls :global(.lang-trigger),
+  .headerActions :global(.theme-toggle),
+  .mobileBarControls :global(.theme-toggle) {
     width: 100%;
     justify-content: center;
   }
 
   .collectionUtilityQrPreview {
     width: 96px;
-  }
-
-  .collectionUtilityCard {
-    min-height: 0;
   }
 
   .qrLightbox {
@@ -2204,35 +2080,12 @@
     padding-right: 14px;
   }
 
-  .headerTitle {
-    font-size: 30px;
-  }
-
-  .headerDescription,
-  .panelDescription {
-    font-size: 14px;
-  }
-
-  .metricValue {
-    font-size: 30px;
-  }
-
-  .emptyState {
-    padding-inline: 0;
-  }
-
   .trendLabels {
     grid-template-columns: 1fr;
   }
 
-  .mobileBarCopy {
-    min-width: 0;
-  }
-
-  .mobileBarCopy strong,
-  .mobileBarCopy span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .brandCopy span,
+  .navCopy span {
+    display: none;
   }
 }
