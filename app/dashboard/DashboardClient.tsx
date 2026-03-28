@@ -47,6 +47,7 @@ import {
 import FlagLangSelector from '../../components/FlagLangSelector'
 import ThemeToggle from '../../components/ThemeToggle'
 import { useStoredLanguage } from '../../components/useStoredLanguage'
+import { DASHBOARD_COPY, dashboardLocale, type DashboardCopy } from './dashboard-copy'
 import styles from './dashboard.module.css'
 import {
   buildCategoryInsights,
@@ -73,6 +74,7 @@ import {
   type DashboardBusiness,
   type DashboardCategory,
   type DashboardForm,
+  type DashboardLang,
   type DashboardRange,
   type DashboardSection,
   type DashboardSubmission,
@@ -98,8 +100,6 @@ type DraftQuestion = {
 
 type SectionMeta = {
   id: DashboardSection
-  label: string
-  description: string
   icon: LucideIcon
 }
 
@@ -113,38 +113,26 @@ type DashboardClientProps = {
 const SECTION_META: SectionMeta[] = [
   {
     id: 'overview',
-    label: 'Overview',
-    description: 'Executive KPIs, service alerts, and a fast read on customer satisfaction.',
     icon: LayoutDashboard,
   },
   {
     id: 'analytics',
-    label: 'Analytics',
-    description: 'Trends, score distribution, and question-level feedback analysis.',
     icon: BarChart3,
   },
   {
     id: 'feedback',
-    label: 'Feedback',
-    description: 'Search, filter, and inspect every customer submission in detail.',
     icon: MessageSquare,
   },
   {
     id: 'operations',
-    label: 'Operations',
-    description: 'Location readiness, service issues, and operational follow-up.',
     icon: CircleAlert,
   },
   {
     id: 'collection',
-    label: 'Collection',
-    description: 'Public form access, QR assets, and form question management.',
     icon: QrCode,
   },
   {
     id: 'settings',
-    label: 'Settings',
-    description: 'Business profile, branding, plan visibility, and workspace controls.',
     icon: Settings2,
   },
 ]
@@ -172,25 +160,54 @@ function flashNotice(
   window.setTimeout(() => setter(null), duration)
 }
 
-function formatDelta(current: number, previous: number, suffix = '') {
+function pluralize(count: number, singular: string, plural: string) {
+  return count === 1 ? singular : plural
+}
+
+function formatDelta(
+  current: number,
+  previous: number,
+  copy: DashboardCopy['common'],
+  suffix = ''
+) {
   const diff = Math.round((current - previous) * 10) / 10
 
   if (!previous && !current) {
-    return { label: 'Flat vs previous period', tone: 'neutral' as const }
+    return { label: copy.previousPeriodFlat, tone: 'neutral' as const }
   }
 
   if (!previous && current) {
-    return { label: `+${current}${suffix} vs previous period`, tone: 'positive' as const }
+    return { label: `+${current}${suffix} ${copy.previousPeriodSuffix}`, tone: 'positive' as const }
   }
 
   if (diff === 0) {
-    return { label: 'Flat vs previous period', tone: 'neutral' as const }
+    return { label: copy.previousPeriodFlat, tone: 'neutral' as const }
   }
 
   return {
-    label: `${diff > 0 ? '+' : ''}${diff}${suffix} vs previous period`,
+    label: `${diff > 0 ? '+' : ''}${diff}${suffix} ${copy.previousPeriodSuffix}`,
     tone: diff > 0 ? ('positive' as const) : ('negative' as const),
   }
+}
+
+function questionPositionLabel(index: number, copy: DashboardCopy['common']) {
+  return `${copy.questionWord} ${String(index + 1).padStart(2, '0')}`
+}
+
+function questionMoveLabel(
+  index: number,
+  copy: DashboardCopy['common'],
+  lang: DashboardLang,
+  direction: 'up' | 'down'
+) {
+  const actionMap = {
+    en: { up: 'up', down: 'down' },
+    fr: { up: 'vers le haut', down: 'vers le bas' },
+    ar: { up: 'الى الاعلى', down: 'الى الاسفل' },
+    es: { up: 'arriba', down: 'abajo' },
+  }
+
+  return `${questionPositionLabel(index, copy)} ${actionMap[lang][direction]}`
 }
 
 function statusClassName(tone: ScoreTone) {
@@ -298,10 +315,18 @@ function SegmentedControl({
   )
 }
 
-function TonePill({ tone, label }: { tone: ScoreTone; label?: string }) {
+function TonePill({
+  tone,
+  label,
+  lang,
+}: {
+  tone: ScoreTone
+  label?: string
+  lang: DashboardLang
+}) {
   return (
     <span className={cn(styles.statusPill, statusClassName(tone))}>
-      {label || toneLabel(tone)}
+      {label || toneLabel(tone, lang)}
     </span>
   )
 }
@@ -326,7 +351,13 @@ function EmptyState({
   )
 }
 
-function TrendChart({ points }: { points: TrendPoint[] }) {
+function TrendChart({
+  points,
+  copy,
+}: {
+  points: TrendPoint[]
+  copy: DashboardCopy
+}) {
   const maxCount = Math.max(...points.map((point) => point.count), 1)
   const maxScore = 5
 
@@ -369,8 +400,10 @@ function TrendChart({ points }: { points: TrendPoint[] }) {
         {points.map((point) => (
           <div key={point.id} className={styles.trendLabel}>
             <strong>{point.label}</strong>
-            <span>{point.count} responses</span>
-            <span>{point.count ? `${point.averageScore}/5 average` : 'No data'}</span>
+            <span>
+              {point.count} {pluralize(point.count, copy.common.responseSingular, copy.common.responsePlural)}
+            </span>
+            <span>{point.count ? `${point.averageScore}/5` : copy.common.noData}</span>
           </div>
         ))}
       </div>
@@ -381,9 +414,13 @@ function TrendChart({ points }: { points: TrendPoint[] }) {
 function DistributionChart({
   distribution,
   total,
+  copy,
+  locale,
 }: {
   distribution: Array<{ score: number; count: number }>
   total: number
+  copy: DashboardCopy
+  locale: string
 }) {
   const peak = Math.max(...distribution.map((item) => item.count), 1)
 
@@ -392,8 +429,10 @@ function DistributionChart({
       {distribution.map((item) => (
         <div key={item.score} className={styles.distributionRow}>
           <div className={styles.distributionLabel}>
-            <strong>{item.score} stars</strong>
-            <span>{item.count} responses</span>
+            <strong>{item.score}/5</strong>
+            <span>
+              {item.count} {pluralize(item.count, copy.common.responseSingular, copy.common.responsePlural)}
+            </span>
           </div>
 
           <span className={styles.distributionTrack}>
@@ -404,7 +443,7 @@ function DistributionChart({
           </span>
 
           <span className={styles.distributionPercent}>
-            {total ? percent(item.count / total) : percent(0)}
+            {total ? percent(item.count / total, locale) : percent(0, locale)}
           </span>
         </div>
       ))}
@@ -416,10 +455,16 @@ function FeedbackDrawer({
   feedback,
   categories,
   onClose,
+  copy,
+  lang,
+  locale,
 }: {
   feedback: FeedbackRow | null
   categories: DashboardCategory[]
   onClose: () => void
+  copy: DashboardCopy
+  lang: DashboardLang
+  locale: string
 }) {
   if (!feedback) {
     return null
@@ -431,20 +476,20 @@ function FeedbackDrawer({
         type="button"
         className={cn(styles.drawerBackdrop, styles.sidebarBackdropOpen)}
         onClick={onClose}
-        aria-label="Close feedback details"
+        aria-label={copy.common.closeFeedbackDetails}
       />
 
-      <aside className={styles.drawer} aria-label="Feedback details">
+      <aside className={styles.drawer} aria-label={copy.common.feedbackDetails}>
         <div className={styles.drawerHeader}>
           <div>
-            <div className={styles.drawerEyebrow}>Feedback details</div>
-            <h2 className={styles.drawerTitle}>{feedback.average_score}/5 overall score</h2>
+            <div className={styles.drawerEyebrow}>{copy.common.feedbackDetails}</div>
+            <h2 className={styles.drawerTitle}>{feedback.average_score}/5 {copy.common.overallScoreSuffix}</h2>
             <div className={styles.drawerMeta}>
-              Submitted {formatDateTime(feedback.created_at)} - {formatRelativeDate(feedback.created_at)}
+              {copy.common.submitted} {formatDateTime(feedback.created_at, locale)} - {formatRelativeDate(feedback.created_at, locale)}
             </div>
           </div>
 
-          <button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close feedback details">
+          <button type="button" className={styles.iconButton} onClick={onClose} aria-label={copy.common.closeFeedbackDetails}>
             <X size={16} />
           </button>
         </div>
@@ -452,18 +497,18 @@ function FeedbackDrawer({
         <div className={styles.drawerSection}>
           <div className={styles.drawerSummaryGrid}>
             <div className={styles.summaryCell}>
-              <span>Status</span>
-              <strong>{toneLabel(feedback.tone)}</strong>
+              <span>{copy.common.status}</span>
+              <strong>{toneLabel(feedback.tone, lang)}</strong>
             </div>
             <div className={styles.summaryCell}>
-              <span>Weakest question</span>
+              <span>{copy.common.weakestQuestion}</span>
               <strong>{feedback.lowestCategoryLabel}</strong>
             </div>
           </div>
         </div>
 
         <div className={styles.drawerSection}>
-          <span className={styles.drawerSectionTitle}>Question scores</span>
+          <span className={styles.drawerSectionTitle}>{copy.common.questionScores}</span>
 
           <div className={styles.scoreList}>
             {categories.length ? (
@@ -473,8 +518,12 @@ function FeedbackDrawer({
                 return (
                   <div key={category.id} className={styles.scoreRow}>
                     <div className={styles.scoreRowHead}>
-                      <strong>{questionLabel(category)}</strong>
-                      <TonePill tone={scoreTone(score || 5)} label={score ? `${score}/5` : 'No score'} />
+                      <strong>{questionLabel(category, lang)}</strong>
+                      <TonePill
+                        tone={scoreTone(score || 5)}
+                        label={score ? `${score}/5` : copy.common.noScore}
+                        lang={lang}
+                      />
                     </div>
                     <span className={styles.scoreTrack}>
                       <span className={styles.scoreFill} style={{ width: `${(score / 5) * 100}%` }} />
@@ -485,17 +534,17 @@ function FeedbackDrawer({
             ) : (
               <EmptyState
                 icon={ListChecks}
-                title="No structured ratings"
-                copy="This feedback entry only contains the overall score and any written comment."
+                title={copy.common.noStructuredRatingsTitle}
+                copy={copy.common.noStructuredRatingsCopy}
               />
             )}
           </div>
         </div>
 
         <div className={styles.drawerSection}>
-          <span className={styles.drawerSectionTitle}>Customer comment</span>
+          <span className={styles.drawerSectionTitle}>{copy.common.customerComment}</span>
           <div className={styles.commentCard}>
-            {feedback.hasComment ? feedback.commentText : 'No written comment was left on this response.'}
+            {feedback.hasComment ? feedback.commentText : copy.common.noWrittenCommentLong}
           </div>
         </div>
       </aside>
@@ -510,7 +559,7 @@ export default function DashboardClient({
   userEmail,
 }: DashboardClientProps) {
   const router = useRouter()
-  const { lang, setLang } = useStoredLanguage('fr')
+  const { lang, setLang } = useStoredLanguage('en')
   const [supabase] = useState(() =>
     createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -602,41 +651,67 @@ export default function DashboardClient({
   const livePath = `/r/${business.slug}`
   const liveUrl = origin ? `${origin}${livePath}` : livePath
   const qrUrl = `/api/qr?url=${encodeURIComponent(liveUrl)}&v=${qrVersion}`
+  const copy = DASHBOARD_COPY[lang] || DASHBOARD_COPY.en
+  const locale = dashboardLocale(lang)
 
   const visibleSubmissions = filterSubmissionsByRange(submissions, selectedRange)
   const summary = summarizeSubmissions(visibleSubmissions)
   const comparison = compareWindowMetrics(submissions, selectedRange)
   const distribution = buildRatingDistribution(visibleSubmissions)
-  const categoryInsights = buildCategoryInsights(visibleSubmissions, publishedQuestions)
+  const categoryInsights = buildCategoryInsights(visibleSubmissions, publishedQuestions, lang)
   const recurringIssues = recurringIssueSummary(categoryInsights)
-  const trendPoints = buildTrendSeries(visibleSubmissions, trendResolution, selectedRange)
+  const trendPoints = buildTrendSeries(visibleSubmissions, trendResolution, selectedRange, locale)
   const allFeedbackRows = buildFeedbackRows(visibleSubmissions, publishedQuestions, {
+    lang,
+    noCategoryLabel: copy.common.noCategory,
     query: '',
     filter: 'all',
     sort: 'newest',
   })
   const feedbackRows = buildFeedbackRows(visibleSubmissions, publishedQuestions, {
+    lang,
+    noCategoryLabel: copy.common.noCategory,
     query: deferredSearch,
     filter: feedbackFilter,
     sort: feedbackSort,
   })
   const selectedFeedback = allFeedbackRows.find((item) => item.id === selectedFeedbackId) || null
-  const sectionMeta = SECTION_META.find((section) => section.id === activeSection) || SECTION_META[0]
-  const averageDelta = formatDelta(comparison.current.averageScore, comparison.previous.averageScore, '/5')
-  const feedbackDelta = formatDelta(comparison.current.totalFeedback, comparison.previous.totalFeedback)
+  const sections = SECTION_META.map((section) => ({
+    ...section,
+    label: copy.sections[section.id].label,
+    description: copy.sections[section.id].description,
+  }))
+  const sectionMeta = sections.find((section) => section.id === activeSection) || sections[0]
+  const averageDelta = formatDelta(comparison.current.averageScore, comparison.previous.averageScore, copy.common, '/5')
+  const feedbackDelta = formatDelta(comparison.current.totalFeedback, comparison.previous.totalFeedback, copy.common)
   const satisfactionDelta = formatDelta(
     Math.round(comparison.current.satisfactionRate * 100),
     Math.round(comparison.previous.satisfactionRate * 100),
-    ' pts'
+    copy.common,
+    copy.common.pointsSuffix
   )
-  const attentionDelta = formatDelta(comparison.current.attentionCount, comparison.previous.attentionCount)
+  const attentionDelta = formatDelta(comparison.current.attentionCount, comparison.previous.attentionCount, copy.common)
   const strongestCategory = [...categoryInsights].reverse().find((item) => item.responses > 0) || null
   const weakestCategory = categoryInsights.find((item) => item.responses > 0) || null
   const positiveCount = visibleSubmissions.filter((item) => scoreTone(item.average_score) === 'positive').length
   const neutralCount = visibleSubmissions.filter((item) => scoreTone(item.average_score) === 'neutral').length
   const negativeCount = visibleSubmissions.filter((item) => scoreTone(item.average_score) === 'negative').length
   const questionChangesPending = questionsDirty(draftQuestions, publishedQuestions)
-  const planCopy = planDescription(businessState.plan)
+  const planCopy = planDescription(businessState.plan, lang)
+  const coverageCount = draftQuestions.filter(
+    (question) =>
+      question.label_fr.trim() &&
+      question.label_ar.trim() &&
+      (question.label_en || '').trim() &&
+      (question.label_es || '').trim()
+  ).length
+  const coverageReady = draftQuestions.length > 0 && coverageCount === draftQuestions.length
+  const collectionReady = Boolean(form && publishedQuestions.length)
+
+  const formatDateValue = (value: string) => formatDate(value, locale)
+  const formatRelativeValue = (value: string) => formatRelativeDate(value, locale)
+  const compactValue = (value: number) => compactNumber(value, locale)
+  const percentValue = (value: number) => percent(value, locale)
 
   useEffect(() => {
     if (selectedFeedbackId && !allFeedbackRows.some((item) => item.id === selectedFeedbackId)) {
@@ -703,18 +778,18 @@ export default function DashboardClient({
       const payload = await response.json()
 
       if (!response.ok) {
-        throw new Error(payload.error || 'Could not save business settings.')
+        throw new Error(payload.error || copy.notices.settingsError)
       }
 
       flashNotice(setSettingsNotice, {
         tone: 'success',
-        text: 'Business settings updated successfully.',
+        text: copy.notices.settingsSaved,
       })
       router.refresh()
     } catch (error) {
       flashNotice(setSettingsNotice, {
         tone: 'error',
-        text: error instanceof Error ? error.message : 'Could not save business settings.',
+        text: error instanceof Error ? error.message : copy.notices.settingsError,
       })
     } finally {
       setIsSavingSettings(false)
@@ -743,7 +818,7 @@ export default function DashboardClient({
       const payload = await response.json()
 
       if (!response.ok) {
-        throw new Error(payload.error || 'Could not upload logo.')
+        throw new Error(payload.error || copy.notices.logoError)
       }
 
       setLogoPreview(payload.url || '')
@@ -754,13 +829,13 @@ export default function DashboardClient({
 
       flashNotice(setSettingsNotice, {
         tone: 'success',
-        text: 'Brand logo updated successfully.',
+        text: copy.notices.logoSaved,
       })
       router.refresh()
     } catch (error) {
       flashNotice(setSettingsNotice, {
         tone: 'error',
-        text: error instanceof Error ? error.message : 'Could not upload logo.',
+        text: error instanceof Error ? error.message : copy.notices.logoError,
       })
     } finally {
       event.target.value = ''
@@ -772,7 +847,7 @@ export default function DashboardClient({
     if (draftQuestions.length >= 10) {
       flashNotice(setQuestionNotice, {
         tone: 'error',
-        text: 'The form can contain up to 10 questions.',
+        text: copy.notices.questionLimit,
       })
       return
     }
@@ -780,7 +855,7 @@ export default function DashboardClient({
     if (!newQuestion.label_fr.trim()) {
       flashNotice(setQuestionNotice, {
         tone: 'error',
-        text: 'A French label is required before adding a new question.',
+        text: copy.notices.frenchRequired,
       })
       return
     }
@@ -803,7 +878,7 @@ export default function DashboardClient({
 
     flashNotice(setQuestionNotice, {
       tone: 'success',
-      text: 'Question added to the draft form.',
+      text: copy.notices.questionAdded,
     })
   }
 
@@ -829,7 +904,7 @@ export default function DashboardClient({
     if (draftQuestions.length === 1) {
       flashNotice(setQuestionNotice, {
         tone: 'error',
-        text: 'The form must keep at least one question.',
+        text: copy.notices.keepOneQuestion,
       })
       return
     }
@@ -861,7 +936,7 @@ export default function DashboardClient({
     if (!form) {
       flashNotice(setQuestionNotice, {
         tone: 'error',
-        text: 'No feedback form exists for this workspace yet.',
+        text: copy.notices.noForm,
       })
       return
     }
@@ -869,7 +944,7 @@ export default function DashboardClient({
     if (!draftQuestions.length) {
       flashNotice(setQuestionNotice, {
         tone: 'error',
-        text: 'Add at least one question before publishing.',
+        text: copy.notices.publishNeedsQuestion,
       })
       return
     }
@@ -891,7 +966,7 @@ export default function DashboardClient({
       const payload = await response.json()
 
       if (!response.ok) {
-        throw new Error(payload.error || 'Could not publish form questions.')
+        throw new Error(payload.error || copy.notices.publishError)
       }
 
       const nextQuestions = Array.isArray(payload.categories)
@@ -903,13 +978,13 @@ export default function DashboardClient({
 
       flashNotice(setQuestionNotice, {
         tone: 'success',
-        text: 'Live form questions updated successfully.',
+        text: copy.notices.publishSuccess,
       })
       router.refresh()
     } catch (error) {
       flashNotice(setQuestionNotice, {
         tone: 'error',
-        text: error instanceof Error ? error.message : 'Could not publish form questions.',
+        text: error instanceof Error ? error.message : copy.notices.publishError,
       })
     } finally {
       setIsPublishingQuestions(false)
@@ -932,32 +1007,38 @@ export default function DashboardClient({
     summary.attentionCount > 0
       ? {
           id: 'attention',
-          title: `${summary.attentionCount} low-rating submission${summary.attentionCount === 1 ? '' : 's'} require follow-up`,
-          copy: 'Scores below 3/5 signal service recovery opportunities that should be reviewed quickly.',
+          title: `${summary.attentionCount} ${pluralize(
+            summary.attentionCount,
+            copy.common.itemSingular,
+            copy.common.itemPlural
+          )} ${copy.common.needsAttention}`,
+          copy: copy.overview.watchlistAttentionCopy,
           tone: 'negative' as const,
         }
       : null,
     weakestCategory && weakestCategory.averageScore < 4
       ? {
           id: 'weakest-category',
-          title: `${weakestCategory.label} is the weakest service area`,
-          copy: `${weakestCategory.averageScore}/5 average with ${percent(weakestCategory.lowScoreRate)} low-score share in the selected window.`,
+          title: `${weakestCategory.label} ${copy.overview.watchlistWeakestTitleSuffix}`,
+          copy: `${weakestCategory.averageScore}/5 ${copy.overview.watchlistWeakestCopySuffix} ${percentValue(
+            weakestCategory.lowScoreRate
+          )} ${copy.common.lowScoreShare} ${copy.overview.watchlistWeakestCopyTail}`,
           tone: weakestCategory.tone,
         }
       : null,
     comparison.previous.totalFeedback > 0 && comparison.current.averageScore < comparison.previous.averageScore
       ? {
           id: 'rating-drift',
-          title: 'Average rating is softening vs the previous period',
-          copy: `${averageDelta.label}. Review the most recent negative comments for context.`,
+          title: copy.overview.watchlistDriftTitle,
+          copy: `${averageDelta.label}. ${copy.overview.watchlistDriftCopyTail}`,
           tone: 'neutral' as const,
         }
       : null,
     summary.commentCoverage < 0.25 && summary.totalFeedback >= 6
       ? {
           id: 'comment-coverage',
-          title: 'Written comments are still sparse',
-          copy: `Only ${percent(summary.commentCoverage)} of customers left written context, which limits issue diagnosis.`,
+          title: copy.overview.watchlistCommentTitle,
+          copy: `${copy.overview.watchlistCommentCopyPrefix} ${percentValue(summary.commentCoverage)} ${copy.overview.watchlistCommentCopySuffix}`,
           tone: 'neutral' as const,
         }
       : null,
@@ -973,30 +1054,30 @@ export default function DashboardClient({
       <div className={styles.sectionStack}>
         <div className={styles.kpiGrid}>
           <MetricCard
-            label="Average rating"
+            label={copy.overview.metrics.averageRating}
             value={`${summary.averageScore || 0}/5`}
-            note="Overall satisfaction trend for the selected reporting window."
+            note={copy.overview.metrics.averageRatingNote}
             badge={{ label: averageDelta.label, tone: averageDelta.tone }}
             icon={Star}
           />
           <MetricCard
-            label="Total feedback"
-            value={compactNumber(summary.totalFeedback)}
-            note="Every submission received in the current reporting window."
+            label={copy.overview.metrics.totalFeedback}
+            value={compactValue(summary.totalFeedback)}
+            note={copy.overview.metrics.totalFeedbackNote}
             badge={{ label: feedbackDelta.label, tone: feedbackDelta.tone }}
             icon={MessageSquare}
           />
           <MetricCard
-            label="Satisfaction rate"
-            value={percent(summary.satisfactionRate)}
-            note="Share of responses scoring 4/5 or higher."
+            label={copy.overview.metrics.satisfactionRate}
+            value={percentValue(summary.satisfactionRate)}
+            note={copy.overview.metrics.satisfactionRateNote}
             badge={{ label: satisfactionDelta.label, tone: satisfactionDelta.tone }}
             icon={CheckCircle2}
           />
           <MetricCard
-            label="Negative alerts"
+            label={copy.overview.metrics.negativeAlerts}
             value={String(summary.attentionCount)}
-            note="Low-rating responses that deserve fast operational review."
+            note={copy.overview.metrics.negativeAlertsNote}
             badge={{ label: attentionDelta.label, tone: attentionDelta.tone }}
             icon={CircleAlert}
           />
@@ -1004,34 +1085,34 @@ export default function DashboardClient({
 
         <div className={styles.twoColumnGrid}>
           <Panel
-            title="Response trend"
-            description="Submission volume and average rating over the selected reporting window."
+            title={copy.overview.responseTrendTitle}
+            description={copy.overview.responseTrendCopy}
             action={
               <SegmentedControl
-                ariaLabel="Trend resolution"
+                ariaLabel={copy.common.trendResolution}
                 value={trendResolution}
                 onChange={(value) => setTrendResolution(value as TrendResolution)}
                 options={RESOLUTION_OPTIONS.map((option) => ({
-                  label: option.charAt(0).toUpperCase() + option.slice(1),
+                  label: copy.options.resolutions[option],
                   value: option,
                 }))}
               />
             }
           >
             {visibleSubmissions.length ? (
-              <TrendChart points={trendPoints} />
+              <TrendChart points={trendPoints} copy={copy} />
             ) : (
               <EmptyState
                 icon={BarChart3}
-                title="No feedback in this range"
-                copy="Widen the date range or wait for new responses to start filling the dashboard."
+                title={copy.overview.noFeedbackTitle}
+                copy={copy.overview.noFeedbackCopy}
               />
             )}
           </Panel>
 
           <Panel
-            title="Operational watchlist"
-            description="The most important service and experience signals to review right now."
+            title={copy.overview.watchlistTitle}
+            description={copy.overview.watchlistCopy}
           >
             {watchlist.length ? (
               <div className={styles.alertList}>
@@ -1044,15 +1125,15 @@ export default function DashboardClient({
                       <strong>{item.title}</strong>
                       <p className={styles.drawerMeta}>{item.copy}</p>
                     </div>
-                    <TonePill tone={item.tone} />
+                    <TonePill tone={item.tone} lang={lang} />
                   </div>
                 ))}
               </div>
             ) : (
               <EmptyState
                 icon={CheckCircle2}
-                title="No urgent service issues"
-                copy="The current data window looks healthy. New risks will appear here as feedback changes."
+                title={copy.overview.watchlistEmptyTitle}
+                copy={copy.overview.watchlistEmptyCopy}
               />
             )}
           </Panel>
@@ -1060,8 +1141,8 @@ export default function DashboardClient({
 
         <div className={styles.twoColumnGrid}>
           <Panel
-            title="Recent feedback"
-            description="Latest customer responses with the fastest path into detailed review."
+            title={copy.overview.recentFeedbackTitle}
+            description={copy.overview.recentFeedbackCopy}
           >
             {allFeedbackRows.length ? (
               <div className={styles.latestList}>
@@ -1077,53 +1158,53 @@ export default function DashboardClient({
                   >
                     <div className={styles.latestRowHead}>
                       <div>
-                        <span>{formatDate(feedback.created_at)}</span>
+                        <span>{formatDateValue(feedback.created_at)}</span>
                         <div className={styles.latestRowLabel}>{feedback.lowestCategoryLabel}</div>
                       </div>
-                      <TonePill tone={feedback.tone} label={`${feedback.average_score}/5`} />
+                      <TonePill tone={feedback.tone} label={`${feedback.average_score}/5`} lang={lang} />
                     </div>
-                    <p>{excerpt(feedback.commentText, 110)}</p>
+                    <p>{feedback.hasComment ? excerpt(feedback.commentText, 110) : copy.common.noWrittenComment}</p>
                   </button>
                 ))}
               </div>
             ) : (
               <EmptyState
                 icon={MessageSquare}
-                title="No recent feedback yet"
-                copy="Once customers submit feedback, the latest responses will be surfaced here."
+                title={copy.overview.recentFeedbackEmptyTitle}
+                copy={copy.overview.recentFeedbackEmptyCopy}
               />
             )}
           </Panel>
 
           <Panel
-            title="Performance snapshot"
-            description="A concise summary of service health, category quality, and comment coverage."
+            title={copy.overview.performanceSnapshotTitle}
+            description={copy.overview.performanceSnapshotCopy}
           >
             <div className={styles.summaryList}>
               <div className={styles.summaryCell}>
-                <span>Strongest category</span>
+                <span>{copy.overview.strongestCategory}</span>
                 <strong>
                   {strongestCategory
                     ? `${strongestCategory.label} (${strongestCategory.averageScore}/5)`
-                    : 'No category data yet'}
+                    : copy.overview.noCategoryData}
                 </strong>
               </div>
               <div className={styles.summaryCell}>
-                <span>Weakest category</span>
+                <span>{copy.overview.weakestCategory}</span>
                 <strong>
                   {weakestCategory
                     ? `${weakestCategory.label} (${weakestCategory.averageScore}/5)`
-                    : 'No category data yet'}
+                    : copy.overview.noCategoryData}
                 </strong>
               </div>
               <div className={styles.summaryCell}>
-                <span>Comment coverage</span>
-                <strong>{percent(summary.commentCoverage)}</strong>
+                <span>{copy.overview.commentCoverage}</span>
+                <strong>{percentValue(summary.commentCoverage)}</strong>
               </div>
               <div className={styles.summaryCell}>
-                <span>Feedback mix</span>
+                <span>{copy.overview.feedbackMix}</span>
                 <strong>
-                  {positiveCount} positive - {neutralCount} neutral - {negativeCount} attention
+                  {positiveCount} {copy.common.positive} - {neutralCount} {copy.common.neutral} - {negativeCount} {copy.common.attention}
                 </strong>
               </div>
             </div>
@@ -1138,41 +1219,41 @@ export default function DashboardClient({
       <div className={styles.sectionStack}>
         <div className={styles.twoColumnGrid}>
           <Panel
-            title="Ratings trend"
-            description="Track response volume and average score over time by day, week, or month."
+            title={copy.analytics.ratingsTrendTitle}
+            description={copy.analytics.ratingsTrendCopy}
             action={
               <SegmentedControl
-                ariaLabel="Analytics trend resolution"
+                ariaLabel={copy.common.analyticsTrendResolution}
                 value={trendResolution}
                 onChange={(value) => setTrendResolution(value as TrendResolution)}
                 options={RESOLUTION_OPTIONS.map((option) => ({
-                  label: option.charAt(0).toUpperCase() + option.slice(1),
+                  label: copy.options.resolutions[option],
                   value: option,
                 }))}
               />
             }
           >
             {visibleSubmissions.length ? (
-              <TrendChart points={trendPoints} />
+              <TrendChart points={trendPoints} copy={copy} />
             ) : (
               <EmptyState
                 icon={BarChart3}
-                title="Trend analytics need fresh data"
-                copy="There is not enough feedback in the selected window to build a reliable trend."
+                title={copy.analytics.trendEmptyTitle}
+                copy={copy.analytics.trendEmptyCopy}
               />
             )}
           </Panel>
 
           <Panel
-            title="Ratings distribution"
-            description="A score-by-score breakdown of the overall rating experience."
+            title={copy.analytics.ratingsDistributionTitle}
+            description={copy.analytics.ratingsDistributionCopy}
           >
             {visibleSubmissions.length ? (
               <div className={styles.sectionStack}>
-                <DistributionChart distribution={distribution} total={visibleSubmissions.length} />
+                <DistributionChart distribution={distribution} total={visibleSubmissions.length} copy={copy} locale={locale} />
 
                 <div className={styles.mixCard}>
-                  <div className={styles.mixBar} aria-label="Feedback sentiment mix">
+                  <div className={styles.mixBar} aria-label={copy.analytics.sentimentMixAria}>
                     <span
                       className={cn(styles.mixSegment, styles.mixPositive)}
                       style={{ width: `${visibleSubmissions.length ? (positiveCount / visibleSubmissions.length) * 100 : 0}%` }}
@@ -1190,17 +1271,17 @@ export default function DashboardClient({
                   <div className={styles.mixLegend}>
                     <div className={styles.mixLegendRow}>
                       <span className={cn(styles.legendSwatch, styles.mixPositive)} />
-                      <span>Positive</span>
+                      <span>{copy.common.positive}</span>
                       <strong>{positiveCount}</strong>
                     </div>
                     <div className={styles.mixLegendRow}>
                       <span className={cn(styles.legendSwatch, styles.mixNeutral)} />
-                      <span>Neutral</span>
+                      <span>{copy.common.neutral}</span>
                       <strong>{neutralCount}</strong>
                     </div>
                     <div className={styles.mixLegendRow}>
                       <span className={cn(styles.legendSwatch, styles.mixNegative)} />
-                      <span>Attention</span>
+                      <span>{copy.common.attention}</span>
                       <strong>{negativeCount}</strong>
                     </div>
                   </div>
@@ -1209,16 +1290,16 @@ export default function DashboardClient({
             ) : (
               <EmptyState
                 icon={Star}
-                title="Distribution unavailable"
-                copy="Score distribution becomes useful once the selected date range contains real feedback."
+                title={copy.analytics.distributionEmptyTitle}
+                copy={copy.analytics.distributionEmptyCopy}
               />
             )}
           </Panel>
         </div>
 
         <Panel
-          title="Question performance"
-          description="Question-by-question scoring to pinpoint what customers value and where service slips."
+          title={copy.analytics.questionPerformanceTitle}
+          description={copy.analytics.questionPerformanceCopy}
         >
           {categoryInsights.some((item) => item.responses > 0) ? (
             <div className={styles.categoryList}>
@@ -1227,9 +1308,11 @@ export default function DashboardClient({
                   <div className={styles.categoryCopy}>
                     <div className={styles.categoryTitleRow}>
                       <strong>{item.label}</strong>
-                      <TonePill tone={item.tone} label={`${item.averageScore || 0}/5`} />
+                      <TonePill tone={item.tone} label={`${item.averageScore || 0}/5`} lang={lang} />
                     </div>
-                    <p>{item.responses} responses - {percent(item.lowScoreRate)} low-score share</p>
+                    <p>
+                      {item.responses} {pluralize(item.responses, copy.common.responseSingular, copy.common.responsePlural)} - {percentValue(item.lowScoreRate)} {copy.common.lowScoreShare}
+                    </p>
                   </div>
                   <span className={styles.scoreTrack}>
                     <span className={styles.scoreFill} style={{ width: `${(item.averageScore / 5) * 100}%` }} />
@@ -1240,16 +1323,16 @@ export default function DashboardClient({
           ) : (
             <EmptyState
               icon={ListChecks}
-              title="Question analytics need more data"
-              copy="Question-level insights will appear as soon as customers rate the live form questions."
+              title={copy.analytics.questionEmptyTitle}
+              copy={copy.analytics.questionEmptyCopy}
             />
           )}
         </Panel>
 
         <div className={styles.twoColumnGrid}>
           <Panel
-            title="Recurring issues"
-            description="Weak categories that are showing up often enough to deserve operational action."
+            title={copy.analytics.recurringIssuesTitle}
+            description={copy.analytics.recurringIssuesCopy}
           >
             {recurringIssues.length ? (
               <div className={styles.issueList}>
@@ -1257,7 +1340,9 @@ export default function DashboardClient({
                   <div key={issue.id} className={styles.issueRow}>
                     <div>
                       <strong>{issue.label}</strong>
-                      <p>{issue.responses} responses - {percent(issue.lowScoreRate)} low-score share</p>
+                      <p>
+                        {issue.responses} {pluralize(issue.responses, copy.common.responseSingular, copy.common.responsePlural)} - {percentValue(issue.lowScoreRate)} {copy.common.lowScoreShare}
+                      </p>
                     </div>
                     <span className={cn(styles.issueScore, statusClassName(issue.tone))}>
                       {issue.averageScore}/5
@@ -1268,32 +1353,32 @@ export default function DashboardClient({
             ) : (
               <EmptyState
                 icon={CheckCircle2}
-                title="No recurring issue pattern"
-                copy="As soon as a question becomes a consistent problem, it will be highlighted here."
+                title={copy.analytics.recurringIssuesEmptyTitle}
+                copy={copy.analytics.recurringIssuesEmptyCopy}
               />
             )}
           </Panel>
 
           <Panel
-            title="Executive summary"
-            description="A compact view for weekly reporting and stakeholder check-ins."
+            title={copy.analytics.executiveSummaryTitle}
+            description={copy.analytics.executiveSummaryCopy}
           >
             <div className={styles.summaryList}>
               <div className={styles.summaryCell}>
-                <span>Average rating</span>
+                <span>{copy.analytics.averageRating}</span>
                 <strong>{summary.averageScore || 0}/5</strong>
               </div>
               <div className={styles.summaryCell}>
-                <span>Feedback count</span>
+                <span>{copy.analytics.feedbackCount}</span>
                 <strong>{summary.totalFeedback}</strong>
               </div>
               <div className={styles.summaryCell}>
-                <span>Satisfaction rate</span>
-                <strong>{percent(summary.satisfactionRate)}</strong>
+                <span>{copy.analytics.satisfactionRate}</span>
+                <strong>{percentValue(summary.satisfactionRate)}</strong>
               </div>
               <div className={styles.summaryCell}>
-                <span>Current window</span>
-                <strong>Last {selectedRange} days</strong>
+                <span>{copy.analytics.currentWindow}</span>
+                <strong>{copy.common.lastDaysPrefix} {selectedRange} {copy.common.lastDaysSuffix}</strong>
               </div>
             </div>
           </Panel>
@@ -1306,9 +1391,13 @@ export default function DashboardClient({
     return (
       <div className={styles.sectionStack}>
         <Panel
-          title="Feedback list"
-          description="Search comments, sort by score or date, and open full submission details in a side drawer."
-          action={<span className={styles.feedbackCount}>{feedbackRows.length} result{feedbackRows.length === 1 ? '' : 's'}</span>}
+          title={copy.feedback.title}
+          description={copy.feedback.copy}
+          action={
+            <span className={styles.feedbackCount}>
+              {feedbackRows.length} {pluralize(feedbackRows.length, copy.common.resultSingular, copy.common.resultPlural)}
+            </span>
+          }
         >
           <div className={styles.feedbackControls}>
             <label className={styles.searchField}>
@@ -1316,8 +1405,8 @@ export default function DashboardClient({
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search comments or question names"
-                aria-label="Search feedback"
+                placeholder={copy.common.searchPlaceholder}
+                aria-label={copy.common.searchFeedback}
               />
             </label>
 
@@ -1326,11 +1415,11 @@ export default function DashboardClient({
                 className={styles.select}
                 value={feedbackFilter}
                 onChange={(event) => setFeedbackFilter(event.target.value as FeedbackFilter)}
-                aria-label="Filter feedback"
+                aria-label={copy.common.filterFeedback}
               >
                 {FEEDBACK_FILTER_OPTIONS.map((option) => (
                   <option key={option} value={option}>
-                    {option.charAt(0).toUpperCase() + option.slice(1)}
+                    {copy.options.feedbackFilters[option]}
                   </option>
                 ))}
               </select>
@@ -1339,11 +1428,11 @@ export default function DashboardClient({
                 className={styles.select}
                 value={feedbackSort}
                 onChange={(event) => setFeedbackSort(event.target.value as FeedbackSort)}
-                aria-label="Sort feedback"
+                aria-label={copy.common.sortFeedback}
               >
                 {FEEDBACK_SORT_OPTIONS.map((option) => (
                   <option key={option} value={option}>
-                    Sort: {option.charAt(0).toUpperCase() + option.slice(1)}
+                    {copy.options.feedbackSorts[option]}
                   </option>
                 ))}
               </select>
@@ -1353,11 +1442,11 @@ export default function DashboardClient({
           {feedbackRows.length ? (
             <div className={styles.feedbackTable}>
               <div className={styles.feedbackHead}>
-                <span>Date</span>
-                <span>Score</span>
-                <span>Weakest area</span>
-                <span>Comment</span>
-                <span>Status</span>
+                <span>{copy.feedback.tableDate}</span>
+                <span>{copy.feedback.tableScore}</span>
+                <span>{copy.feedback.tableWeakestArea}</span>
+                <span>{copy.feedback.tableComment}</span>
+                <span>{copy.feedback.tableStatus}</span>
               </div>
 
               <div className={styles.feedbackBody}>
@@ -1369,22 +1458,29 @@ export default function DashboardClient({
                     onClick={() => setSelectedFeedbackId(feedback.id)}
                   >
                     <span className={styles.feedbackCell}>
-                      <strong>{formatDate(feedback.created_at)}</strong>
-                      <small>{formatRelativeDate(feedback.created_at)}</small>
+                      <strong>{formatDateValue(feedback.created_at)}</strong>
+                      <small>{formatRelativeValue(feedback.created_at)}</small>
                     </span>
                     <span className={styles.feedbackCell}>
                       <strong>{feedback.average_score}/5</strong>
-                      <small>{Object.keys(feedback.ratings || {}).length} rated areas</small>
+                      <small>
+                        {Object.keys(feedback.ratings || {}).length}{' '}
+                        {pluralize(
+                          Object.keys(feedback.ratings || {}).length,
+                          copy.common.ratedAreaSingular,
+                          copy.common.ratedAreaPlural
+                        )}
+                      </small>
                     </span>
                     <span className={styles.feedbackCell}>
                       <strong>{feedback.lowestCategoryLabel}</strong>
                       <small>{feedback.lowestCategoryScore}/5</small>
                     </span>
                     <span className={styles.feedbackCell}>
-                      <strong>{feedback.hasComment ? excerpt(feedback.commentText, 84) : 'No written comment'}</strong>
+                      <strong>{feedback.hasComment ? excerpt(feedback.commentText, 84) : copy.common.noWrittenComment}</strong>
                     </span>
                     <span className={styles.feedbackCell}>
-                      <TonePill tone={feedback.tone} />
+                      <TonePill tone={feedback.tone} lang={lang} />
                     </span>
                   </button>
                 ))}
@@ -1393,8 +1489,8 @@ export default function DashboardClient({
           ) : (
             <EmptyState
               icon={MessageSquare}
-              title="No feedback matches these filters"
-              copy="Try a wider date range or clear the active search, filter, and sort combination."
+              title={copy.feedback.emptyTitle}
+              copy={copy.feedback.emptyCopy}
             />
           )}
         </Panel>
@@ -1407,45 +1503,45 @@ export default function DashboardClient({
       <div className={styles.sectionStack}>
         <div className={styles.twoColumnGrid}>
           <Panel
-            title="Current location snapshot"
-            description="Today the workspace maps to a single business entity, so this panel acts as the live location overview."
+            title={copy.operations.currentLocationTitle}
+            description={copy.operations.currentLocationCopy}
           >
             <div className={styles.summaryList}>
               <div className={styles.summaryCell}>
-                <span>Location</span>
+                <span>{copy.operations.location}</span>
                 <strong>{businessState.name}</strong>
               </div>
               <div className={styles.summaryCell}>
-                <span>City</span>
+                <span>{copy.operations.city}</span>
                 <strong>{businessState.city}</strong>
               </div>
               <div className={styles.summaryCell}>
-                <span>Sector</span>
-                <strong>{sectorLabel(businessState.sector)}</strong>
+                <span>{copy.operations.sector}</span>
+                <strong>{sectorLabel(businessState.sector, lang)}</strong>
               </div>
               <div className={styles.summaryCell}>
-                <span>Latest feedback</span>
-                <strong>{allFeedbackRows[0] ? formatRelativeDate(allFeedbackRows[0].created_at) : 'No feedback yet'}</strong>
+                <span>{copy.operations.latestFeedback}</span>
+                <strong>{allFeedbackRows[0] ? formatRelativeValue(allFeedbackRows[0].created_at) : copy.operations.noFeedbackYet}</strong>
               </div>
             </div>
           </Panel>
 
           <Panel
-            title="Branches and locations"
-            description="Prepared for multi-location analytics, while staying honest about the current backend limits."
+            title={copy.operations.branchesTitle}
+            description={copy.operations.branchesCopy}
           >
             <EmptyState
               icon={Building2}
-              title="Branch comparison is not available yet"
-              copy="The backend currently stores a single business workspace without branch entities or per-location submission ownership. Once those models exist, this area can show top and worst-performing locations."
+              title={copy.operations.branchesEmptyTitle}
+              copy={copy.operations.branchesEmptyCopy}
             />
           </Panel>
         </div>
 
         <div className={styles.twoColumnGrid}>
           <Panel
-            title="Service insights"
-            description="Operational reading of the weakest categories, even before staff-level tracking exists."
+            title={copy.operations.serviceInsightsTitle}
+            description={copy.operations.serviceInsightsCopy}
           >
             {categoryInsights.some((item) => item.responses > 0) ? (
               <div className={styles.issueList}>
@@ -1456,7 +1552,9 @@ export default function DashboardClient({
                     <div key={item.id} className={styles.issueRow}>
                       <div>
                         <strong>{item.label}</strong>
-                        <p>{item.responses} responses - {percent(item.lowScoreRate)} low-score share</p>
+                        <p>
+                          {item.responses} {pluralize(item.responses, copy.common.responseSingular, copy.common.responsePlural)} - {percentValue(item.lowScoreRate)} {copy.common.lowScoreShare}
+                        </p>
                       </div>
                       <span className={cn(styles.issueScore, statusClassName(item.tone))}>
                         {item.averageScore}/5
@@ -1467,15 +1565,15 @@ export default function DashboardClient({
             ) : (
               <EmptyState
                 icon={Users}
-                title="Not enough operational signal"
-                copy="As more responses arrive, service issues and recurring weak spots will be easier to separate from noise."
+                title={copy.operations.serviceInsightsEmptyTitle}
+                copy={copy.operations.serviceInsightsEmptyCopy}
               />
             )}
           </Panel>
 
           <Panel
-            title="Operational checklist"
-            description="Action prompts for managers based on current product and data readiness."
+            title={copy.operations.checklistTitle}
+            description={copy.operations.checklistCopy}
           >
             <div className={styles.checklist}>
               <div className={styles.checklistRow}>
@@ -1483,11 +1581,11 @@ export default function DashboardClient({
                   <CheckCircle2 size={18} />
                 </div>
                 <div style={{ display: 'grid', gap: 6, flex: 1 }}>
-                  <strong>Review low-scoring feedback daily</strong>
+                  <strong>{copy.operations.checklistLowScoreTitle}</strong>
                   <p className={styles.drawerMeta}>
                     {summary.attentionCount
-                      ? `${summary.attentionCount} item${summary.attentionCount === 1 ? '' : 's'} still need attention in the selected window.`
-                      : 'No low-scoring submissions are currently surfacing in this reporting window.'}
+                      ? `${summary.attentionCount} ${pluralize(summary.attentionCount, copy.common.itemSingular, copy.common.itemPlural)} ${copy.common.needsAttention}.`
+                      : copy.operations.checklistLowScoreNone}
                   </p>
                 </div>
               </div>
@@ -1497,11 +1595,11 @@ export default function DashboardClient({
                   <ListChecks size={18} />
                 </div>
                 <div style={{ display: 'grid', gap: 6, flex: 1 }}>
-                  <strong>Keep the live form aligned with operations</strong>
+                  <strong>{copy.operations.checklistFormTitle}</strong>
                   <p className={styles.drawerMeta}>
                     {publishedQuestions.length
-                      ? `${publishedQuestions.length} live question${publishedQuestions.length === 1 ? '' : 's'} currently drive customer feedback collection.`
-                      : 'No live questions are configured yet.'}
+                      ? `${publishedQuestions.length} ${pluralize(publishedQuestions.length, copy.common.questionSingular, copy.common.questionPlural)}`
+                      : copy.operations.checklistFormNone}
                   </p>
                 </div>
               </div>
@@ -1511,11 +1609,11 @@ export default function DashboardClient({
                   <MessageSquare size={18} />
                 </div>
                 <div style={{ display: 'grid', gap: 6, flex: 1 }}>
-                  <strong>Improve written context from guests</strong>
+                  <strong>{copy.operations.checklistCommentTitle}</strong>
                   <p className={styles.drawerMeta}>
                     {summary.commentCoverage >= 0.3
-                      ? `Written feedback coverage is at ${percent(summary.commentCoverage)}, which gives better qualitative detail.`
-                      : `Written feedback coverage is only ${percent(summary.commentCoverage)}, so issue diagnosis still depends heavily on score patterns.`}
+                      ? `${percentValue(summary.commentCoverage)} ${copy.operations.checklistCommentGoodTail}`
+                      : `${percentValue(summary.commentCoverage)} ${copy.operations.checklistCommentLowTail}`}
                   </p>
                 </div>
               </div>
@@ -1525,10 +1623,8 @@ export default function DashboardClient({
                   <Building2 size={18} />
                 </div>
                 <div style={{ display: 'grid', gap: 6, flex: 1 }}>
-                  <strong>Prepare branch and staff dimensions</strong>
-                  <p className={styles.drawerMeta}>
-                    Multi-branch and staff performance views need backend tables for locations, staff members, and submission relationships.
-                  </p>
+                  <strong>{copy.operations.checklistDimensionsTitle}</strong>
+                  <p className={styles.drawerMeta}>{copy.operations.checklistDimensionsCopy}</p>
                 </div>
               </div>
             </div>
@@ -1539,249 +1635,442 @@ export default function DashboardClient({
   }
 
   function renderCollectionSection() {
+    const collectionSignals = [
+      {
+        id: 'live-form',
+        title: copy.collection.statusLiveForm,
+        status: collectionReady ? copy.common.ready : copy.common.notConfigured,
+        tone: collectionReady ? ('positive' as const) : ('negative' as const),
+        copy: collectionReady ? copy.collection.statusLiveFormReady : copy.collection.statusLiveFormMissing,
+        meta: `${publishedQuestions.length} ${pluralize(publishedQuestions.length, copy.common.questionSingular, copy.common.questionPlural)}`,
+      },
+      {
+        id: 'public-access',
+        title: copy.collection.statusPublicAccess,
+        status: collectionReady ? copy.common.ready : copy.common.needsAttention,
+        tone: collectionReady ? ('positive' as const) : ('neutral' as const),
+        copy: collectionReady ? copy.collection.statusPublicReady : copy.collection.statusPublicMissing,
+        meta: liveUrl,
+      },
+      {
+        id: 'qr',
+        title: copy.collection.statusQrAsset,
+        status: business.qr_generated ? copy.common.ready : copy.common.needsAttention,
+        tone: business.qr_generated ? ('positive' as const) : ('neutral' as const),
+        copy: business.qr_generated ? copy.collection.statusQrReady : copy.collection.statusQrMissing,
+        meta: business.qr_generated ? `${business.slug}-feedback-qr.png` : copy.common.notConfigured,
+      },
+      {
+        id: 'channels',
+        title: copy.collection.statusChannels,
+        status: businessState.google_review_url && logoPreview ? copy.common.ready : copy.common.needsAttention,
+        tone: businessState.google_review_url && logoPreview ? ('positive' as const) : ('neutral' as const),
+        copy:
+          businessState.google_review_url && logoPreview
+            ? copy.collection.statusChannelsReady
+            : copy.collection.statusChannelsMissing,
+        meta: businessState.google_review_url || copy.common.noData,
+      },
+    ]
+
+    const studioMetrics = [
+      {
+        id: 'live',
+        label: copy.collection.questionStudioMetricLive,
+        value: String(publishedQuestions.length),
+        note: `${publishedQuestions.length} ${pluralize(
+          publishedQuestions.length,
+          copy.common.questionSingular,
+          copy.common.questionPlural
+        )}`,
+      },
+      {
+        id: 'draft',
+        label: copy.collection.questionStudioMetricDraft,
+        value: questionChangesPending ? copy.common.needsAttention : copy.common.ready,
+        note: questionChangesPending ? copy.collection.questionStudioDraftPending : copy.collection.questionStudioDraftClean,
+      },
+      {
+        id: 'coverage',
+        label: copy.collection.questionStudioMetricCoverage,
+        value: draftQuestions.length ? `${coverageCount}/${draftQuestions.length}` : copy.common.noData,
+        note: coverageReady ? copy.collection.questionStudioCoverageReady : copy.collection.questionStudioCoveragePartial,
+      },
+      {
+        id: 'status',
+        label: copy.collection.questionStudioMetricStatus,
+        value: collectionReady ? copy.common.ready : copy.common.notConfigured,
+        note: collectionReady ? copy.collection.questionStudioStatusReady : copy.collection.questionStudioStatusBlocked,
+      },
+    ]
+
     return (
       <div className={styles.sectionStack}>
-        <div className={styles.twoColumnGrid}>
-          <Panel
-            title="Collection channels"
-            description="Everything needed to distribute the feedback form and monitor collection readiness."
-          >
-            <div className={styles.collectionStatusGrid}>
-              <div className={styles.collectionStatusCard}>
-                <strong>Live form</strong>
-                <p>{form ? 'Configured and ready to collect feedback.' : 'No feedback form is currently attached to this workspace.'}</p>
-              </div>
-              <div className={styles.collectionStatusCard}>
-                <strong>QR asset</strong>
-                <p>{business.qr_generated ? 'QR generation is enabled for this workspace.' : 'QR has not yet been marked as generated in the current data model.'}</p>
-              </div>
-              <div className={styles.collectionStatusCard}>
-                <strong>Google review link</strong>
-                <p>{businessState.google_review_url ? 'External review destination is configured.' : 'No Google review URL has been added yet.'}</p>
-              </div>
-              <div className={styles.collectionStatusCard}>
-                <strong>Branding</strong>
-                <p>{logoPreview ? 'Brand logo is present on the workspace.' : 'Add a logo to make collection assets feel production-ready.'}</p>
-              </div>
-            </div>
-          </Panel>
-
-          <Panel
-            title="Public form access"
-            description="Direct access to the live customer-facing feedback flow."
-          >
-            <div className={styles.collectionHero}>
-              <div className={styles.linkCard}>
-                <div className={styles.linkCardHead}>
-                  <strong>Live form URL</strong>
-                  <Link href={livePath} className={styles.secondaryButton} target="_blank" rel="noreferrer">
-                    Open
-                    <ExternalLink size={16} />
-                  </Link>
+        <Panel title={copy.collection.overviewTitle} description={copy.collection.overviewCopy}>
+          <div className={styles.collectionOverviewGrid}>
+            {collectionSignals.map((signal) => (
+              <article key={signal.id} className={styles.collectionSignalCard}>
+                <div className={styles.collectionSignalHeader}>
+                  <div>
+                    <span className={styles.questionIndex}>{signal.title}</span>
+                    <strong className={styles.collectionSignalTitle}>{signal.status}</strong>
+                  </div>
+                  <TonePill tone={signal.tone} label={signal.status} lang={lang} />
                 </div>
-                <span>{liveUrl}</span>
-              </div>
+                <p>{signal.copy}</p>
+                <span className={styles.collectionSignalMeta}>{signal.meta}</span>
+              </article>
+            ))}
+          </div>
+        </Panel>
 
+        <Panel title={copy.collection.distributionTitle} description={copy.collection.distributionCopy}>
+          <div className={styles.collectionChannelGrid}>
+            <article className={styles.collectionChannelCard}>
+              <div className={styles.channelCardHead}>
+                <div>
+                  <span className={styles.questionIndex}>{copy.collection.liveUrlTitle}</span>
+                  <strong className={styles.collectionSignalTitle}>{liveUrl}</strong>
+                </div>
+                <Link href={livePath} className={styles.secondaryButton} target="_blank" rel="noreferrer">
+                  {copy.common.open}
+                  <ExternalLink size={16} />
+                </Link>
+              </div>
+              <p>{copy.collection.liveUrlCopy}</p>
+              <span className={styles.channelHint}>{copy.collection.liveUrlHint}</span>
               <div className={styles.actionRow}>
                 <button type="button" className={styles.primaryButton} onClick={copyLiveFormLink}>
-                  {copyState === 'copied' ? 'Copied link' : copyState === 'error' ? 'Copy failed' : 'Copy form link'}
+                  {copyState === 'copied' ? copy.common.copiedLink : copyState === 'error' ? copy.common.copyFailed : copy.common.copyFormLink}
                   <Copy size={16} />
+                </button>
+              </div>
+            </article>
+
+            <article className={styles.collectionChannelCard}>
+              <div className={styles.channelCardHead}>
+                <div>
+                  <span className={styles.questionIndex}>{copy.collection.reviewLinkTitle}</span>
+                  <strong className={styles.collectionSignalTitle}>
+                    {businessState.google_review_url || copy.common.notConfigured}
+                  </strong>
+                </div>
+                {businessState.google_review_url ? (
+                  <Link href={businessState.google_review_url} className={styles.secondaryButton} target="_blank" rel="noreferrer">
+                    {copy.collection.openDestination}
+                    <ExternalLink size={16} />
+                  </Link>
+                ) : null}
+              </div>
+              <p>{businessState.google_review_url ? copy.collection.reviewLinkCopy : copy.collection.reviewLinkMissing}</p>
+              <span className={styles.channelHint}>{copy.collection.reviewLinkHint}</span>
+            </article>
+
+            <article className={styles.collectionChannelCard}>
+              <div className={styles.channelCardHead}>
+                <div>
+                  <span className={styles.questionIndex}>{copy.collection.qrTitle}</span>
+                  <strong className={styles.collectionSignalTitle}>{copy.common.qrAvailability}</strong>
+                </div>
+                <TonePill tone={business.qr_generated ? 'positive' : 'neutral'} label={business.qr_generated ? copy.common.ready : copy.common.needsAttention} lang={lang} />
+              </div>
+              <p>{copy.collection.qrCopy}</p>
+              <div className={styles.qrCardPreview} style={{ backgroundImage: `url("${qrUrl}")` }} />
+              <span className={styles.channelHint}>{copy.collection.qrHint}</span>
+              <div className={styles.actionRow}>
+                <button type="button" className={styles.secondaryButton} onClick={refreshQrAsset}>
+                  {isRefreshingQr ? <LoaderCircle size={16} className={styles.spin} /> : <QrCode size={16} />}
+                  {copy.common.refreshPreview}
+                </button>
+                <button type="button" className={styles.primaryButton} onClick={downloadQrAsset}>
+                  {copy.common.downloadPng}
+                  <Download size={16} />
+                </button>
+              </div>
+            </article>
+          </div>
+        </Panel>
+
+        <Panel
+          title={copy.collection.questionStudioTitle}
+          description={copy.collection.questionStudioCopy}
+          action={
+            <button
+              type="button"
+              className={styles.primaryButton}
+              onClick={publishQuestions}
+              disabled={!form || isPublishingQuestions || !questionChangesPending}
+            >
+              {isPublishingQuestions ? <LoaderCircle size={16} className={styles.spin} /> : <Save size={16} />}
+              {copy.common.publishChanges}
+            </button>
+          }
+        >
+          {questionNotice ? (
+            <div className={cn(styles.notice, questionNotice.tone === 'success' ? styles.noticeSuccess : styles.noticeError)}>
+              {questionNotice.text}
+            </div>
+          ) : null}
+
+          <div className={styles.questionStudio}>
+            <div className={styles.questionStudioMetrics}>
+              {studioMetrics.map((metric) => (
+                <div key={metric.id} className={styles.questionStudioMetric}>
+                  <span>{metric.label}</span>
+                  <strong>{metric.value}</strong>
+                  <p>{metric.note}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className={styles.questionStudioGrid}>
+              <div className={styles.questionStack}>
+                <div className={styles.collectionSignalCard}>
+                  <span className={styles.questionIndex}>{copy.collection.questionStudioListTitle}</span>
+                  <strong className={styles.collectionSignalTitle}>{copy.collection.questionStudioListCopy}</strong>
+                </div>
+
+                {draftQuestions.length ? (
+                  <div className={styles.questionList}>
+                    {draftQuestions.map((question, index) => (
+                      <article key={`${question.id}-${index}`} className={styles.questionCard}>
+                        <div className={styles.questionCardHead}>
+                          <div>
+                            <span className={styles.questionIndex}>{questionPositionLabel(index, copy.common)}</span>
+                            <strong>{questionLabel(question, lang)}</strong>
+                          </div>
+
+                          <div className={styles.iconButtonRow}>
+                            <button
+                              type="button"
+                              className={styles.iconButton}
+                              onClick={() => moveQuestion(index, 'up')}
+                              disabled={index === 0}
+                              aria-label={questionMoveLabel(index, copy.common, lang, 'up')}
+                            >
+                              <ArrowUp size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.iconButton}
+                              onClick={() => moveQuestion(index, 'down')}
+                              disabled={index === draftQuestions.length - 1}
+                              aria-label={questionMoveLabel(index, copy.common, lang, 'down')}
+                            >
+                              <ArrowDown size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.iconButton}
+                              onClick={() => removeQuestion(index)}
+                              aria-label={questionPositionLabel(index, copy.common)}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className={styles.questionFieldGrid}>
+                          <label className={styles.field}>
+                            <span>{copy.common.frenchLabel}</span>
+                            <input
+                              className={styles.input}
+                              value={question.label_fr}
+                              onChange={(event) => updateQuestionField(index, 'label_fr', event.target.value)}
+                            />
+                          </label>
+
+                          <label className={styles.field}>
+                            <span>{copy.common.arabicLabel}</span>
+                            <input
+                              className={styles.input}
+                              value={question.label_ar}
+                              onChange={(event) => updateQuestionField(index, 'label_ar', event.target.value)}
+                            />
+                          </label>
+
+                          <label className={styles.field}>
+                            <span>{copy.common.englishLabel}</span>
+                            <input
+                              className={styles.input}
+                              value={question.label_en || ''}
+                              onChange={(event) => updateQuestionField(index, 'label_en', event.target.value)}
+                            />
+                          </label>
+
+                          <label className={styles.field}>
+                            <span>{copy.common.spanishLabel}</span>
+                            <input
+                              className={styles.input}
+                              value={question.label_es || ''}
+                              onChange={(event) => updateQuestionField(index, 'label_es', event.target.value)}
+                            />
+                          </label>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState
+                    icon={ListChecks}
+                    title={copy.collection.questionEmptyTitle}
+                    copy={copy.collection.questionEmptyCopy}
+                  />
+                )}
+              </div>
+
+              <aside className={styles.questionStudioSidebar}>
+                <div className={styles.questionComposerPanel}>
+                  <div className={styles.questionCardHead}>
+                    <div>
+                      <span className={styles.questionIndex}>{copy.common.newQuestion}</span>
+                      <strong>{copy.collection.questionStudioComposerTitle}</strong>
+                    </div>
+
+                    <button type="button" className={styles.secondaryButton} onClick={addQuestion}>
+                      {copy.common.addQuestion}
+                      <Plus size={16} />
+                    </button>
+                  </div>
+
+                  <p className={styles.channelHint}>{copy.collection.questionStudioComposerCopy}</p>
+
+                  <div className={styles.questionFieldGrid}>
+                    <label className={styles.field}>
+                      <span>{copy.common.frenchLabel}</span>
+                      <input
+                        className={styles.input}
+                        value={newQuestion.label_fr}
+                        onChange={(event) => setNewQuestion((current) => ({ ...current, label_fr: event.target.value }))}
+                      />
+                    </label>
+
+                    <label className={styles.field}>
+                      <span>{copy.common.arabicLabel}</span>
+                      <input
+                        className={styles.input}
+                        value={newQuestion.label_ar}
+                        onChange={(event) => setNewQuestion((current) => ({ ...current, label_ar: event.target.value }))}
+                      />
+                    </label>
+
+                    <label className={styles.field}>
+                      <span>{copy.common.englishLabel}</span>
+                      <input
+                        className={styles.input}
+                        value={newQuestion.label_en}
+                        onChange={(event) => setNewQuestion((current) => ({ ...current, label_en: event.target.value }))}
+                      />
+                    </label>
+
+                    <label className={styles.field}>
+                      <span>{copy.common.spanishLabel}</span>
+                      <input
+                        className={styles.input}
+                        value={newQuestion.label_es}
+                        onChange={(event) => setNewQuestion((current) => ({ ...current, label_es: event.target.value }))}
+                      />
+                    </label>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </Panel>
+
+        <Panel title={copy.collection.brandingTitle} description={copy.collection.brandingCopy}>
+          {settingsNotice ? (
+            <div className={cn(styles.notice, settingsNotice.tone === 'success' ? styles.noticeSuccess : styles.noticeError)}>
+              {settingsNotice.text}
+            </div>
+          ) : null}
+
+          <div className={styles.brandGrid}>
+            <div className={styles.brandIdentityPanel}>
+              <div className={styles.questionCardHead}>
+                <div>
+                  <span className={styles.questionIndex}>{copy.collection.brandIdentityTitle}</span>
+                  <strong>{businessState.name}</strong>
+                </div>
+                <TonePill tone={logoPreview ? 'positive' : 'neutral'} label={logoPreview ? copy.common.logoUploaded : copy.common.noLogoYet} lang={lang} />
+              </div>
+
+              <div className={styles.workspaceCard}>
+                <div
+                  className={styles.brandPreview}
+                  style={logoPreview ? { backgroundImage: `url("${logoPreview}")` } : undefined}
+                >
+                  {!logoPreview ? businessState.name.slice(0, 2).toUpperCase() : null}
+                </div>
+
+                <div className={styles.workspaceCopy}>
+                  <strong>{businessState.name}</strong>
+                  <span>{sectorLabel(businessState.sector, lang)} - {businessState.city}</span>
+                </div>
+
+                <div className={styles.actionRow}>
+                  <label className={styles.secondaryButton}>
+                    {isUploadingLogo ? <LoaderCircle size={16} className={styles.spin} /> : <ImageUp size={16} />}
+                    {logoPreview ? copy.common.replaceLogo : copy.common.uploadLogo}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <span className={styles.channelHint}>{copy.collection.logoHint}</span>
+            </div>
+
+            <div className={styles.channelConfigPanel}>
+              <div className={styles.questionCardHead}>
+                <div>
+                  <span className={styles.questionIndex}>{copy.collection.channelConfigTitle}</span>
+                  <strong>{copy.collection.channelConfigCopy}</strong>
+                </div>
+                <TonePill
+                  tone={businessState.google_review_url ? 'positive' : 'neutral'}
+                  label={businessState.google_review_url ? copy.common.ready : copy.common.notConfigured}
+                  lang={lang}
+                />
+              </div>
+
+              <label className={styles.field}>
+                <span>{copy.collection.destinationLabel}</span>
+                <input
+                  className={styles.input}
+                  value={businessState.google_review_url || ''}
+                  onChange={(event) =>
+                    setBusinessState((current) => ({
+                      ...current,
+                      google_review_url: event.target.value,
+                    }))
+                  }
+                  placeholder={copy.collection.destinationPlaceholder}
+                />
+              </label>
+
+              <span className={styles.channelHint}>{copy.collection.destinationHint}</span>
+
+              <div className={styles.actionRow}>
+                <button type="button" className={styles.primaryButton} onClick={saveSettings} disabled={isSavingSettings}>
+                  {isSavingSettings ? <LoaderCircle size={16} className={styles.spin} /> : <Save size={16} />}
+                  {copy.common.saveChanges}
                 </button>
 
                 {businessState.google_review_url ? (
                   <Link href={businessState.google_review_url} className={styles.secondaryButton} target="_blank" rel="noreferrer">
-                    Google reviews
+                    {copy.collection.openDestination}
                     <ExternalLink size={16} />
                   </Link>
                 ) : null}
               </div>
             </div>
-          </Panel>
-        </div>
-
-        <div className={styles.twoColumnGrid}>
-          <Panel
-            title="QR asset"
-            description="Download or refresh a high-resolution QR code that points directly to the live feedback form."
-          >
-            <div className={styles.qrStudio}>
-              <div className={styles.qrPreview} style={{ backgroundImage: `url("${qrUrl}")` }} />
-
-              <div className={styles.actionRow}>
-                <button type="button" className={styles.secondaryButton} onClick={refreshQrAsset}>
-                  {isRefreshingQr ? <LoaderCircle size={16} className={styles.spin} /> : <QrCode size={16} />}
-                  Refresh preview
-                </button>
-                <button type="button" className={styles.primaryButton} onClick={downloadQrAsset}>
-                  Download PNG
-                  <Download size={16} />
-                </button>
-              </div>
-            </div>
-          </Panel>
-
-          <Panel
-            title="Live question set"
-            description="Edit the customer feedback form without leaving the dashboard."
-            action={
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={publishQuestions}
-                disabled={!form || isPublishingQuestions || !questionChangesPending}
-              >
-                {isPublishingQuestions ? <LoaderCircle size={16} className={styles.spin} /> : <Save size={16} />}
-                Publish changes
-              </button>
-            }
-          >
-            {questionNotice ? (
-              <div className={cn(styles.notice, questionNotice.tone === 'success' ? styles.noticeSuccess : styles.noticeError)}>
-                {questionNotice.text}
-              </div>
-            ) : null}
-
-            {draftQuestions.length ? (
-              <div className={styles.questionList}>
-                {draftQuestions.map((question, index) => (
-                  <article key={`${question.id}-${index}`} className={styles.questionCard}>
-                    <div className={styles.questionCardHead}>
-                      <div>
-                        <span className={styles.questionIndex}>Question {String(index + 1).padStart(2, '0')}</span>
-                        <strong>{questionLabel(question)}</strong>
-                      </div>
-
-                      <div className={styles.iconButtonRow}>
-                        <button
-                          type="button"
-                          className={styles.iconButton}
-                          onClick={() => moveQuestion(index, 'up')}
-                          disabled={index === 0}
-                          aria-label={`Move question ${index + 1} up`}
-                        >
-                          <ArrowUp size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.iconButton}
-                          onClick={() => moveQuestion(index, 'down')}
-                          disabled={index === draftQuestions.length - 1}
-                          aria-label={`Move question ${index + 1} down`}
-                        >
-                          <ArrowDown size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.iconButton}
-                          onClick={() => removeQuestion(index)}
-                          aria-label={`Remove question ${index + 1}`}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className={styles.questionFieldGrid}>
-                      <label className={styles.field}>
-                        <span>French label</span>
-                        <input
-                          className={styles.input}
-                          value={question.label_fr}
-                          onChange={(event) => updateQuestionField(index, 'label_fr', event.target.value)}
-                        />
-                      </label>
-
-                      <label className={styles.field}>
-                        <span>Arabic label</span>
-                        <input
-                          className={styles.input}
-                          value={question.label_ar}
-                          onChange={(event) => updateQuestionField(index, 'label_ar', event.target.value)}
-                        />
-                      </label>
-
-                      <label className={styles.field}>
-                        <span>English label</span>
-                        <input
-                          className={styles.input}
-                          value={question.label_en || ''}
-                          onChange={(event) => updateQuestionField(index, 'label_en', event.target.value)}
-                        />
-                      </label>
-
-                      <label className={styles.field}>
-                        <span>Spanish label</span>
-                        <input
-                          className={styles.input}
-                          value={question.label_es || ''}
-                          onChange={(event) => updateQuestionField(index, 'label_es', event.target.value)}
-                        />
-                      </label>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon={ListChecks}
-                title="No questions configured"
-                copy="Create the first question below to start collecting structured customer feedback."
-              />
-            )}
-
-            <div className={styles.questionComposer}>
-              <div className={styles.questionCardHead}>
-                <div>
-                  <span className={styles.questionIndex}>New question</span>
-                  <strong>Add a new question to the draft form</strong>
-                </div>
-
-                <button type="button" className={styles.secondaryButton} onClick={addQuestion}>
-                  Add question
-                  <Plus size={16} />
-                </button>
-              </div>
-
-              <div className={styles.questionFieldGrid}>
-                <label className={styles.field}>
-                  <span>French label</span>
-                  <input
-                    className={styles.input}
-                    value={newQuestion.label_fr}
-                    onChange={(event) => setNewQuestion((current) => ({ ...current, label_fr: event.target.value }))}
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Arabic label</span>
-                  <input
-                    className={styles.input}
-                    value={newQuestion.label_ar}
-                    onChange={(event) => setNewQuestion((current) => ({ ...current, label_ar: event.target.value }))}
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>English label</span>
-                  <input
-                    className={styles.input}
-                    value={newQuestion.label_en}
-                    onChange={(event) => setNewQuestion((current) => ({ ...current, label_en: event.target.value }))}
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Spanish label</span>
-                  <input
-                    className={styles.input}
-                    value={newQuestion.label_es}
-                    onChange={(event) => setNewQuestion((current) => ({ ...current, label_es: event.target.value }))}
-                  />
-                </label>
-              </div>
-            </div>
-          </Panel>
-        </div>
+          </div>
+        </Panel>
       </div>
     )
   }
@@ -1791,12 +2080,12 @@ export default function DashboardClient({
       <div className={styles.sectionStack}>
         <div className={styles.twoColumnGrid}>
           <Panel
-            title="Business settings"
-            description="Core workspace details used across the feedback experience."
+            title={copy.settings.businessTitle}
+            description={copy.settings.businessCopy}
             action={
               <button type="button" className={styles.primaryButton} onClick={saveSettings} disabled={isSavingSettings}>
                 {isSavingSettings ? <LoaderCircle size={16} className={styles.spin} /> : <Save size={16} />}
-                Save settings
+                {copy.common.save}
               </button>
             }
           >
@@ -1808,7 +2097,7 @@ export default function DashboardClient({
 
             <div className={styles.formGrid}>
               <label className={styles.field}>
-                <span>Business name</span>
+                <span>{copy.settings.businessName}</span>
                 <input
                   className={styles.input}
                   value={businessState.name}
@@ -1822,7 +2111,7 @@ export default function DashboardClient({
               </label>
 
               <label className={styles.field}>
-                <span>Plan</span>
+                <span>{copy.settings.plan}</span>
                 <select
                   className={styles.select}
                   value={businessState.plan}
@@ -1833,15 +2122,15 @@ export default function DashboardClient({
                     }))
                   }
                 >
-                  <option value="trial">Trial</option>
-                  <option value="starter">Starter</option>
-                  <option value="pro">Pro</option>
-                  <option value="business">Business</option>
+                  <option value="trial">{planLabel('trial', lang)}</option>
+                  <option value="starter">{planLabel('starter', lang)}</option>
+                  <option value="pro">{planLabel('pro', lang)}</option>
+                  <option value="business">{planLabel('business', lang)}</option>
                 </select>
               </label>
 
               <label className={styles.field}>
-                <span>Google review URL</span>
+                <span>{copy.settings.googleReviewUrl}</span>
                 <input
                   className={styles.input}
                   value={businessState.google_review_url || ''}
@@ -1851,30 +2140,30 @@ export default function DashboardClient({
                       google_review_url: event.target.value,
                     }))
                   }
-                  placeholder="https://..."
+                  placeholder={copy.collection.destinationPlaceholder}
                 />
               </label>
 
               <div className={styles.readOnlyBlock}>
-                <span>Plan status</span>
-                <strong>{businessState.plan_status.replace(/[_-]+/g, ' ')}</strong>
+                <span>{copy.settings.planStatus}</span>
+                <strong>{copy.options.planStatuses[businessState.plan_status as keyof typeof copy.options.planStatuses] || businessState.plan_status.replace(/[_-]+/g, ' ')}</strong>
               </div>
 
               <div className={styles.readOnlyBlock}>
-                <span>City</span>
+                <span>{copy.operations.city}</span>
                 <strong>{businessState.city}</strong>
               </div>
 
               <div className={styles.readOnlyBlock}>
-                <span>Sector</span>
-                <strong>{sectorLabel(businessState.sector)}</strong>
+                <span>{copy.operations.sector}</span>
+                <strong>{sectorLabel(businessState.sector, lang)}</strong>
               </div>
             </div>
           </Panel>
 
           <Panel
-            title="Branding and workspace"
-            description="Keep the admin workspace polished and aligned with the business brand."
+            title={copy.settings.brandingTitle}
+            description={copy.settings.brandingCopy}
           >
             <div className={styles.brandingCard}>
               <div className={styles.workspaceCard}>
@@ -1887,18 +2176,18 @@ export default function DashboardClient({
 
                 <div className={styles.workspaceCopy}>
                   <strong>{businessState.name}</strong>
-                  <span>{sectorLabel(businessState.sector)} - {businessState.city}</span>
+                  <span>{sectorLabel(businessState.sector, lang)} - {businessState.city}</span>
                 </div>
 
                 <div className={styles.workspaceMeta}>
-                  <span>{planLabel(businessState.plan)}</span>
-                  <span>{logoPreview ? 'Logo uploaded' : 'No logo yet'}</span>
+                  <span>{planLabel(businessState.plan, lang)}</span>
+                  <span>{logoPreview ? copy.common.logoUploaded : copy.common.noLogoYet}</span>
                 </div>
 
                 <div className={styles.actionRow}>
                   <label className={styles.secondaryButton}>
                     {isUploadingLogo ? <LoaderCircle size={16} className={styles.spin} /> : <ImageUp size={16} />}
-                    {logoPreview ? 'Replace logo' : 'Upload logo'}
+                    {logoPreview ? copy.common.replaceLogo : copy.common.uploadLogo}
                     <input
                       type="file"
                       accept="image/*"
@@ -1911,18 +2200,18 @@ export default function DashboardClient({
 
               <div className={styles.sessionCard}>
                 <div className={styles.sessionMeta}>
-                  <strong>Workspace owner</strong>
-                  <span>{userEmail || 'Signed in user'}</span>
+                  <strong>{copy.settings.workspaceOwner}</strong>
+                  <span>{userEmail || copy.common.signedInUser}</span>
                 </div>
 
                 <div className={styles.sessionMeta}>
-                  <strong>Plan guidance</strong>
+                  <strong>{copy.settings.planGuidance}</strong>
                   <span>{planCopy}</span>
                 </div>
 
                 <button type="button" className={styles.ghostButton} onClick={logout} disabled={isLoggingOut}>
                   {isLoggingOut ? <LoaderCircle size={16} className={styles.spin} /> : <LogOut size={16} />}
-                  Sign out
+                  {copy.common.signOut}
                 </button>
               </div>
             </div>
@@ -1947,7 +2236,7 @@ export default function DashboardClient({
         type="button"
         className={cn(styles.sidebarBackdrop, mobileNavOpen && styles.sidebarBackdropOpen)}
         onClick={() => setMobileNavOpen(false)}
-        aria-label="Close navigation"
+        aria-label={copy.common.closeNavigation}
       />
 
       <aside className={cn(styles.sidebar, mobileNavOpen && styles.sidebarOpen)}>
@@ -1956,7 +2245,7 @@ export default function DashboardClient({
             <span className={styles.brandMark}>FP</span>
             <span className={styles.brandCopy}>
               <strong>FeedbackPro</strong>
-              <span>Customer feedback workspace</span>
+              <span>{copy.common.brandTagline}</span>
             </span>
           </Link>
 
@@ -1965,7 +2254,7 @@ export default function DashboardClient({
               type="button"
               className={cn(styles.iconButton, styles.sidebarCollapseButton)}
               onClick={toggleSidebarCollapsed}
-              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-label={sidebarCollapsed ? copy.common.expandSidebar : copy.common.collapseSidebar}
             >
               {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
             </button>
@@ -1974,7 +2263,7 @@ export default function DashboardClient({
               type="button"
               className={cn(styles.iconButton, styles.sidebarCloseButton)}
               onClick={() => setMobileNavOpen(false)}
-              aria-label="Close navigation"
+              aria-label={copy.common.closeNavigation}
             >
               <X size={16} />
             </button>
@@ -1991,17 +2280,19 @@ export default function DashboardClient({
 
           <div className={styles.workspaceCopy}>
             <strong>{businessState.name}</strong>
-            <span>{businessState.city} - {sectorLabel(businessState.sector)}</span>
+            <span>{businessState.city} - {sectorLabel(businessState.sector, lang)}</span>
           </div>
 
           <div className={styles.workspaceMeta}>
-            <span>{planLabel(businessState.plan)}</span>
-            <span>{submissions.length} total feedback</span>
+            <span>{planLabel(businessState.plan, lang)}</span>
+            <span>
+              {submissions.length} {copy.overview.metrics.totalFeedback}
+            </span>
           </div>
         </div>
 
         <nav className={styles.nav}>
-          {SECTION_META.map((section) => {
+          {sections.map((section) => {
             const Icon = section.icon
 
             return (
@@ -2028,15 +2319,15 @@ export default function DashboardClient({
 
         <div className={styles.sidebarFoot}>
           <div className={styles.sidebarHint}>
-            <strong>Data limitations</strong>
-            <p>Branch and staff analytics remain placeholder-first until the backend exposes those entities explicitly.</p>
+            <strong>{copy.common.dataLimitationsTitle}</strong>
+            <p>{copy.common.dataLimitationsCopy}</p>
           </div>
         </div>
       </aside>
 
       <div className={styles.canvas}>
         <div className={styles.mobileBar}>
-          <button type="button" className={styles.iconButton} onClick={() => setMobileNavOpen(true)} aria-label="Open navigation">
+          <button type="button" className={styles.iconButton} onClick={() => setMobileNavOpen(true)} aria-label={copy.common.openNavigation}>
             <Menu size={16} />
           </button>
 
@@ -2054,7 +2345,7 @@ export default function DashboardClient({
         <header className={styles.header}>
           <div className={styles.headerCopy}>
             <div className={styles.headerEyebrow}>
-              {isViewPending ? 'Updating workspace view' : 'Workspace dashboard'}
+              {isViewPending ? copy.header.updating : copy.header.eyebrow}
             </div>
             <h1 className={styles.headerTitle}>{sectionMeta.label}</h1>
             <p className={styles.headerDescription}>{sectionMeta.description}</p>
@@ -2062,7 +2353,7 @@ export default function DashboardClient({
 
           <div className={styles.headerActions}>
             <SegmentedControl
-              ariaLabel="Reporting range"
+              ariaLabel={copy.common.reportingRange}
               value={String(selectedRange)}
               onChange={(value) => setSelectedRange(Number(value) as DashboardRange)}
               options={RANGE_OPTIONS.map((range) => ({
@@ -2077,12 +2368,12 @@ export default function DashboardClient({
             </div>
 
             <Link href={livePath} className={styles.secondaryButton} target="_blank" rel="noreferrer">
-              Open form
+              {copy.common.openForm}
               <ExternalLink size={16} />
             </Link>
 
             <button type="button" className={styles.primaryButton} onClick={copyLiveFormLink}>
-              {copyState === 'copied' ? 'Copied link' : copyState === 'error' ? 'Copy failed' : 'Copy form link'}
+              {copyState === 'copied' ? copy.common.copiedLink : copyState === 'error' ? copy.common.copyFailed : copy.common.copyFormLink}
               <Link2 size={16} />
             </button>
           </div>
@@ -2095,6 +2386,9 @@ export default function DashboardClient({
         feedback={selectedFeedback}
         categories={publishedQuestions}
         onClose={() => setSelectedFeedbackId(null)}
+        copy={copy}
+        lang={lang}
+        locale={locale}
       />
     </div>
   )

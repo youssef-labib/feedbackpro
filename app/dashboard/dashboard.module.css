@@ -273,7 +273,8 @@
 }
 
 .shellCollapsed .sidebar {
-  padding-inline: 12px;
+  padding-inline: 10px;
+  gap: 18px;
 }
 
 .shellCollapsed .brandCopy,
@@ -291,18 +292,39 @@
 
 .shellCollapsed .workspaceCard {
   justify-items: center;
-  padding: 14px 10px;
+  padding: 12px 10px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, var(--dashboard-panel) 0%, var(--dashboard-panel-soft) 100%);
 }
 
 .shellCollapsed .nav {
   justify-items: center;
+  gap: 10px;
 }
 
 .shellCollapsed .navButton {
-  width: 56px;
+  width: 64px;
+  min-height: 58px;
   padding: 10px;
   grid-template-columns: 1fr;
   justify-items: center;
+  border-radius: 18px;
+}
+
+.shellCollapsed .navIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+}
+
+.shellCollapsed .navButtonActive::before {
+  content: '';
+  position: absolute;
+  inset: 12px auto 12px 8px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .shellCollapsed .navButton::after {
@@ -310,7 +332,7 @@
   position: absolute;
   left: calc(100% + 14px);
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(-50%) translateX(4px);
   padding: 8px 10px;
   border: 1px solid var(--dashboard-border);
   border-radius: 12px;
@@ -320,14 +342,16 @@
   font-weight: 700;
   white-space: nowrap;
   box-shadow: var(--dashboard-shadow);
+  backdrop-filter: blur(14px);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.16s ease;
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 .shellCollapsed .navButton:hover::after,
 .shellCollapsed .navButton:focus-visible::after {
   opacity: 1;
+  transform: translateY(-50%) translateX(0);
 }
 
 .header {
@@ -489,8 +513,7 @@
 .metricHead,
 .latestRowHead,
 .scoreRowHead,
-.questionCardHead,
-.linkCardHead {
+.questionCardHead {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -651,7 +674,6 @@
 
 .statusGrid,
 .drawerSummaryGrid,
-.collectionStatusGrid,
 .formGrid {
   display: grid;
   gap: 14px;
@@ -659,7 +681,6 @@
 }
 
 .summaryCell,
-.collectionStatusCard,
 .readOnlyBlock {
   padding: 16px;
   border: 1px solid var(--dashboard-border);
@@ -671,7 +692,6 @@
 
 .summaryCell span,
 .summaryCell p,
-.collectionStatusCard p,
 .readOnlyBlock span,
 .readOnlyBlock p,
 .latestRow p,
@@ -711,10 +731,7 @@
 .alertRow,
 .latestRow,
 .categoryRow,
-.collectionStatusCard,
 .questionCard,
-.questionComposer,
-.linkCard,
 .commentCard,
 .feedbackRow {
   padding: 16px;
@@ -841,7 +858,6 @@
 .drawerTitle,
 .drawerSectionTitle,
 .questionCardHead strong,
-.linkCardHead strong,
 .sessionMeta strong {
   color: var(--text);
   font-weight: 700;
@@ -1044,23 +1060,10 @@
   align-content: start;
 }
 
-.collectionHero,
-.qrStudio,
 .brandingCard,
 .sessionCard {
   display: grid;
   gap: 16px;
-}
-
-.linkCard {
-  display: grid;
-  gap: 10px;
-}
-
-.linkCard span {
-  overflow-wrap: anywhere;
-  color: var(--muted-strong);
-  line-height: 1.6;
 }
 
 .drawerBackdrop,
@@ -1135,8 +1138,7 @@
   gap: 10px;
 }
 
-.questionFieldGrid,
-.collectionStatusGrid {
+.questionFieldGrid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -1174,10 +1176,6 @@
   display: block;
 }
 
-.questionComposer {
-  border-style: dashed;
-}
-
 .notice {
   padding: 14px 16px;
   border: 1px solid transparent;
@@ -1202,7 +1200,131 @@
   padding-inline: 14px;
 }
 
-.qrPreview {
+.collectionOverviewGrid,
+.collectionChannelGrid,
+.questionStudioMetrics,
+.brandGrid {
+  display: grid;
+  gap: 16px;
+}
+
+.collectionOverviewGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.collectionChannelGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.questionStudio {
+  display: grid;
+  gap: 18px;
+}
+
+.questionStudioMetrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.questionStudioGrid,
+.brandGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.questionStudioGrid {
+  display: grid;
+  gap: 18px;
+  align-items: start;
+}
+
+.collectionSignalCard,
+.collectionChannelCard,
+.questionStudioMetric,
+.questionComposerPanel,
+.brandIdentityPanel,
+.channelConfigPanel {
+  padding: 18px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--dashboard-panel-soft) 0%, var(--dashboard-panel) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.collectionSignalCard,
+.collectionChannelCard,
+.questionStudioMetric,
+.brandIdentityPanel,
+.channelConfigPanel,
+.questionComposerPanel,
+.questionStack,
+.questionStudioSidebar {
+  display: grid;
+  gap: 14px;
+}
+
+.collectionChannelCard {
+  align-content: start;
+}
+
+.questionStudioSidebar {
+  position: sticky;
+  top: 104px;
+}
+
+.collectionSignalHeader,
+.channelCardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.collectionSignalTitle {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.collectionSignalCard p,
+.collectionChannelCard p,
+.questionStudioMetric p,
+.collectionSignalMeta,
+.channelHint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.collectionSignalMeta {
+  display: block;
+  word-break: break-word;
+}
+
+.questionStudioMetric span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.questionStudioMetric strong {
+  font-size: 24px;
+  letter-spacing: -0.04em;
+}
+
+.questionStack {
+  min-width: 0;
+}
+
+.questionComposerPanel {
+  border-style: dashed;
+}
+
+.qrPreview,
+.qrCardPreview {
   min-height: 270px;
   border: 1px solid var(--dashboard-border);
   border-radius: 22px;
@@ -1213,7 +1335,8 @@
   background-size: 190px 190px;
 }
 
-[data-theme='dark'] .qrPreview {
+[data-theme='dark'] .qrPreview,
+[data-theme='dark'] .qrCardPreview {
   background-color: #f8fafc;
 }
 
@@ -1258,12 +1381,27 @@
   right: calc(100% + 14px);
 }
 
+[dir='rtl'] .shellCollapsed .navButtonActive::before {
+  inset: 12px 8px 12px auto;
+}
+
 @media (max-width: 1240px) {
   .kpiGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .twoColumnGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .collectionOverviewGrid,
+  .questionStudioMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .collectionChannelGrid,
+  .questionStudioGrid,
+  .brandGrid {
     grid-template-columns: 1fr;
   }
 
@@ -1438,9 +1576,12 @@
   .kpiGrid,
   .statusGrid,
   .drawerSummaryGrid,
-  .collectionStatusGrid,
   .formGrid,
-  .questionFieldGrid {
+  .questionFieldGrid,
+  .collectionOverviewGrid,
+  .collectionChannelGrid,
+  .questionStudioMetrics,
+  .brandGrid {
     grid-template-columns: 1fr;
   }
 
@@ -1491,6 +1632,10 @@
 
   .trendLabels {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .questionStudioSidebar {
+    position: static;
   }
 
   .drawer {

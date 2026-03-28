@@ -41,6 +41,7 @@ export type DashboardSection =
   | 'collection'
   | 'settings'
 
+export type DashboardLang = 'fr' | 'ar' | 'en' | 'es'
 export type DashboardRange = 7 | 30 | 90
 export type TrendResolution = 'day' | 'week' | 'month'
 export type FeedbackFilter = 'all' | 'attention' | 'positive' | 'commented'
@@ -104,48 +105,116 @@ function normalizedComment(comment: string | null) {
   return comment?.trim() || ''
 }
 
-function categoryLabelMap(categories: DashboardCategory[]) {
-  return new Map(
-    categories.map((category) => [
-      category.id,
-      questionLabel(category),
-    ])
-  )
+function categoryLabelMap(categories: DashboardCategory[], lang: DashboardLang) {
+  return new Map(categories.map((category) => [category.id, questionLabel(category, lang)]))
 }
 
-export function sectorLabel(sector: string) {
-  const labels: Record<string, string> = {
-    restaurant: 'Restaurant',
-    cafe: 'Cafe',
-    salon: 'Salon',
-    hotel: 'Hotel',
-    gym: 'Gym',
-    car_rental: 'Car rental',
+export function sectorLabel(sector: string, lang: DashboardLang = 'en') {
+  const labels: Record<DashboardLang, Record<string, string>> = {
+    fr: {
+      restaurant: 'Restaurant',
+      cafe: 'Cafe',
+      salon: 'Salon',
+      hotel: 'Hotel',
+      gym: 'Salle de sport',
+      car_rental: 'Location auto',
+    },
+    ar: {
+      restaurant: 'مطعم',
+      cafe: 'مقهى',
+      salon: 'صالون',
+      hotel: 'فندق',
+      gym: 'قاعة رياضية',
+      car_rental: 'كراء السيارات',
+    },
+    en: {
+      restaurant: 'Restaurant',
+      cafe: 'Cafe',
+      salon: 'Salon',
+      hotel: 'Hotel',
+      gym: 'Gym',
+      car_rental: 'Car rental',
+    },
+    es: {
+      restaurant: 'Restaurante',
+      cafe: 'Cafe',
+      salon: 'Salon',
+      hotel: 'Hotel',
+      gym: 'Gimnasio',
+      car_rental: 'Alquiler de coches',
+    },
   }
 
-  return labels[sector] || sector.replace(/[_-]+/g, ' ').replace(/\b\w/g, (part) => part.toUpperCase())
+  return labels[lang][sector] || sector.replace(/[_-]+/g, ' ').replace(/\b\w/g, (part) => part.toUpperCase())
 }
 
-export function planLabel(plan: string) {
-  const labels: Record<string, string> = {
-    trial: 'Trial',
-    starter: 'Starter',
-    pro: 'Pro',
-    business: 'Business',
+export function planLabel(plan: string, lang: DashboardLang = 'en') {
+  const labels: Record<DashboardLang, Record<string, string>> = {
+    fr: {
+      trial: 'Essai',
+      starter: 'Starter',
+      pro: 'Pro',
+      business: 'Business',
+    },
+    ar: {
+      trial: 'تجريبي',
+      starter: 'ستارتر',
+      pro: 'برو',
+      business: 'بيزنس',
+    },
+    en: {
+      trial: 'Trial',
+      starter: 'Starter',
+      pro: 'Pro',
+      business: 'Business',
+    },
+    es: {
+      trial: 'Prueba',
+      starter: 'Starter',
+      pro: 'Pro',
+      business: 'Business',
+    },
   }
 
-  return labels[plan] || 'Custom'
+  return labels[lang][plan] || (lang === 'fr' ? 'Personnalise' : lang === 'ar' ? 'مخصص' : lang === 'es' ? 'Personalizado' : 'Custom')
 }
 
-export function planDescription(plan: string) {
-  if (plan === 'starter') return 'Single-location setup with the essentials for collecting and reviewing feedback.'
-  if (plan === 'pro') return 'Balanced workspace for teams that need better visibility on quality and service trends.'
-  if (plan === 'business') return 'Best fit for brands preparing for more advanced operations and multi-site reporting.'
-  return 'Trial workspace for onboarding, setup, and validating the feedback loop before activation.'
+export function planDescription(plan: string, lang: DashboardLang = 'en') {
+  const descriptions: Record<DashboardLang, Record<string, string>> = {
+    fr: {
+      starter: 'Configuration mono-site avec les bases pour collecter et revoir le feedback.',
+      pro: 'Espace equilibre pour les equipes qui veulent mieux suivre la qualite et le service.',
+      business: 'Ideal pour les marques qui se preparent a des operations plus avancees et multi-sites.',
+      default: 'Espace d essai pour lancer la configuration et valider la boucle de feedback avant activation.',
+    },
+    ar: {
+      starter: 'تهيئة لموقع واحد مع الاساسيات لجمع الملاحظات ومراجعتها.',
+      pro: 'مساحة متوازنة للفرق التي تحتاج رؤية اوضح لجودة الخدمة والاتجاهات.',
+      business: 'انسب خيار للعلامات التي تستعد لتشغيل اكثر تقدما وتقارير متعددة الفروع.',
+      default: 'مساحة تجريبية لبدء الاعداد والتحقق من دورة الملاحظات قبل التفعيل.',
+    },
+    en: {
+      starter: 'Single-location setup with the essentials for collecting and reviewing feedback.',
+      pro: 'Balanced workspace for teams that need better visibility on quality and service trends.',
+      business: 'Best fit for brands preparing for more advanced operations and multi-site reporting.',
+      default: 'Trial workspace for onboarding, setup, and validating the feedback loop before activation.',
+    },
+    es: {
+      starter: 'Configuracion de una sola ubicacion con lo esencial para recopilar y revisar feedback.',
+      pro: 'Espacio equilibrado para equipos que necesitan mejor visibilidad sobre calidad y servicio.',
+      business: 'Ideal para marcas que se preparan para operaciones mas avanzadas y reportes multi-sede.',
+      default: 'Espacio de prueba para configurar y validar el ciclo de feedback antes de activarlo.',
+    },
+  }
+
+  return descriptions[lang][plan] || descriptions[lang].default
 }
 
-export function questionLabel(category: DashboardCategory) {
-  return category.label_en || category.label_fr || category.label_ar || `Question ${category.id}`
+export function questionLabel(category: DashboardCategory, lang: DashboardLang = 'en') {
+  if (lang === 'fr') return category.label_fr || category.label_en || category.label_ar || category.label_es || `Question ${category.id}`
+  if (lang === 'ar') return category.label_ar || category.label_fr || category.label_en || category.label_es || `Question ${category.id}`
+  if (lang === 'es') return category.label_es || category.label_en || category.label_fr || category.label_ar || `Question ${category.id}`
+  return category.label_en || category.label_fr || category.label_ar || category.label_es || `Question ${category.id}`
 }
 
 export function scoreTone(score: number): ScoreTone {
@@ -154,10 +223,31 @@ export function scoreTone(score: number): ScoreTone {
   return 'negative'
 }
 
-export function toneLabel(tone: ScoreTone) {
-  if (tone === 'positive') return 'Positive'
-  if (tone === 'neutral') return 'Neutral'
-  return 'Attention'
+export function toneLabel(tone: ScoreTone, lang: DashboardLang = 'en') {
+  const labels: Record<DashboardLang, Record<ScoreTone, string>> = {
+    fr: {
+      positive: 'Positif',
+      neutral: 'Neutre',
+      negative: 'A surveiller',
+    },
+    ar: {
+      positive: 'ايجابي',
+      neutral: 'محايد',
+      negative: 'يحتاج متابعة',
+    },
+    en: {
+      positive: 'Positive',
+      neutral: 'Neutral',
+      negative: 'Attention',
+    },
+    es: {
+      positive: 'Positivo',
+      neutral: 'Neutral',
+      negative: 'Atencion',
+    },
+  }
+
+  return labels[lang][tone]
 }
 
 export function formatDate(value: string, locale = 'en-US') {
@@ -212,7 +302,7 @@ export function percent(value: number, locale = 'en-US') {
 
 export function excerpt(value: string | null, maxLength = 120) {
   const clean = normalizedComment(value)
-  if (!clean) return 'No written comment'
+  if (!clean) return ''
   if (clean.length <= maxLength) return clean
   return `${clean.slice(0, maxLength).trimEnd()}...`
 }
@@ -289,7 +379,8 @@ export function buildRatingDistribution(submissions: DashboardSubmission[]) {
 
 export function buildCategoryInsights(
   submissions: DashboardSubmission[],
-  categories: DashboardCategory[]
+  categories: DashboardCategory[],
+  lang: DashboardLang = 'en'
 ) {
   const buckets: Record<string, { total: number; count: number; low: number }> = {}
 
@@ -320,7 +411,7 @@ export function buildCategoryInsights(
 
       return {
         id: category.id,
-        label: questionLabel(category),
+        label: questionLabel(category, lang),
         responses: bucket.count,
         averageScore,
         lowScoreRate,
@@ -338,10 +429,12 @@ export function buildCategoryInsights(
 
 export function findLowestRatedCategory(
   submission: DashboardSubmission,
-  categories: DashboardCategory[]
+  categories: DashboardCategory[],
+  lang: DashboardLang = 'en',
+  fallbackLabel = 'No category'
 ) {
-  const labels = categoryLabelMap(categories)
-  let lowestLabel = 'No category'
+  const labels = categoryLabelMap(categories, lang)
+  let lowestLabel = fallbackLabel
   let lowestScore = 5
 
   Object.entries(submission.ratings || {}).forEach(([categoryId, rawValue]) => {
@@ -362,12 +455,15 @@ export function buildFeedbackRows(
   submissions: DashboardSubmission[],
   categories: DashboardCategory[],
   options: {
+    lang?: DashboardLang
+    noCategoryLabel?: string
     query: string
     filter: FeedbackFilter
     sort: FeedbackSort
   }
 ) {
-  const labels = categoryLabelMap(categories)
+  const lang = options.lang || 'en'
+  const labels = categoryLabelMap(categories, lang)
   const query = options.query.trim().toLowerCase()
 
   const rows = submissions.filter((submission) => {
@@ -405,7 +501,7 @@ export function buildFeedbackRows(
   })
 
   return sorted.map((submission) => {
-    const lowest = findLowestRatedCategory(submission, categories)
+    const lowest = findLowestRatedCategory(submission, categories, lang, options.noCategoryLabel)
     const commentText = normalizedComment(submission.comment)
 
     return {
@@ -419,6 +515,10 @@ export function buildFeedbackRows(
   })
 }
 
+export function recurringIssueSummary(items: CategoryInsight[]) {
+  return items.filter((item) => item.responses >= 3 && item.lowScoreRate >= 0.35 && item.averageScore <= 4)
+}
+
 export function buildTrendSeries(
   submissions: DashboardSubmission[],
   resolution: TrendResolution,
@@ -426,84 +526,45 @@ export function buildTrendSeries(
   locale = 'en-US',
   now = new Date()
 ) {
-  const rangeStart = getRangeStart(range, now)
-  const rangeEnd = new Date(startOfDay(now).getTime() + DAY_MS)
-  const points: Array<{ start: Date; end: Date; label: string }> = []
+  const labels = new Map<string, TrendPoint>()
+  const start = getRangeStart(range, now)
 
-  if (resolution === 'day') {
-    for (let offset = range - 1; offset >= 0; offset -= 1) {
-      const start = new Date(startOfDay(now).getTime() - offset * DAY_MS)
-      const end = new Date(start.getTime() + DAY_MS)
-      points.push({
-        start,
-        end,
-        label: new Intl.DateTimeFormat(locale, {
-          month: 'short',
-          day: 'numeric',
-        }).format(start),
-      })
+  submissions.forEach((submission) => {
+    const date = new Date(submission.created_at)
+    if (date < start) return
+
+    let key = ''
+    let label = ''
+
+    if (resolution === 'month') {
+      key = `${date.getFullYear()}-${date.getMonth()}`
+      label = new Intl.DateTimeFormat(locale, { month: 'short', year: '2-digit' }).format(date)
+    } else if (resolution === 'week') {
+      const weekStart = new Date(date)
+      const day = (weekStart.getDay() + 6) % 7
+      weekStart.setDate(weekStart.getDate() - day)
+      weekStart.setHours(0, 0, 0, 0)
+      key = weekStart.toISOString().slice(0, 10)
+      label = new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(weekStart)
+    } else {
+      key = date.toISOString().slice(0, 10)
+      label = new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(date)
     }
-  }
 
-  if (resolution === 'week') {
-    let start = new Date(rangeStart)
-
-    while (start < rangeEnd) {
-      const end = new Date(Math.min(start.getTime() + 7 * DAY_MS, rangeEnd.getTime()))
-      points.push({
-        start,
-        end,
-        label: new Intl.DateTimeFormat(locale, {
-          month: 'short',
-          day: 'numeric',
-        }).format(start),
-      })
-
-      start = end
-    }
-  }
-
-  if (resolution === 'month') {
-    let start = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1)
-
-    while (start < rangeEnd) {
-      const end = new Date(start.getFullYear(), start.getMonth() + 1, 1)
-      points.push({
-        start,
-        end,
-        label: new Intl.DateTimeFormat(locale, {
-          month: 'short',
-        }).format(start),
-      })
-
-      start = end
-    }
-  }
-
-  return points.map((point, index) => {
-    const bucket = submissions.filter((submission) => {
-      const createdAt = new Date(submission.created_at).getTime()
-      return createdAt >= point.start.getTime() && createdAt < point.end.getTime()
-    })
-
-    return {
-      id: `${resolution}-${index}-${point.label}`,
-      label: point.label,
-      count: bucket.length,
-      averageScore: bucket.length
-        ? roundToOne(bucket.reduce((sum, submission) => sum + submission.average_score, 0) / bucket.length)
-        : 0,
-    } satisfies TrendPoint
+    const point = labels.get(key) || { id: key, label, count: 0, averageScore: 0 }
+    point.count += 1
+    point.averageScore += submission.average_score
+    labels.set(key, point)
   })
+
+  return [...labels.values()]
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .map((point) => ({
+      ...point,
+      averageScore: point.count ? roundToOne(point.averageScore / point.count) : 0,
+    }))
 }
 
-export function recurringIssueSummary(categoryInsights: CategoryInsight[]) {
-  return categoryInsights.filter((item) => item.responses > 0 && (item.averageScore < 4 || item.lowScoreRate >= 0.3)).slice(0, 4)
-}
-
-export function questionsDirty(
-  currentQuestions: DashboardCategory[],
-  publishedQuestions: DashboardCategory[]
-) {
-  return JSON.stringify(currentQuestions) !== JSON.stringify(publishedQuestions)
+export function questionsDirty(next: DashboardCategory[], current: DashboardCategory[]) {
+  return JSON.stringify(next) !== JSON.stringify(current)
 }
