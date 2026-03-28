@@ -588,6 +588,51 @@ function QrPreviewLightbox({
   )
 }
 
+function PhotoPreviewLightbox({
+  open,
+  onClose,
+  imageUrl,
+  businessName,
+}: {
+  open: boolean
+  onClose: () => void
+  imageUrl: string
+  businessName: string
+}) {
+  if (!open || !imageUrl) {
+    return null
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className={cn(styles.drawerBackdrop, styles.sidebarBackdropOpen, styles.qrLightboxBackdrop)}
+        onClick={onClose}
+        aria-label="Close business photo preview"
+      />
+
+      <div className={styles.qrLightbox} role="dialog" aria-modal="true" aria-label="Business photo preview">
+        <div className={styles.qrLightboxPanel}>
+          <div className={styles.qrLightboxHeader}>
+            <div>
+              <div className={styles.drawerEyebrow}>Business photo</div>
+              <h2 className={styles.qrLightboxTitle}>{businessName}</h2>
+            </div>
+
+            <button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close business photo preview">
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className={styles.photoLightboxPreview} style={{ backgroundImage: `url("${imageUrl}")` }} />
+          <p className={styles.qrLightboxCopy}>Use this larger view to inspect the uploaded business photo comfortably.</p>
+        </div>
+      </div>
+    </>
+  )
+}
+
 export default function DashboardClient({
   business,
   form,
@@ -614,6 +659,7 @@ export default function DashboardClient({
   const [feedbackSort, setFeedbackSort] = useState<FeedbackSort>('newest')
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(null)
   const [isQrPreviewOpen, setIsQrPreviewOpen] = useState(false)
+  const [isPhotoPreviewOpen, setIsPhotoPreviewOpen] = useState(false)
   const [businessState, setBusinessState] = useState<DashboardBusiness>({ ...business })
   const [logoPreview, setLogoPreview] = useState(business.logo_url || '')
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle')
@@ -667,6 +713,7 @@ export default function DashboardClient({
         setMobileNavOpen(false)
         setSelectedFeedbackId(null)
         setIsQrPreviewOpen(false)
+        setIsPhotoPreviewOpen(false)
       }
     }
 
@@ -675,7 +722,7 @@ export default function DashboardClient({
   }, [])
 
   useEffect(() => {
-    const shouldLock = mobileNavOpen || Boolean(selectedFeedbackId) || isQrPreviewOpen
+    const shouldLock = mobileNavOpen || Boolean(selectedFeedbackId) || isQrPreviewOpen || isPhotoPreviewOpen
     const previousOverflow = document.body.style.overflow
 
     if (shouldLock) {
@@ -685,7 +732,7 @@ export default function DashboardClient({
     return () => {
       document.body.style.overflow = previousOverflow
     }
-  }, [isQrPreviewOpen, mobileNavOpen, selectedFeedbackId])
+  }, [isPhotoPreviewOpen, isQrPreviewOpen, mobileNavOpen, selectedFeedbackId])
 
   const livePath = `/r/${business.slug}`
   const liveUrl = origin ? `${origin}${livePath}` : livePath
@@ -2110,12 +2157,23 @@ export default function DashboardClient({
           >
             <div className={styles.brandingCard}>
               <div className={styles.workspaceCard}>
-                <div
-                  className={styles.brandPreview}
-                  style={logoPreview ? { backgroundImage: `url("${logoPreview}")` } : undefined}
-                >
-                  {!logoPreview ? businessState.name.slice(0, 2).toUpperCase() : null}
-                </div>
+                {logoPreview ? (
+                  <button
+                    type="button"
+                    className={styles.brandPreviewButton}
+                    onClick={() => setIsPhotoPreviewOpen(true)}
+                    aria-label="Open larger business photo preview"
+                  >
+                    <div
+                      className={styles.brandPreview}
+                      style={{ backgroundImage: `url("${logoPreview}")` }}
+                    />
+                  </button>
+                ) : (
+                  <div className={styles.brandPreview}>
+                    {businessState.name.slice(0, 2).toUpperCase()}
+                  </div>
+                )}
 
                 <div className={styles.workspaceCopy}>
                   <strong>{businessState.name}</strong>
@@ -2126,6 +2184,8 @@ export default function DashboardClient({
                   <span>{planLabel(businessState.plan)}</span>
                   <span>{logoPreview ? 'Photo uploaded' : 'No photo yet'}</span>
                 </div>
+
+                {logoPreview ? <span className={styles.brandPreviewHint}>Click the photo to enlarge it.</span> : null}
 
                 <div className={styles.actionRow}>
                   <label className={styles.secondaryButton}>
@@ -2338,6 +2398,13 @@ export default function DashboardClient({
         onClose={() => setIsQrPreviewOpen(false)}
         qrUrl={qrUrl}
         liveUrl={liveUrl}
+      />
+
+      <PhotoPreviewLightbox
+        open={isPhotoPreviewOpen}
+        onClose={() => setIsPhotoPreviewOpen(false)}
+        imageUrl={logoPreview}
+        businessName={businessState.name}
       />
 
       <FeedbackDrawer
