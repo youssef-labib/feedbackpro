@@ -11,7 +11,7 @@
   --dashboard-shadow: 0 22px 54px rgba(15, 23, 42, 0.08);
   --dashboard-shadow-strong: 0 30px 86px rgba(15, 23, 42, 0.14);
   --dashboard-sidebar-width: 320px;
-  --dashboard-sidebar-collapsed-width: 88px;
+  --dashboard-sidebar-collapsed-width: 80px;
   min-height: 100vh;
   background:
     radial-gradient(circle at top left, color-mix(in srgb, var(--accent-soft) 42%, transparent) 0%, transparent 30%),
@@ -273,8 +273,21 @@
 }
 
 .shellCollapsed .sidebar {
-  padding-inline: 12px;
-  gap: 16px;
+  padding: 18px 12px 20px;
+  gap: 14px;
+  grid-template-rows: auto 1fr;
+  justify-items: center;
+}
+
+.shellCollapsed .sidebarHeader {
+  width: 100%;
+  justify-content: center;
+  padding-top: 2px;
+}
+
+.shellCollapsed .sidebarHeaderActions {
+  width: 100%;
+  justify-content: center;
 }
 
 .shellCollapsed .brandCopy,
@@ -285,35 +298,34 @@
   display: none;
 }
 
-.shellCollapsed .brand {
-  width: 100%;
-  justify-content: center;
+.shellCollapsed .brand,
+.shellCollapsed .workspaceCard {
+  display: none;
 }
 
-.shellCollapsed .workspaceCard {
-  justify-items: center;
-  padding: 6px 0 2px;
-  border-color: transparent;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+.shellCollapsed .sidebarCollapseButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
 }
 
 .shellCollapsed .nav {
+  width: 100%;
+  align-content: start;
   justify-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .shellCollapsed .navButton {
-  width: 56px;
-  height: 56px;
-  min-height: 56px;
+  width: 52px;
+  height: 52px;
+  min-height: 52px;
   padding: 0;
   gap: 0;
   grid-template-columns: 1fr;
   place-items: center;
-  justify-items: center;
-  border-radius: 16px;
+  margin-inline: auto;
+  border-radius: 14px;
   border-color: transparent;
   background: transparent;
   box-shadow: none;
@@ -323,19 +335,20 @@
 .shellCollapsed .navButton:focus-visible {
   transform: none;
   border-color: transparent;
-  background: color-mix(in srgb, var(--dashboard-panel-soft) 72%, transparent);
+  background: transparent;
+  box-shadow: none;
 }
 
 .shellCollapsed .navButtonActive {
   border-color: transparent;
-  background: color-mix(in srgb, var(--dashboard-panel-soft) 82%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent);
+  background: transparent;
+  box-shadow: none;
 }
 
 .shellCollapsed .navIcon {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
   background: transparent;
   color: var(--muted-strong);
   transition:
@@ -346,27 +359,30 @@
 
 .shellCollapsed .navButton:hover .navIcon,
 .shellCollapsed .navButton:focus-visible .navIcon {
-  background: color-mix(in srgb, var(--dashboard-panel) 84%, var(--dashboard-panel-strong));
+  background: color-mix(in srgb, var(--dashboard-panel) 88%, var(--dashboard-panel-strong));
   color: var(--text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dashboard-border) 86%, transparent);
 }
 
 .shellCollapsed .navButtonActive::before {
   content: '';
   position: absolute;
   top: 50%;
-  left: 5px;
-  width: 3px;
-  height: 18px;
+  left: 4px;
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
   transform: translateY(-50%);
   background: var(--accent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .shellCollapsed .navButtonActive .navIcon {
-  background: color-mix(in srgb, var(--accent-soft) 54%, var(--dashboard-panel));
+  background: color-mix(in srgb, var(--accent-soft) 58%, var(--dashboard-panel));
   color: var(--accent-strong);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 10px 20px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .shellCollapsed .navButton::after {
@@ -1425,7 +1441,7 @@
 
 [dir='rtl'] .shellCollapsed .navButtonActive::before {
   left: auto;
-  right: 5px;
+  right: 4px;
 }
 
 @media (max-width: 1240px) {
@@ -1470,8 +1486,31 @@
     display: grid;
   }
 
+  .shellCollapsed .brand {
+    display: inline-flex;
+  }
+
+  .shellCollapsed .workspaceCard {
+    display: grid;
+  }
+
   .shellCollapsed .workspaceMeta {
     display: flex;
+  }
+
+  .shellCollapsed .sidebar {
+    grid-template-rows: auto auto 1fr auto;
+    justify-items: stretch;
+  }
+
+  .shellCollapsed .sidebarHeader {
+    justify-content: space-between;
+    padding-top: 0;
+  }
+
+  .shellCollapsed .sidebarHeaderActions {
+    width: auto;
+    justify-content: flex-end;
   }
 
   .shellCollapsed .brand {
