@@ -5,11 +5,12 @@ import { createSupabaseAdminClient, createSupabaseServerClient } from '../../../
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { businessId, name, google_review_url, plan } = body as {
+    const { businessId, name, google_review_url, plan, logo_url } = body as {
       businessId?: string
       name?: string
       google_review_url?: string
       plan?: string
+      logo_url?: string | null
     }
 
     if (!businessId) {
@@ -21,10 +22,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
     }
 
-    const updates: Record<string, string> = {}
+    const updates: Record<string, string | null> = {}
     if (typeof name === 'string' && name.trim()) updates.name = name.trim()
     if (typeof google_review_url === 'string') updates.google_review_url = google_review_url.trim()
     if (typeof plan === 'string') updates.plan = plan
+    if (Object.prototype.hasOwnProperty.call(body, 'logo_url')) {
+      updates.logo_url = typeof logo_url === 'string' ? logo_url.trim() : null
+    }
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })

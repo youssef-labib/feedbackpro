@@ -622,6 +622,7 @@ export default function DashboardClient({
   const [isPublishingQuestions, setIsPublishingQuestions] = useState(false)
   const [isRefreshingQr, setIsRefreshingQr] = useState(false)
   const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const [isRemovingLogo, setIsRemovingLogo] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [settingsNotice, setSettingsNotice] = useState<Notice | null>(null)
   const [questionNotice, setQuestionNotice] = useState<Notice | null>(null)
@@ -852,6 +853,52 @@ export default function DashboardClient({
     } finally {
       event.target.value = ''
       setIsUploadingLogo(false)
+    }
+  }
+
+  async function removeLogo() {
+    if (!logoPreview) {
+      return
+    }
+
+    setIsRemovingLogo(true)
+
+    try {
+      const response = await fetch('/api/business/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          businessId: businessState.id,
+          logo_url: null,
+        }),
+      })
+
+      const payload = await response.json()
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Could not remove business photo.')
+      }
+
+      setLogoPreview('')
+      setBusinessState((current) => ({
+        ...current,
+        logo_url: null,
+      }))
+
+      flashNotice(setSettingsNotice, {
+        tone: 'success',
+        text: 'Business photo removed successfully.',
+      })
+      router.refresh()
+    } catch (error) {
+      flashNotice(setSettingsNotice, {
+        tone: 'error',
+        text: error instanceof Error ? error.message : 'Could not remove business photo.',
+      })
+    } finally {
+      setIsRemovingLogo(false)
     }
   }
 
@@ -2077,13 +2124,13 @@ export default function DashboardClient({
 
                 <div className={styles.workspaceMeta}>
                   <span>{planLabel(businessState.plan)}</span>
-                  <span>{logoPreview ? 'Logo uploaded' : 'No logo yet'}</span>
+                  <span>{logoPreview ? 'Photo uploaded' : 'No photo yet'}</span>
                 </div>
 
                 <div className={styles.actionRow}>
                   <label className={styles.secondaryButton}>
                     {isUploadingLogo ? <LoaderCircle size={16} className={styles.spin} /> : <ImageUp size={16} />}
-                    {logoPreview ? 'Replace logo' : 'Upload logo'}
+                    {logoPreview ? 'Replace photo' : 'Upload photo'}
                     <input
                       type="file"
                       accept="image/*"
@@ -2091,6 +2138,16 @@ export default function DashboardClient({
                       style={{ display: 'none' }}
                     />
                   </label>
+
+                  <button
+                    type="button"
+                    className={styles.ghostButton}
+                    onClick={removeLogo}
+                    disabled={!logoPreview || isRemovingLogo}
+                  >
+                    {isRemovingLogo ? <LoaderCircle size={16} className={styles.spin} /> : <Trash2 size={16} />}
+                    Remove photo
+                  </button>
                 </div>
               </div>
 
