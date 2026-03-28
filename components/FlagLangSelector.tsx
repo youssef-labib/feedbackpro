@@ -5,10 +5,10 @@ import { Check, ChevronDown } from 'lucide-react'
 import type { Lang } from './useStoredLanguage'
 
 const FLAGS: Record<Lang, { flag: string; short: string; label: string; subtitle: string }> = {
-  fr: { flag: '\uD83C\uDDEB\uD83C\uDDF7', short: 'FR', label: 'Francais', subtitle: 'French' },
-  ar: { flag: '\uD83C\uDDF2\uD83C\uDDE6', short: 'AR', label: '\u0627\u0644\u0639\u0631\u0628\u064A\u0629', subtitle: 'Arabic' },
-  en: { flag: '\uD83C\uDDEC\uD83C\uDDE7', short: 'EN', label: 'English', subtitle: 'English' },
-  es: { flag: '\uD83C\uDDEA\uD83C\uDDF8', short: 'ES', label: 'Espanol', subtitle: 'Spanish' },
+  fr: { flag: '🇫🇷', short: 'FR', label: 'Francais', subtitle: 'French' },
+  ar: { flag: '🇲🇦', short: 'AR', label: 'العربية', subtitle: 'Arabic' },
+  en: { flag: '🇬🇧', short: 'EN', label: 'English', subtitle: 'English' },
+  es: { flag: '🇪🇸', short: 'ES', label: 'Espanol', subtitle: 'Spanish' },
 }
 
 export default function FlagLangSelector({
@@ -59,7 +59,7 @@ export default function FlagLangSelector({
         aria-haspopup="menu"
       >
         <span className="lang-trigger-current">
-          <span className="lang-trigger-flag">{current.flag}</span>
+          <span>{current.flag}</span>
           <span className="lang-trigger-label">{current.short}</span>
         </span>
         <ChevronDown size={16} className="lang-trigger-chevron" />
@@ -79,16 +79,12 @@ export default function FlagLangSelector({
               role="menuitemradio"
               aria-checked={option.code === lang}
             >
-              <span className="lang-option-flag">{option.flag}</span>
+              <span>{option.flag}</span>
               <span className="lang-option-copy">
                 <span className="lang-option-title">{option.short}</span>
                 <span className="lang-option-subtitle">{option.label}</span>
               </span>
-              {option.code === lang ? (
-                <span className="lang-option-check">
-                  <Check size={15} />
-                </span>
-              ) : null}
+              {option.code === lang ? <Check size={15} style={{ marginLeft: 'auto' }} /> : null}
             </button>
           ))}
         </div>
