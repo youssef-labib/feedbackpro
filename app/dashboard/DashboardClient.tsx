@@ -1549,22 +1549,22 @@ export default function DashboardClient({
                     className={cn(styles.feedbackRow, selectedFeedbackId === feedback.id && styles.feedbackRowActive)}
                     onClick={() => setSelectedFeedbackId(feedback.id)}
                   >
-                    <span className={styles.feedbackCell}>
+                    <span className={styles.feedbackCell} data-label="Date">
                       <strong>{formatDate(feedback.created_at)}</strong>
                       <small>{formatRelativeDate(feedback.created_at)}</small>
                     </span>
-                    <span className={styles.feedbackCell}>
+                    <span className={styles.feedbackCell} data-label="Score">
                       <strong>{feedback.average_score}/5</strong>
                       <small>{Object.keys(feedback.ratings || {}).length} rated areas</small>
                     </span>
-                    <span className={styles.feedbackCell}>
+                    <span className={styles.feedbackCell} data-label="Weakest area">
                       <strong>{feedback.lowestCategoryLabel}</strong>
                       <small>{feedback.lowestCategoryScore}/5</small>
                     </span>
-                    <span className={styles.feedbackCell}>
+                    <span className={styles.feedbackCell} data-label="Comment">
                       <strong>{feedback.hasComment ? excerpt(feedback.commentText, 84) : 'No written comment'}</strong>
                     </span>
-                    <span className={styles.feedbackCell}>
+                    <span className={styles.feedbackCell} data-label="Status">
                       <TonePill tone={feedback.tone} />
                     </span>
                   </button>
@@ -2354,43 +2354,47 @@ export default function DashboardClient({
         </div>
 
         <header className={styles.header}>
-          <div className={styles.headerCopy}>
-            <div className={styles.headerEyebrow}>
-              {isViewPending ? 'Updating workspace view' : 'Workspace dashboard'}
-            </div>
-            <h1 className={styles.headerTitle}>{sectionMeta.label}</h1>
-            <p className={styles.headerDescription}>{sectionMeta.description}</p>
-          </div>
-
-          <div className={styles.headerActions}>
-            <SegmentedControl
-              ariaLabel="Reporting range"
-              value={String(selectedRange)}
-              onChange={(value) => setSelectedRange(Number(value) as DashboardRange)}
-              options={RANGE_OPTIONS.map((range) => ({
-                label: `${range}d`,
-                value: String(range),
-              }))}
-            />
-
-            <div className={styles.utilityControls}>
-              <FlagLangSelector lang={lang} setLang={setLang} />
-              <ThemeToggle />
+          <div className={styles.headerInner}>
+            <div className={styles.headerCopy}>
+              <div className={styles.headerEyebrow}>
+                {isViewPending ? 'Updating workspace view' : 'Workspace dashboard'}
+              </div>
+              <h1 className={styles.headerTitle}>{sectionMeta.label}</h1>
+              <p className={styles.headerDescription}>{sectionMeta.description}</p>
             </div>
 
-            <Link href={livePath} className={styles.secondaryButton} target="_blank" rel="noreferrer">
-              Open form
-              <ExternalLink size={16} />
-            </Link>
+            <div className={styles.headerActions}>
+              <SegmentedControl
+                ariaLabel="Reporting range"
+                value={String(selectedRange)}
+                onChange={(value) => setSelectedRange(Number(value) as DashboardRange)}
+                options={RANGE_OPTIONS.map((range) => ({
+                  label: `${range}d`,
+                  value: String(range),
+                }))}
+              />
 
-            <button type="button" className={styles.primaryButton} onClick={copyLiveFormLink}>
-              {copyState === 'copied' ? 'Copied link' : copyState === 'error' ? 'Copy failed' : 'Copy form link'}
-              <Link2 size={16} />
-            </button>
+              <div className={styles.utilityControls}>
+                <FlagLangSelector lang={lang} setLang={setLang} />
+                <ThemeToggle />
+              </div>
+
+              <Link href={livePath} className={styles.secondaryButton} target="_blank" rel="noreferrer">
+                Open form
+                <ExternalLink size={16} />
+              </Link>
+
+              <button type="button" className={styles.primaryButton} onClick={copyLiveFormLink}>
+                {copyState === 'copied' ? 'Copied link' : copyState === 'error' ? 'Copy failed' : 'Copy form link'}
+                <Link2 size={16} />
+              </button>
+            </div>
           </div>
         </header>
 
-        <main className={styles.main}>{renderSectionContent()}</main>
+        <main className={styles.main}>
+          <div className={styles.mainInner}>{renderSectionContent()}</div>
+        </main>
       </div>
 
       <QrPreviewLightbox

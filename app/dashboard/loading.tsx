@@ -20,20 +20,24 @@ export default function Loading() {
         </div>
 
         <header className={styles.header}>
-          <div className={styles.workspaceCard} style={{ minHeight: 84, flex: 1 }} />
-          <div className={styles.workspaceCard} style={{ minHeight: 84, width: 360 }} />
+          <div className={styles.headerInner}>
+            <div className={styles.workspaceCard} style={{ minHeight: 84, flex: 1 }} />
+            <div className={styles.workspaceCard} style={{ minHeight: 84, width: 360 }} />
+          </div>
         </header>
 
         <main className={styles.main}>
-          <div className={styles.kpiGrid}>
-            {Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className={styles.metricCard} style={{ minHeight: 180 }} />
-            ))}
-          </div>
+          <div className={styles.mainInner}>
+            <div className={styles.kpiGrid}>
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className={styles.metricCard} style={{ minHeight: 180 }} />
+              ))}
+            </div>
 
-          <div className={styles.twoColumnGrid} style={{ marginTop: 20 }}>
-            <div className={styles.panel} style={{ minHeight: 360 }} />
-            <div className={styles.panel} style={{ minHeight: 360 }} />
+            <div className={styles.twoColumnGrid} style={{ marginTop: 20 }}>
+              <div className={styles.panel} style={{ minHeight: 360 }} />
+              <div className={styles.panel} style={{ minHeight: 360 }} />
+            </div>
           </div>
         </main>
       </div>
