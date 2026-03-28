@@ -1585,7 +1585,7 @@ export default function DashboardClient({
           description="Keep collection assets compact, accessible, and easy to distribute without crowding the editor."
         >
           <div className={styles.collectionUtilityRail}>
-            <article className={styles.collectionUtilityCard}>
+            <article className={cn(styles.collectionUtilityCard, styles.collectionUtilityStatusCard)}>
               <div className={styles.collectionUtilityHeader}>
                 <span className={styles.collectionUtilityEyebrow}>Collection status</span>
                 <span
@@ -1597,34 +1597,33 @@ export default function DashboardClient({
                   {form ? 'Live form ready' : 'Setup needed'}
                 </span>
               </div>
-              <strong>Feedback form access</strong>
-              <p>
-                {form
-                  ? 'Guests can open the live form immediately through the public URL and QR access.'
-                  : 'No feedback form is currently attached to this workspace.'}
-              </p>
-              <div className={styles.collectionUtilityMeta}>
+              <div className={styles.collectionUtilityBody}>
+                <strong>Feedback form access</strong>
+                <p>
+                  {form
+                    ? 'Guests can open the live form immediately through the public URL and QR access.'
+                    : 'No feedback form is currently attached to this workspace.'}
+                </p>
+              </div>
+              <div className={cn(styles.collectionUtilityFooter, styles.collectionUtilityMeta)}>
                 <span>{draftQuestions.length} drafted question{draftQuestions.length === 1 ? '' : 's'}</span>
                 <span>{questionChangesPending ? 'Changes waiting to publish' : 'Draft synced with live form'}</span>
               </div>
             </article>
 
-            <article className={styles.collectionUtilityCard}>
+            <article className={cn(styles.collectionUtilityCard, styles.collectionUtilityLinkCard)}>
               <div className={styles.collectionUtilityHeader}>
                 <span className={styles.collectionUtilityEyebrow}>Live form URL</span>
-                <Link
-                  href={livePath}
-                  className={cn(styles.secondaryButton, styles.compactButton)}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Open
-                  <ExternalLink size={16} />
-                </Link>
+                <span className={cn(styles.inlineBadge, styles.inlineBadgePositive)}>Public access</span>
               </div>
-              <strong>Share the public feedback flow</strong>
-              <p className={styles.collectionUtilityLink}>{liveUrl}</p>
-              <div className={styles.compactActionRow}>
+              <div className={styles.collectionUtilityBody}>
+                <strong>Share the public feedback flow</strong>
+                <div className={styles.collectionUtilityUrlBlock}>
+                  <span className={styles.collectionUtilityUrlLabel}>Public URL</span>
+                  <p className={styles.collectionUtilityLink}>{liveUrl}</p>
+                </div>
+              </div>
+              <div className={cn(styles.collectionUtilityFooter, styles.compactActionRow)}>
                 <button
                   type="button"
                   className={cn(styles.primaryButton, styles.compactButton)}
@@ -1633,10 +1632,19 @@ export default function DashboardClient({
                   {copyState === 'copied' ? 'Copied link' : copyState === 'error' ? 'Copy failed' : 'Copy form link'}
                   <Copy size={16} />
                 </button>
+                <Link
+                  href={livePath}
+                  className={cn(styles.secondaryButton, styles.compactButton)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open live form
+                  <ExternalLink size={16} />
+                </Link>
               </div>
             </article>
 
-            <article className={styles.collectionUtilityCard}>
+            <article className={cn(styles.collectionUtilityCard, styles.collectionUtilityReviewCard)}>
               <div className={styles.collectionUtilityHeader}>
                 <span className={styles.collectionUtilityEyebrow}>Review channel</span>
                 <span
@@ -1648,13 +1656,15 @@ export default function DashboardClient({
                   {businessState.google_review_url ? 'Connected' : 'Optional'}
                 </span>
               </div>
-              <strong>Google review destination</strong>
-              <p>
-                {businessState.google_review_url
-                  ? 'Send guests to an external review page after they complete the feedback flow.'
-                  : 'Add a Google review link when you want to pair private feedback collection with public reviews.'}
-              </p>
-              <div className={styles.compactActionRow}>
+              <div className={styles.collectionUtilityBody}>
+                <strong>Google review destination</strong>
+                <p>
+                  {businessState.google_review_url
+                    ? 'Send guests to an external review page after they complete the feedback flow.'
+                    : 'Add a Google review link when you want to pair private feedback collection with public reviews.'}
+                </p>
+              </div>
+              <div className={cn(styles.collectionUtilityFooter, styles.compactActionRow)}>
                 {businessState.google_review_url ? (
                   <Link
                     href={businessState.google_review_url}
@@ -1673,7 +1683,7 @@ export default function DashboardClient({
               </div>
             </article>
 
-            <article className={cn(styles.collectionUtilityCard, styles.collectionUtilityQr)}>
+            <article className={cn(styles.collectionUtilityCard, styles.collectionUtilityQrCard)}>
               <div className={styles.collectionUtilityQrPreview} style={{ backgroundImage: `url("${qrUrl}")` }} />
               <div className={styles.collectionUtilityQrBody}>
                 <div className={styles.collectionUtilityHeader}>
@@ -1687,9 +1697,11 @@ export default function DashboardClient({
                     {business.qr_generated ? 'Generated' : 'Preview available'}
                   </span>
                 </div>
-                <strong>Printable QR access</strong>
-                <p>Refresh the preview or download a PNG without leaving the builder.</p>
-                <div className={styles.compactActionRow}>
+                <div className={styles.collectionUtilityBody}>
+                  <strong>Printable QR access</strong>
+                  <p>Refresh the preview or download a PNG without leaving the builder.</p>
+                </div>
+                <div className={cn(styles.collectionUtilityFooter, styles.compactActionRow)}>
                   <button
                     type="button"
                     className={cn(styles.secondaryButton, styles.compactButton)}

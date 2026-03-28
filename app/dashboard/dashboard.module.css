@@ -1070,19 +1070,21 @@
 
 .collectionUtilityRail {
   display: grid;
-  gap: 14px;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.4fr) minmax(0, 1.08fr) minmax(0, 1.45fr);
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
 }
 
 .collectionUtilityCard {
-  padding: 18px;
+  padding: 20px;
   border: 1px solid var(--dashboard-border);
   border-radius: 22px;
   background: linear-gradient(180deg, color-mix(in srgb, var(--dashboard-panel) 76%, var(--dashboard-panel-soft) 24%) 0%, var(--dashboard-panel-soft) 100%);
   display: grid;
+  grid-template-rows: auto auto 1fr auto;
   gap: 14px;
   min-width: 0;
+  min-height: 220px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
@@ -1121,6 +1123,16 @@
   margin: 0;
   color: var(--muted);
   line-height: 1.65;
+}
+
+.collectionUtilityBody {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.collectionUtilityFooter {
+  margin-top: auto;
 }
 
 .collectionUtilityMeta,
@@ -1169,19 +1181,44 @@
   color: var(--muted-strong) !important;
 }
 
+.collectionUtilityUrlBlock {
+  padding: 14px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--dashboard-panel) 70%, var(--dashboard-panel-soft) 30%);
+  display: grid;
+  gap: 8px;
+}
+
+.collectionUtilityUrlLabel {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
 .compactButton {
   min-height: 38px;
   padding: 0 14px;
   border-radius: 12px;
 }
 
-.collectionUtilityQr {
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
+.collectionUtilityStatusCard,
+.collectionUtilityLinkCard,
+.collectionUtilityReviewCard {
+  align-content: start;
+}
+
+.collectionUtilityQrCard {
+  grid-template-columns: 112px minmax(0, 1fr);
+  grid-template-rows: 1fr;
+  align-items: stretch;
+  column-gap: 18px;
 }
 
 .collectionUtilityQrPreview {
-  width: 108px;
+  width: 100%;
   aspect-ratio: 1;
   border: 1px solid var(--dashboard-border);
   border-radius: 20px;
@@ -1205,6 +1242,11 @@
 .builderQuestionTitle {
   display: grid;
   gap: 10px;
+}
+
+.collectionUtilityQrBody {
+  min-width: 0;
+  align-content: start;
 }
 
 .questionBuilder {
@@ -1783,8 +1825,9 @@
     grid-template-columns: 1fr;
   }
 
-  .collectionUtilityQr {
+  .collectionUtilityQrCard {
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
   }
 
   .panel,
