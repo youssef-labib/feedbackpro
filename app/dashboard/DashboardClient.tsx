@@ -563,7 +563,12 @@ export default function DashboardClient({
     if (stored === 'true') {
       setSidebarCollapsed(true)
     }
-    setSidebarReady(true)
+
+    const frame = window.requestAnimationFrame(() => {
+      setSidebarReady(true)
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [])
 
   useEffect(() => {
@@ -1942,7 +1947,7 @@ export default function DashboardClient({
   }
 
   return (
-    <div className={cn(styles.shell, sidebarCollapsed && styles.shellCollapsed)}>
+    <div className={cn(styles.shell, sidebarReady && styles.shellReady, sidebarCollapsed && styles.shellCollapsed)}>
       <button
         type="button"
         className={cn(styles.sidebarBackdrop, mobileNavOpen && styles.sidebarBackdropOpen)}

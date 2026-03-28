@@ -42,7 +42,7 @@
 .canvas {
   margin-left: var(--dashboard-sidebar-width);
   min-height: 100vh;
-  transition: margin-left 0.24s ease, margin-right 0.24s ease;
+  will-change: margin-left, margin-right;
 }
 
 .sidebar {
@@ -56,9 +56,22 @@
   display: grid;
   grid-template-rows: auto auto 1fr auto;
   gap: 20px;
+  overflow: clip;
   z-index: 30;
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.02);
-  transition: width 0.24s ease, transform 0.24s ease, padding 0.24s ease;
+  will-change: width, padding, transform;
+}
+
+.shellReady .canvas {
+  transition: margin-left 0.3s cubic-bezier(0.22, 1, 0.36, 1), margin-right 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.shellReady .sidebar {
+  transition:
+    width 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    gap 0.26s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .sidebarHeader {
@@ -83,6 +96,18 @@
   align-items: center;
   gap: 14px;
   text-decoration: none;
+  max-width: 100%;
+  opacity: 1;
+  transform: translateX(0);
+  transform-origin: left center;
+  overflow: hidden;
+}
+
+.shellReady .brand {
+  transition:
+    max-width 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.16s ease,
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .brandMark,
@@ -139,6 +164,21 @@
   padding: 18px;
   display: grid;
   gap: 14px;
+  max-height: 240px;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transform-origin: top center;
+  overflow: hidden;
+}
+
+.shellReady .workspaceCard {
+  transition:
+    max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.18s ease,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    border-width 0.16s ease,
+    margin 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .workspaceLogo,
@@ -200,7 +240,13 @@
   transition:
     transform 0.18s ease,
     border-color 0.18s ease,
-    background-color 0.18s ease;
+    background-color 0.18s ease,
+    box-shadow 0.2s ease,
+    width 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    gap 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .navButton:hover {
@@ -229,11 +275,31 @@
   background: color-mix(in srgb, var(--accent-soft) 52%, var(--dashboard-panel-soft));
   color: var(--accent);
   flex-shrink: 0;
+  transition:
+    width 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .navCopy {
   display: grid;
   gap: 4px;
+  max-width: 220px;
+  max-height: 72px;
+  opacity: 1;
+  transform: translateX(0);
+  overflow: hidden;
+}
+
+.shellReady .navCopy {
+  transition:
+    max-width 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    max-height 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.14s ease,
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .navCopy strong {
@@ -255,6 +321,17 @@
 
 .sidebarFoot {
   align-self: end;
+  max-height: 160px;
+  opacity: 1;
+  transform: translateY(0);
+  overflow: hidden;
+}
+
+.shellReady .sidebarFoot {
+  transition:
+    max-height 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.16s ease,
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .sidebarHint {
@@ -279,19 +356,6 @@
   gap: 18px;
 }
 
-.shellCollapsed .brandCopy,
-.shellCollapsed .workspaceCopy,
-.shellCollapsed .workspaceMeta,
-.shellCollapsed .sidebarFoot,
-.shellCollapsed .navCopy {
-  display: none;
-}
-
-.shellCollapsed .brand,
-.shellCollapsed .workspaceCard {
-  display: none;
-}
-
 .shellCollapsed .sidebarHeader {
   width: 100%;
   justify-content: center;
@@ -304,6 +368,21 @@
 
 .shellCollapsed .brand {
   width: auto;
+  max-width: 0;
+  opacity: 0;
+  transform: translateX(-14px);
+  pointer-events: none;
+}
+
+.shellCollapsed .workspaceCard {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-12px) scale(0.96);
+  padding-top: 0;
+  padding-bottom: 0;
+  border-width: 0;
+  margin: 0;
+  pointer-events: none;
 }
 
 .shellCollapsed .nav {
@@ -323,6 +402,14 @@
   justify-items: center;
 }
 
+.shellCollapsed .navCopy {
+  max-width: 0;
+  max-height: 0;
+  opacity: 0;
+  transform: translateX(-10px);
+  pointer-events: none;
+}
+
 .shellCollapsed .navIcon {
   width: 36px;
   height: 36px;
@@ -333,6 +420,13 @@
   width: 42px;
   height: 42px;
   border-radius: 14px;
+}
+
+.shellCollapsed .sidebarFoot {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
 }
 
 .shellCollapsed .navButton::after {
@@ -1312,27 +1406,30 @@
     --dashboard-sidebar-width: 0px;
   }
 
-  .shellCollapsed .brandCopy,
-  .shellCollapsed .workspaceCopy,
-  .shellCollapsed .sidebarFoot,
-  .shellCollapsed .navCopy {
-    display: grid;
-  }
-
-  .shellCollapsed .workspaceMeta {
-    display: flex;
-  }
-
   .shellCollapsed .brand {
     display: inline-flex;
     width: auto;
+    max-width: 100%;
+    opacity: 1;
+    transform: none;
     justify-content: flex-start;
+    pointer-events: auto;
   }
 
   .shellCollapsed .workspaceCard {
     display: grid;
     justify-items: stretch;
+    max-height: 240px;
+    opacity: 1;
+    transform: none;
     padding: 18px;
+    border-width: 1px;
+    margin: 0;
+    pointer-events: auto;
+  }
+
+  .shellCollapsed .workspaceMeta {
+    display: flex;
   }
 
   .shellCollapsed .sidebar {
@@ -1367,10 +1464,27 @@
     justify-items: stretch;
   }
 
+  .shellCollapsed .navCopy {
+    display: grid;
+    max-width: 220px;
+    max-height: 72px;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
   .shellCollapsed .navIcon {
     width: 40px;
     height: 40px;
     border-radius: 14px;
+  }
+
+  .shellCollapsed .sidebarFoot {
+    display: block;
+    max-height: 160px;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
   }
 
   .shellCollapsed .navButton::after {
@@ -1577,5 +1691,26 @@
   .brandCopy span,
   .navCopy span {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas,
+  .sidebar,
+  .brand,
+  .workspaceCard,
+  .sidebarFoot,
+  .navButton,
+  .navIcon,
+  .navCopy {
+    transition: none !important;
+  }
+
+  .navButton:hover,
+  .primaryButton:hover,
+  .secondaryButton:hover,
+  .ghostButton:hover,
+  .iconButton:hover {
+    transform: none;
   }
 }
