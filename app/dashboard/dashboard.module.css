@@ -1376,6 +1376,14 @@
   color: var(--muted-strong);
 }
 
+.localeTag {
+  min-height: 26px;
+  min-width: 0;
+  width: fit-content;
+  padding-inline: 8px;
+  justify-content: center;
+}
+
 .requiredTag {
   border-color: color-mix(in srgb, var(--accent) 22%, transparent);
   background: color-mix(in srgb, var(--accent-soft) 72%, var(--dashboard-panel));
