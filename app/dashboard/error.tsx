@@ -1,6 +1,8 @@
 'use client'
 
 import { CircleAlert, RefreshCw } from 'lucide-react'
+import { useStoredLanguage } from '../../components/useStoredLanguage'
+import { DASHBOARD_COPY } from './dashboard-copy'
 import styles from './dashboard.module.css'
 
 export default function Error({
@@ -8,6 +10,9 @@ export default function Error({
 }: {
   reset: () => void
 }) {
+  const { lang } = useStoredLanguage('fr')
+  const copy = DASHBOARD_COPY[(lang || 'en') as keyof typeof DASHBOARD_COPY] || DASHBOARD_COPY.en
+
   return (
     <div className={styles.shell}>
       <div className={styles.canvas} style={{ margin: 0 }}>
@@ -17,12 +22,10 @@ export default function Error({
               <div className={styles.emptyIcon}>
                 <CircleAlert size={18} />
               </div>
-              <h1 className={styles.emptyTitle}>Dashboard could not load</h1>
-              <p className={styles.emptyCopy}>
-                Something went wrong while preparing the workspace. Try again to reload the latest data.
-              </p>
+              <h1 className={styles.emptyTitle}>{copy.common.dashboardLoadError}</h1>
+              <p className={styles.emptyCopy}>{copy.common.dashboardLoadErrorCopy}</p>
               <button type="button" className={styles.primaryButton} onClick={reset}>
-                Try again
+                {copy.common.tryAgain}
                 <RefreshCw size={16} />
               </button>
             </div>

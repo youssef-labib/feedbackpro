@@ -41,6 +41,7 @@ export type DashboardSection =
   | 'collection'
   | 'settings'
 
+export type DashboardLang = 'fr' | 'ar' | 'en' | 'es'
 export type DashboardRange = 7 | 30 | 90
 export type TrendResolution = 'day' | 'week' | 'month'
 export type FeedbackFilter = 'all' | 'attention' | 'positive' | 'commented'
@@ -104,48 +105,124 @@ function normalizedComment(comment: string | null) {
   return comment?.trim() || ''
 }
 
-function categoryLabelMap(categories: DashboardCategory[]) {
+function categoryLabelMap(categories: DashboardCategory[], lang: DashboardLang = 'en') {
   return new Map(
     categories.map((category) => [
       category.id,
-      questionLabel(category),
+      questionLabel(category, lang),
     ])
   )
 }
 
-export function sectorLabel(sector: string) {
-  const labels: Record<string, string> = {
-    restaurant: 'Restaurant',
-    cafe: 'Cafe',
-    salon: 'Salon',
-    hotel: 'Hotel',
-    gym: 'Gym',
-    car_rental: 'Car rental',
+export function sectorLabel(sector: string, lang: DashboardLang = 'en') {
+  const labels: Record<DashboardLang, Record<string, string>> = {
+    fr: {
+      restaurant: 'Restaurant',
+      cafe: 'Café',
+      salon: 'Salon',
+      hotel: 'Hôtel',
+      gym: 'Salle de sport',
+      car_rental: 'Location de voitures',
+    },
+    ar: {
+      restaurant: 'مطعم',
+      cafe: 'مقهى',
+      salon: 'صالون',
+      hotel: 'فندق',
+      gym: 'قاعة رياضية',
+      car_rental: 'تأجير السيارات',
+    },
+    en: {
+      restaurant: 'Restaurant',
+      cafe: 'Cafe',
+      salon: 'Salon',
+      hotel: 'Hotel',
+      gym: 'Gym',
+      car_rental: 'Car rental',
+    },
+    es: {
+      restaurant: 'Restaurante',
+      cafe: 'Cafetería',
+      salon: 'Salón',
+      hotel: 'Hotel',
+      gym: 'Gimnasio',
+      car_rental: 'Alquiler de coches',
+    },
   }
 
-  return labels[sector] || sector.replace(/[_-]+/g, ' ').replace(/\b\w/g, (part) => part.toUpperCase())
+  return (
+    labels[lang][sector] ||
+    sector.replace(/[_-]+/g, ' ').replace(/\b\w/g, (part) => part.toUpperCase())
+  )
 }
 
-export function planLabel(plan: string) {
-  const labels: Record<string, string> = {
-    trial: 'Trial',
-    starter: 'Starter',
-    pro: 'Pro',
-    business: 'Business',
+export function planLabel(plan: string, lang: DashboardLang = 'en') {
+  const labels: Record<DashboardLang, Record<string, string>> = {
+    fr: {
+      trial: 'Essai',
+      starter: 'Starter',
+      pro: 'Pro',
+      business: 'Business',
+    },
+    ar: {
+      trial: 'تجريبي',
+      starter: 'ستارتر',
+      pro: 'برو',
+      business: 'بيزنس',
+    },
+    en: {
+      trial: 'Trial',
+      starter: 'Starter',
+      pro: 'Pro',
+      business: 'Business',
+    },
+    es: {
+      trial: 'Prueba',
+      starter: 'Starter',
+      pro: 'Pro',
+      business: 'Business',
+    },
   }
 
-  return labels[plan] || 'Custom'
+  return labels[lang][plan] || (lang === 'ar' ? 'مخصص' : lang === 'fr' ? 'Personnalisé' : lang === 'es' ? 'Personalizado' : 'Custom')
 }
 
-export function planDescription(plan: string) {
-  if (plan === 'starter') return 'Single-location setup with the essentials for collecting and reviewing feedback.'
-  if (plan === 'pro') return 'Balanced workspace for teams that need better visibility on quality and service trends.'
-  if (plan === 'business') return 'Best fit for brands preparing for more advanced operations and multi-site reporting.'
-  return 'Trial workspace for onboarding, setup, and validating the feedback loop before activation.'
+export function planDescription(plan: string, lang: DashboardLang = 'en') {
+  const descriptions: Record<DashboardLang, Record<string, string>> = {
+    fr: {
+      starter: 'Configuration mono-site avec l’essentiel pour collecter et consulter les retours clients.',
+      pro: 'Espace équilibré pour les équipes qui veulent mieux piloter la qualité et les tendances de service.',
+      business: 'Idéal pour les marques qui se préparent à des opérations plus avancées et à un pilotage multi-sites.',
+      default: 'Espace d’essai pour finaliser la configuration et valider la boucle de feedback avant activation.',
+    },
+    ar: {
+      starter: 'تهيئة لموقع واحد مع الأساسيات اللازمة لجمع الملاحظات ومراجعتها.',
+      pro: 'مساحة متوازنة للفرق التي تحتاج إلى رؤية أوضح لجودة الخدمة واتجاهات الأداء.',
+      business: 'الخيار الأنسب للعلامات التي تستعد لعمليات أكثر تقدماً وتقارير متعددة الفروع.',
+      default: 'مساحة تجريبية لبدء الإعداد والتحقق من دورة الملاحظات قبل التفعيل.',
+    },
+    en: {
+      starter: 'Single-location setup with the essentials for collecting and reviewing feedback.',
+      pro: 'Balanced workspace for teams that need better visibility on quality and service trends.',
+      business: 'Best fit for brands preparing for more advanced operations and multi-site reporting.',
+      default: 'Trial workspace for onboarding, setup, and validating the feedback loop before activation.',
+    },
+    es: {
+      starter: 'Configuración para una sola ubicación con lo esencial para recopilar y revisar feedback.',
+      pro: 'Espacio equilibrado para equipos que necesitan mayor visibilidad sobre calidad y tendencias de servicio.',
+      business: 'La mejor opción para marcas que se preparan para operaciones más avanzadas y reportes multiubicación.',
+      default: 'Espacio de prueba para configurar el sistema y validar el ciclo de feedback antes de activarlo.',
+    },
+  }
+
+  return descriptions[lang][plan] || descriptions[lang].default
 }
 
-export function questionLabel(category: DashboardCategory) {
-  return category.label_en || category.label_fr || category.label_ar || `Question ${category.id}`
+export function questionLabel(category: DashboardCategory, lang: DashboardLang = 'en') {
+  if (lang === 'fr') return category.label_fr || category.label_en || category.label_ar || category.label_es || `Question ${category.id}`
+  if (lang === 'ar') return category.label_ar || category.label_fr || category.label_en || category.label_es || `السؤال ${category.id}`
+  if (lang === 'es') return category.label_es || category.label_en || category.label_fr || category.label_ar || `Pregunta ${category.id}`
+  return category.label_en || category.label_fr || category.label_ar || category.label_es || `Question ${category.id}`
 }
 
 export function scoreTone(score: number): ScoreTone {
@@ -154,10 +231,31 @@ export function scoreTone(score: number): ScoreTone {
   return 'negative'
 }
 
-export function toneLabel(tone: ScoreTone) {
-  if (tone === 'positive') return 'Positive'
-  if (tone === 'neutral') return 'Neutral'
-  return 'Attention'
+export function toneLabel(tone: ScoreTone, lang: DashboardLang = 'en') {
+  const labels: Record<DashboardLang, Record<ScoreTone, string>> = {
+    fr: {
+      positive: 'Positif',
+      neutral: 'Neutre',
+      negative: 'À surveiller',
+    },
+    ar: {
+      positive: 'إيجابي',
+      neutral: 'محايد',
+      negative: 'يحتاج متابعة',
+    },
+    en: {
+      positive: 'Positive',
+      neutral: 'Neutral',
+      negative: 'Attention',
+    },
+    es: {
+      positive: 'Positivo',
+      neutral: 'Neutral',
+      negative: 'Atención',
+    },
+  }
+
+  return labels[lang][tone]
 }
 
 export function formatDate(value: string, locale = 'en-US') {
@@ -289,7 +387,8 @@ export function buildRatingDistribution(submissions: DashboardSubmission[]) {
 
 export function buildCategoryInsights(
   submissions: DashboardSubmission[],
-  categories: DashboardCategory[]
+  categories: DashboardCategory[],
+  lang: DashboardLang = 'en'
 ) {
   const buckets: Record<string, { total: number; count: number; low: number }> = {}
 
@@ -320,7 +419,7 @@ export function buildCategoryInsights(
 
       return {
         id: category.id,
-        label: questionLabel(category),
+        label: questionLabel(category, lang),
         responses: bucket.count,
         averageScore,
         lowScoreRate,
@@ -338,17 +437,25 @@ export function buildCategoryInsights(
 
 export function findLowestRatedCategory(
   submission: DashboardSubmission,
-  categories: DashboardCategory[]
+  categories: DashboardCategory[],
+  lang: DashboardLang = 'en',
+  fallbackLabel = 'No category'
 ) {
-  const labels = categoryLabelMap(categories)
-  let lowestLabel = 'No category'
+  const labels = categoryLabelMap(categories, lang)
+  let lowestLabel = fallbackLabel
   let lowestScore = 5
 
   Object.entries(submission.ratings || {}).forEach(([categoryId, rawValue]) => {
     const value = Number(rawValue)
     if (value <= lowestScore) {
       lowestScore = value
-      lowestLabel = labels.get(categoryId) || `Question ${categoryId}`
+      lowestLabel =
+        labels.get(categoryId) ||
+        (lang === 'ar'
+          ? `السؤال ${categoryId}`
+          : lang === 'es'
+            ? `Pregunta ${categoryId}`
+            : `Question ${categoryId}`)
     }
   })
 
@@ -362,12 +469,15 @@ export function buildFeedbackRows(
   submissions: DashboardSubmission[],
   categories: DashboardCategory[],
   options: {
+    lang?: DashboardLang
+    noCategoryLabel?: string
     query: string
     filter: FeedbackFilter
     sort: FeedbackSort
   }
 ) {
-  const labels = categoryLabelMap(categories)
+  const lang = options.lang || 'en'
+  const labels = categoryLabelMap(categories, lang)
   const query = options.query.trim().toLowerCase()
 
   const rows = submissions.filter((submission) => {
@@ -381,7 +491,14 @@ export function buildFeedbackRows(
     if (!query) return true
 
     const questionText = Object.keys(submission.ratings || {})
-      .map((categoryId) => labels.get(categoryId) || `Question ${categoryId}`)
+      .map((categoryId) =>
+        labels.get(categoryId) ||
+        (lang === 'ar'
+          ? `السؤال ${categoryId}`
+          : lang === 'es'
+            ? `Pregunta ${categoryId}`
+            : `Question ${categoryId}`)
+      )
       .join(' ')
       .toLowerCase()
 
@@ -405,7 +522,12 @@ export function buildFeedbackRows(
   })
 
   return sorted.map((submission) => {
-    const lowest = findLowestRatedCategory(submission, categories)
+    const lowest = findLowestRatedCategory(
+      submission,
+      categories,
+      lang,
+      options.noCategoryLabel || (lang === 'ar' ? 'بدون فئة' : lang === 'fr' ? 'Aucune catégorie' : lang === 'es' ? 'Sin categoría' : 'No category')
+    )
     const commentText = normalizedComment(submission.comment)
 
     return {
