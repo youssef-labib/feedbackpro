@@ -2088,6 +2088,10 @@
     transform: translateX(0);
   }
 
+  [dir='rtl'] .sidebarOpen {
+    transform: translateX(0);
+  }
+
   .sidebarBackdropOpen {
     opacity: 1;
     pointer-events: auto;
