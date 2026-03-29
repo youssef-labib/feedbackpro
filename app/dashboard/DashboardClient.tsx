@@ -2393,14 +2393,16 @@ export default function DashboardClient({
               {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
             </button>
 
-            <button
-              type="button"
-              className={cn(styles.iconButton, styles.sidebarCloseButton)}
-              onClick={() => setMobileNavOpen(false)}
-              aria-label="Close navigation"
-            >
-              <X size={16} />
-            </button>
+            {mobileNavOpen ? (
+              <button
+                type="button"
+                className={cn(styles.iconButton, styles.sidebarCloseButton)}
+                onClick={() => setMobileNavOpen(false)}
+                aria-label="Close navigation"
+              >
+                <X size={16} />
+              </button>
+            ) : null}
           </div>
         </div>
 
