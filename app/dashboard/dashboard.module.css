@@ -339,7 +339,7 @@
 }
 
 .shellCollapsed .sidebarHeaderActions {
-  width: 52px;
+  width: 100%;
   justify-content: center;
 }
 
@@ -371,9 +371,9 @@
 }
 
 .shellCollapsed .sidebarCollapseButton {
-  width: 52px;
-  height: 52px;
-  border-radius: 18px;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
 }
 
 .shellCollapsed .navButton::after {
