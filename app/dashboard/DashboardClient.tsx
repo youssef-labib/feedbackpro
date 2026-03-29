@@ -2390,9 +2390,7 @@ export default function DashboardClient({
               onClick={toggleSidebarCollapsed}
               aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
-              <span className={styles.sidebarControlIcon}>
-                {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-              </span>
+              {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
             </button>
 
             {mobileNavOpen ? (
