@@ -80,6 +80,12 @@
   gap: 10px;
 }
 
+.sidebarControlIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .sidebarCloseButton {
   display: none;
 }
@@ -339,7 +345,7 @@
 }
 
 .shellCollapsed .sidebarHeaderActions {
-  width: 52px;
+  width: 100%;
   justify-content: center;
 }
 
@@ -352,6 +358,8 @@
   justify-items: center;
   align-content: start;
   gap: 10px;
+  padding-right: 0;
+  margin-right: 0;
 }
 
 .shellCollapsed .navButton {
@@ -374,6 +382,14 @@
   width: 52px;
   height: 52px;
   border-radius: 18px;
+}
+
+.shellCollapsed .sidebarControlIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent-soft) 52%, var(--dashboard-panel-soft));
+  color: var(--accent);
 }
 
 .shellCollapsed .navButton::after {
